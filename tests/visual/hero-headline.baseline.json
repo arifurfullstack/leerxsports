@@ -1,0 +1,191 @@
+{
+  "mobile-360": {
+    "viewportWidth": 360,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 244.19,
+        "height": 39.38,
+        "fontSize": 45.8,
+        "letterSpacingEm": -0.011,
+        "wordSpacingEm": 0.052,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 244.19,
+        "height": 39.38,
+        "fontSize": 45.8,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.096,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "mobile-390": {
+    "viewportWidth": 390,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 257.8,
+        "height": 42.09,
+        "fontSize": 48.95,
+        "letterSpacingEm": -0.011,
+        "wordSpacingEm": 0.052,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 257.8,
+        "height": 42.09,
+        "fontSize": 48.95,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.096,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "mobile-414": {
+    "viewportWidth": 414,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 273.3,
+        "height": 44.25,
+        "fontSize": 51.47,
+        "letterSpacingEm": -0.011,
+        "wordSpacingEm": 0.052,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 273.3,
+        "height": 44.25,
+        "fontSize": 51.47,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.096,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "tablet-768": {
+    "viewportWidth": 768,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 472.55,
+        "height": 76.22,
+        "fontSize": 88.64,
+        "letterSpacingEm": -0.012,
+        "wordSpacingEm": 0.053,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 472.55,
+        "height": 76.22,
+        "fontSize": 88.64,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.097,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "laptop-1024": {
+    "viewportWidth": 1024,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 617.8,
+        "height": 99.33,
+        "fontSize": 115.52,
+        "letterSpacingEm": -0.012,
+        "wordSpacingEm": 0.053,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 617.8,
+        "height": 99.33,
+        "fontSize": 115.52,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.098,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "desktop-1280": {
+    "viewportWidth": 1280,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 761.05,
+        "height": 122.47,
+        "fontSize": 142.4,
+        "letterSpacingEm": -0.012,
+        "wordSpacingEm": 0.053,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 761.05,
+        "height": 122.47,
+        "fontSize": 142.4,
+        "letterSpacingEm": -0.001,
+        "wordSpacingEm": 0.098,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  },
+  "wide-1440": {
+    "viewportWidth": 1440,
+    "lines": [
+      {
+        "index": 0,
+        "text": "Fitness Is",
+        "width": 848.33,
+        "height": 136.91,
+        "fontSize": 159.2,
+        "letterSpacingEm": -0.012,
+        "wordSpacingEm": 0.054,
+        "lineCount": 1,
+        "overflowsViewport": false
+      },
+      {
+        "index": 1,
+        "text": "The Only Law",
+        "width": 848.33,
+        "height": 136.91,
+        "fontSize": 159.2,
+        "letterSpacingEm": 0,
+        "wordSpacingEm": 0.098,
+        "lineCount": 1,
+        "overflowsViewport": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,586 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+/* Self-hosted webfonts (font-display: swap by default). Removes external
+   render-blocking Google Fonts calls from every route. */
+@import "@fontsource-variable/inter";
+@import "@fontsource/anton";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * LEER Sports design system
+ *
+ * Premium athletic dark identity: deep black base, charcoal surfaces,
+ * neon-red accent for conversion + locked-content states. All colors are
+ * semantic tokens using oklch. Dark-first — light mode is not exposed.
+ */
+
+@theme inline {
+  --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "ui-sans-serif", "system-ui", "sans-serif";
+  --font-display: "Anton", "Impact", "Haettenschweiler", "Franklin Gothic Bold", "Arial Narrow", "Inter Variable", "ui-sans-serif", "system-ui", "sans-serif";
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-sport: var(--sport);
+  --color-sport-foreground: var(--sport-foreground);
+  --color-coral: var(--coral);
+  --color-coral-foreground: var(--coral-foreground);
+  --color-navy: var(--navy);
+  --color-navy-foreground: var(--navy-foreground);
+
+  --color-premium: var(--premium);
+  --color-premium-foreground: var(--premium-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Dark-first LEER palette */
+  --background: oklch(0.08 0.005 20);           /* deep black */
+  --foreground: oklch(0.98 0.005 0);            /* white */
+
+  --card: oklch(0.14 0.008 20);                 /* dark charcoal */
+  --card-foreground: oklch(0.98 0.005 0);
+
+  --popover: oklch(0.14 0.008 20);
+  --popover-foreground: oklch(0.98 0.005 0);
+
+  /* Neon red premium accent */
+  --primary: oklch(0.62 0.24 27);
+  --primary-foreground: oklch(0.99 0.005 0);
+
+  --secondary: oklch(0.18 0.008 20);
+  --secondary-foreground: oklch(0.96 0.005 0);
+
+  --muted: oklch(0.18 0.008 20);
+  --muted-foreground: oklch(0.68 0.01 20);
+
+  --accent: oklch(0.62 0.24 27);
+  --accent-foreground: oklch(0.99 0.005 0);
+
+  --destructive: oklch(0.60 0.24 27);
+  --destructive-foreground: oklch(0.99 0.005 0);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.62 0.24 27);
+
+  --chart-1: oklch(0.62 0.24 27);
+  --chart-2: oklch(0.78 0.16 85);
+  --chart-3: oklch(0.62 0.15 260);
+  --chart-4: oklch(0.72 0.14 160);
+  --chart-5: oklch(0.60 0.20 320);
+
+  --sidebar: oklch(0.10 0.006 20);
+  --sidebar-foreground: oklch(0.96 0.005 0);
+  --sidebar-primary: oklch(0.62 0.24 27);
+  --sidebar-primary-foreground: oklch(0.99 0.005 0);
+  --sidebar-accent: oklch(0.16 0.008 20);
+  --sidebar-accent-foreground: oklch(0.96 0.005 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.62 0.24 27);
+
+  /* Legacy tokens kept for compatibility (mapped to new palette) */
+  --sport: oklch(0.62 0.24 27);
+  --sport-foreground: oklch(0.99 0.005 0);
+  --coral: oklch(0.62 0.24 27);
+  --coral-foreground: oklch(0.99 0.005 0);
+  --navy: oklch(0.14 0.008 20);
+  --navy-foreground: oklch(0.98 0.005 0);
+
+  /* Premium + status tokens */
+  --premium: oklch(0.62 0.24 27);
+  --premium-foreground: oklch(0.99 0.005 0);
+  --success: oklch(0.72 0.17 155);
+  --warning: oklch(0.80 0.16 85);
+
+  /* ---------- Shared typography scale ----------
+     A single source of truth for size, line-height, tracking and
+     word-spacing across the hero and section headings. Sizes use
+     clamp() so the rhythm stays consistent from mobile → desktop
+     without needing per-breakpoint overrides in JSX. */
+
+  /* Display (hero headline) */
+  --fs-display: clamp(2.75rem, 10.5vw + 0.5rem, 10.5rem);
+  --lh-display: 0.86;
+  --tracking-display: clamp(-0.04em, -0.028em - 0.12vw, -0.018em);
+  --tracking-display-tight: clamp(-0.02em, -0.005em + 0.05vw, 0.02em);
+  --tracking-display-airy: clamp(-0.02em, -0.005em - 0.08vw, 0.005em);
+  --word-display-airy: clamp(0.02em, 0.04em + 0.15vw, 0.12em);
+  --word-display-tight: clamp(0.06em, 0.08em + 0.2vw, 0.18em);
+
+  /* Section headline (h2) */
+  --fs-h2: clamp(1.75rem, 1.1rem + 2.4vw, 3rem);
+  --lh-h2: 1.05;
+  --tracking-h2: -0.02em;
+
+  /* Sub-section (h3) */
+  --fs-h3: clamp(1.125rem, 0.9rem + 0.9vw, 1.5rem);
+  --lh-h3: 1.2;
+  --tracking-h3: -0.005em;
+
+  /* Eyebrow / all-caps label */
+  --fs-eyebrow: clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);
+  --lh-eyebrow: 1.4;
+  --tracking-eyebrow: 0.28em;
+
+  /* Metric / stat numerals — big kinetic numbers used in bento tiles */
+  --fs-metric: clamp(3rem, 2rem + 5vw, 5.5rem);
+  --lh-metric: 0.9;
+  --tracking-metric: -0.02em;
+
+  --fs-metric-sm: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  --lh-metric-sm: 0.95;
+  --tracking-metric-sm: -0.015em;
+
+  /* Card / tile headings (h4 role) */
+  --fs-tile-lg: clamp(1.5rem, 1.15rem + 1.4vw, 2.25rem);
+  --lh-tile-lg: 1.05;
+  --tracking-tile-lg: -0.01em;
+
+  --fs-tile: clamp(1.125rem, 0.95rem + 0.7vw, 1.5rem);
+  --lh-tile: 1.1;
+  --tracking-tile: -0.005em;
+
+  /* Body copy */
+  --fs-lead: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
+  --lh-lead: 1.55;
+  --tracking-lead: 0.005em;
+
+  --fs-body: 1rem;
+  --lh-body: 1.6;
+  --tracking-body: 0.005em;
+
+  --fs-small: 0.875rem;
+  --lh-small: 1.55;
+  --tracking-small: 0.01em;
+}
+
+.dark {
+  /* .dark mirrors :root — LEER is dark-first */
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Fresh-content glow for trainer avatars */
+  .premium-glow {
+    box-shadow:
+      0 0 0 2px var(--premium),
+      0 0 18px -2px color-mix(in oklch, var(--premium) 60%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .premium-pulse {
+      animation: premium-pulse 2.4s ease-in-out infinite;
+    }
+  }
+
+  @keyframes premium-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 2px var(--premium),
+        0 0 12px -2px color-mix(in oklch, var(--premium) 40%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 2px var(--premium),
+        0 0 26px 2px color-mix(in oklch, var(--premium) 75%, transparent);
+    }
+  }
+
+  .locked-blur {
+    filter: blur(28px) saturate(0.7);
+    transform: scale(1.05);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Typography scale utilities — one rule per role, driven by the tokens
+   above. Apply these instead of ad-hoc font-size / line-height / tracking
+   so the rhythm stays consistent across pages. */
+@utility type-display {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+}
+@utility type-display-airy {
+  letter-spacing: var(--tracking-display-airy);
+  word-spacing: var(--word-display-airy);
+}
+@utility type-display-tight {
+  letter-spacing: var(--tracking-display-tight);
+  word-spacing: var(--word-display-tight);
+}
+@utility type-h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  letter-spacing: var(--tracking-h2);
+}
+@utility type-h3 {
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+  letter-spacing: var(--tracking-h3);
+}
+@utility type-metric {
+  font-size: var(--fs-metric);
+  line-height: var(--lh-metric);
+  letter-spacing: var(--tracking-metric);
+}
+@utility type-metric-sm {
+  font-size: var(--fs-metric-sm);
+  line-height: var(--lh-metric-sm);
+  letter-spacing: var(--tracking-metric-sm);
+}
+@utility type-tile-lg {
+  font-size: var(--fs-tile-lg);
+  line-height: var(--lh-tile-lg);
+  letter-spacing: var(--tracking-tile-lg);
+}
+@utility type-tile {
+  font-size: var(--fs-tile);
+  line-height: var(--lh-tile);
+  letter-spacing: var(--tracking-tile);
+}
+@utility type-eyebrow {
+  font-size: var(--fs-eyebrow);
+  line-height: var(--lh-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+@utility type-lead {
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  letter-spacing: var(--tracking-lead);
+}
+@utility type-body {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tracking-body);
+}
+@utility type-small {
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  letter-spacing: var(--tracking-small);
+}
+
+/* ---------- Hero kinetic typography ---------- */
+@keyframes hero-text-reveal {
+  0% {
+    -webkit-transform: translateY(105%);
+    transform: translateY(105%);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes hero-gradient-sweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.hero-reveal {
+  /* Safe default: fully visible so the hero always renders even if
+     animations, keyframes, or the parent's overflow clip fail. */
+  opacity: 1;
+  transform: none;
+  will-change: transform, opacity;
+  -webkit-animation: hero-text-reveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: hero-text-reveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The masked slide-up effect relies on the parent using overflow:hidden
+   to clip the translated child. Add an explicit -webkit-mask fallback
+   so older WebKit/Safari still produce a clean edge if the ancestor
+   clip is ever compromised (e.g. transforms creating a new stacking
+   context that leaks descenders). */
+.hero-reveal-clip {
+  overflow: hidden;
+  -webkit-mask-image: -webkit-linear-gradient(top, #000 0%, #000 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 100%);
+}
+
+.hero-sweep {
+  /* Fallback color for browsers without background-clip:text support
+     (older Safari, some in-app webviews). Keeps the headline legible. */
+  color: var(--primary);
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    #f472b6,
+    #fb923c,
+    var(--primary)
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Only make the fill transparent when the browser actually supports
+   clipping the background to the text glyphs; otherwise keep the
+   fallback solid color above so text never disappears on Safari. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-sweep {
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    -webkit-animation: hero-gradient-sweep 6s linear infinite;
+    animation: hero-gradient-sweep 6s linear infinite;
+  }
+}
+
+/* color-mix() lands in Safari 16.4+. When supported, blend the brand
+   color with transparent edges for a softer sweep. */
+@supports (background: linear-gradient(90deg, color-mix(in oklch, red 50%, transparent), red)) {
+  .hero-sweep {
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--primary) 90%, transparent),
+      #f472b6,
+      #fb923c,
+      color-mix(in oklch, var(--primary) 90%, transparent)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal {
+    -webkit-animation: none;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hero-sweep {
+    -webkit-animation: none;
+    animation: none;
+    background-position: 0 center;
+  }
+}
+
+/* ---------- Bento tile entrance + hover ----------
+   Subtle rise-and-fade on mount, gentle lift on hover. All motion is
+   gated behind prefers-reduced-motion so users who opt out see the
+   tiles fully rendered with no transform. */
+@keyframes tile-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.tile-anim {
+  /* Safe default — fully visible if animations don't run. */
+  opacity: 1;
+  transform: none;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease,
+    box-shadow 0.35s ease,
+    background-color 0.3s ease;
+  /* Isolate paint + layout to this tile so hover/scroll repaints do
+     not invalidate siblings — big win on mobile Safari. */
+  contain: layout paint;
+  /* Promote to its own compositor layer so transform-based hover
+     lifts don't repaint the tile's contents. */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tile-anim {
+    animation: tile-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--tile-delay, 0ms);
+    will-change: transform, opacity;
+  }
+  .tile-anim:hover {
+    transform: translate3d(0, -3px, 0);
+    box-shadow: 0 18px 40px -24px color-mix(in oklch, var(--primary) 40%, transparent);
+  }
+  .tile-anim:active {
+    transform: translate3d(0, -1px, 0) scale(0.997);
+    transition-duration: 0.15s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-anim {
+    animation: none;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+}
+
+/* ---------- Skeleton shimmer ----------
+   Diagonal light sweep for placeholder tiles. Uses a masked gradient
+   so it works on any background color. Pauses under reduced motion. */
+@keyframes skeleton-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-tile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.skeleton-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--foreground) 6%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-tile::after {
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* Graceful crossfade when the real bento swaps in over the skeleton.
+   Keeps the layout locked so nothing jumps. */
+.section-fade-in {
+  animation: fade-in-soft 0.4s ease-out both;
+}
+
+@keyframes fade-in-soft {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-fade-in {
+    animation: none;
+  }
+}
+
+/* ---------- Hero interactive focus coverage ----------
+   Guarantees every interactive descendant of the hero section shows a
+   consistent keyboard focus ring. Uses `outline` + `outline-offset` so
+   the ring is painted outside the element's box and never displaces
+   surrounding layout. */
+.hero-scope :where(a, button, [role="button"], [role="link"], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 9999px;
+}
+
+/* Hide horizontal scrollbar on touch rails (Trainer spotlight, etc.). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---------- Scroll-triggered reveal ----------
+   Lightweight, opt-in entrance animation for headings, eyebrows and
+   supporting copy. Elements start slightly translated and faded; when
+   their nearest [data-inview="true"] ancestor flips on, they animate
+   into place. Stagger via inline `--reveal-delay`. Fully bypassed
+   under reduced motion so nothing hides for users who opt out. */
+.reveal {
+  opacity: 1;
+  transform: none;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-inview="true"] .reveal {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
