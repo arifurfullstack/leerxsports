@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- payment tables/functions are introduced by the pending migration and are not in generated Supabase types yet */
 import { decryptSecret } from "./gateway-crypto.server";
+import { buildStripeReturnUrls } from "./payment-return-urls";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type CheckoutProvider = "stripe" | "paypal" | "bank";
@@ -70,17 +71,12 @@ export async function createProviderCheckout(params: {
     const secret = gateway.config.secret_key;
     if (!secret) throw new Error("Stripe secret key is not configured.");
 
-    const successUrl = new URL("/payment/complete", origin);
-    successUrl.searchParams.set("order", order.id);
-    successUrl.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
-    const cancelUrl = new URL("/payment/complete", origin);
-    cancelUrl.searchParams.set("order", order.id);
-    cancelUrl.searchParams.set("cancelled", "1");
+    const { successUrl, cancelUrl } = buildStripeReturnUrls(origin, order.id);
 
     const body = new URLSearchParams();
     body.set("mode", "payment");
-    body.set("success_url", successUrl.toString());
-    body.set("cancel_url", cancelUrl.toString());
+    body.set("success_url", successUrl);
+    body.set("cancel_url", cancelUrl);
     body.set("client_reference_id", order.id);
     body.set("metadata[payment_order_id]", order.id);
     body.set("payment_intent_data[metadata][payment_order_id]", order.id);

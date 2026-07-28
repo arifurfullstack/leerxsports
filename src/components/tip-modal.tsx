@@ -38,11 +38,11 @@ export function TipModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-widest">
-            Coaching completed
+            Support {trainerName}
           </DialogTitle>
           <DialogDescription>
-            Show your respect to {trainerName}. The platform applies the configured revenue split
-            only after payment confirmation.
+            Send a tip to show your support. The platform applies the configured revenue split only
+            after payment confirmation.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-2">

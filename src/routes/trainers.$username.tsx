@@ -32,8 +32,10 @@ import {
   UserX,
   Check,
   Sparkles,
+  Heart,
 } from "lucide-react";
 import { UnlockCheckoutDialog } from "@/components/unlock-checkout-dialog";
+import { TipModal } from "@/components/tip-modal";
 
 function normalizeUsername(raw: string): string {
   return raw
@@ -493,6 +495,7 @@ function TrainerProfileInner({
 
   const [activePost, setActivePost] = useState<Post | null>(null);
   const [askOpen, setAskOpen] = useState(false);
+  const [tipOpen, setTipOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [followListKind, setFollowListKind] = useState<FollowListKind | null>(null);
   const openFollowList = (kind: FollowListKind) => setFollowListKind(kind);
@@ -787,6 +790,22 @@ function TrainerProfileInner({
                 disabled={!t.monetization_enabled}
               />
 
+              <Button
+                size="default"
+                variant="outline"
+                disabled={!t.monetization_enabled || currentUserId === t.user_id}
+                title={
+                  currentUserId === t.user_id
+                    ? "You cannot tip yourself"
+                    : "Send a coaching tip"
+                }
+                onClick={() => requireAuth(() => setTipOpen(true))}
+                className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/10 hover:shadow-md"
+              >
+                <Heart className="mr-2 h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-110" />
+                Tip
+              </Button>
+
               {/* Share Button */}
               <Button
                 size="default"
@@ -1024,6 +1043,13 @@ function TrainerProfileInner({
         onOpenChange={(o) => !o && setFollowListKind(null)}
         userId={t.user_id}
         kind={followListKind ?? "followers"}
+      />
+      <TipModal
+        open={tipOpen}
+        onOpenChange={setTipOpen}
+        trainerId={t.user_id}
+        trainerName={t.display_name ?? t.username ?? "this creator"}
+        presets={[5, 10, 25]}
       />
     </article>
   );

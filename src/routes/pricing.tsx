@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckoutDialog, type CheckoutPlanId, type CheckoutAssumptions } from "@/components/checkout-dialog";
-import { RedirectIfAuthed } from "@/components/redirect-if-authed";
 import {
   Check,
   Tag,
@@ -60,7 +59,6 @@ function PricingPage() {
 
   return (
     <main className="relative isolate overflow-hidden bg-[#000000] text-foreground">
-      <RedirectIfAuthed />
       {/* Clean Solid Deep Black (#000000) background with subtle top spotlight */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[#000000]">
         <div

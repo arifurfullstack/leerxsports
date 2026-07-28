@@ -38,11 +38,11 @@ export function ProfileModeProvider({ children }: { children: ReactNode }) {
 
       const { data: trainerRow } = await supabase
         .from("trainer_profiles")
-        .select("user_id, status")
+        .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const isCreator = Boolean(hasTrainerRole || (trainerRow && (trainerRow as any).status === "approved"));
+      const isCreator = Boolean(hasTrainerRole || trainerRow);
       return { isCreator, userId: user.id };
     },
     staleTime: 60_000,
