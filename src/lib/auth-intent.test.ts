@@ -35,9 +35,9 @@ describe("resolvePostAuthTarget — successful login returns to /admin", () => {
     expect(resolvePostAuthTarget("admin")).toBe("/admin");
   });
 
-  it("falls back to /onboarding for empty/unknown intent", () => {
-    expect(resolvePostAuthTarget({ intent: "" })).toBe("/onboarding");
-    expect(resolvePostAuthTarget({ intent: "something-else" })).toBe("/onboarding");
+  it("falls back to /home for empty/unknown intent", () => {
+    expect(resolvePostAuthTarget({ intent: "" })).toBe("/home");
+    expect(resolvePostAuthTarget({ intent: "something-else" })).toBe("/home");
   });
 
   it("prefers a sanitized redirect over intent", () => {
@@ -47,13 +47,9 @@ describe("resolvePostAuthTarget — successful login returns to /admin", () => {
   });
 
   it("drops unsafe redirects and falls back to intent/default", () => {
-    expect(resolvePostAuthTarget({ redirect: "//evil.example/x" })).toBe("/onboarding");
-    expect(resolvePostAuthTarget({ redirect: "https://evil.example" })).toBe(
-      "/onboarding",
-    );
-    expect(resolvePostAuthTarget({ redirect: "javascript:alert(1)" })).toBe(
-      "/onboarding",
-    );
+    expect(resolvePostAuthTarget({ redirect: "//evil.example/x" })).toBe("/home");
+    expect(resolvePostAuthTarget({ redirect: "https://evil.example" })).toBe("/home");
+    expect(resolvePostAuthTarget({ redirect: "javascript:alert(1)" })).toBe("/home");
   });
 });
 

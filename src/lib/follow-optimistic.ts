@@ -14,6 +14,20 @@ export const followInfoKey = (trainerId: string) =>
 export const followCountsKey = (trainerId: string) =>
   ["follow-counts", trainerId] as const;
 
+/** Per-trainer in-flight tracking so rapid clicks reconcile to a stable
+ * baseline instead of drifting on partial server responses. */
+type BurstState = {
+  inflight: number;
+  baselineFollowers: number | null;
+  baselineFollowing: boolean | null;
+  baselineViewerFollowing: number | null;
+};
+const burst = new Map<string, BurstState>();
+/** Scope id for TanStack Query mutation serialization. Same trainer +
+ * viewer pair is serialized so DB toggles land in click order. */
+export const followMutationScopeId = (trainerId: string, viewerId?: string | null) =>
+  `follow:${trainerId}:${viewerId ?? "anon"}`;
+
 function bumpFollowersCache(
   qc: QueryClient,
   trainerId: string,
@@ -29,13 +43,37 @@ function bumpFollowersCache(
 }
 
 /**
- * Pure optimistic update: flip isFollowing and adjust follower count.
- * Returns previous snapshots + the delta so the caller can roll back on
- * error even when counts arrived from the server mid-flight.
+ * Bump the "following" count on the viewer's own follow-counts cache so
+ * their profile reflects a follow/unfollow immediately without waiting
+ * for a refetch.
+ */
+export function bumpViewerFollowingCache(
+  qc: QueryClient,
+  viewerId: string,
+  delta: number,
+) {
+  const key = followCountsKey(viewerId);
+  const current = qc.getQueryData<FollowCounts>(key);
+  if (!current) return;
+  qc.setQueryData<FollowCounts>(key, {
+    ...current,
+    following: Math.max(0, current.following + delta),
+  });
+}
+
+/**
+ * Optimistically flip isFollowing and adjust follower count.
+ *
+ * Rapid-click safety: on the first click of a burst we snapshot the
+ * follower count (and optionally the viewer's own following count) as a
+ * baseline; each subsequent click while the burst is in flight adds to
+ * the same baseline. When the burst settles, reconcile snaps counts to
+ * `baseline ± {0,1}` derived from the server's final isFollowing state.
  */
 export async function applyOptimisticFollow(
   qc: QueryClient,
   trainerId: string,
+  viewerId?: string | null,
 ): Promise<FollowMutationContext> {
   const infoKey = followInfoKey(trainerId);
   const countsKey = followCountsKey(trainerId);
@@ -45,6 +83,26 @@ export async function applyOptimisticFollow(
   ]);
   const prevInfo = qc.getQueryData<SubscriptionInfo>(infoKey);
   const prevCounts = qc.getQueryData<FollowCounts>(countsKey);
+
+  const state = burst.get(trainerId) ?? {
+    inflight: 0,
+    baselineFollowers: null,
+    baselineFollowing: null,
+    baselineViewerFollowing: null,
+  };
+  if (state.inflight === 0) {
+    state.baselineFollowers = prevCounts?.followers ?? null;
+    state.baselineFollowing = prevInfo?.isFollowing ?? false;
+    if (viewerId && viewerId !== trainerId) {
+      const viewerCounts = qc.getQueryData<FollowCounts>(followCountsKey(viewerId));
+      state.baselineViewerFollowing = viewerCounts?.following ?? null;
+    } else {
+      state.baselineViewerFollowing = null;
+    }
+  }
+  state.inflight += 1;
+  burst.set(trainerId, state);
+
   const wasFollowing = prevInfo?.isFollowing ?? false;
   const delta: 1 | -1 = wasFollowing ? -1 : 1;
   if (prevInfo) {
@@ -57,12 +115,26 @@ export async function applyOptimisticFollow(
   return { prevInfo, prevCounts, delta };
 }
 
+function endBurst(trainerId: string): BurstState | null {
+  const s = burst.get(trainerId);
+  if (!s) return null;
+  s.inflight = Math.max(0, s.inflight - 1);
+  if (s.inflight === 0) {
+    const snapshot = { ...s };
+    burst.delete(trainerId);
+    return snapshot;
+  }
+  burst.set(trainerId, s);
+  return null;
+}
+
 export function rollbackOptimisticFollow(
   qc: QueryClient,
   trainerId: string,
   ctx: FollowMutationContext | undefined,
 ) {
   if (!ctx) return;
+  endBurst(trainerId);
   if (ctx.prevInfo) qc.setQueryData(followInfoKey(trainerId), ctx.prevInfo);
   // Reverse whatever we applied, even if counts landed from the server
   // between apply → rollback (prevCounts snapshot would be stale).
@@ -71,33 +143,74 @@ export function rollbackOptimisticFollow(
 
 /**
  * Reconcile follow state from the server response — the source of truth.
- * Corrects the follower count if the optimistic guess and server disagree
- * (e.g. rapid double-toggle, out-of-band change).
+ *
+ * Only the LAST in-flight click of a burst reconciles counts; intermediate
+ * responses just decrement the in-flight counter. This prevents thrashing
+ * when the server hasn't yet processed later toggles, and guarantees the
+ * final count = baseline + trueDelta where trueDelta ∈ {-1, 0, +1}.
  */
 export function reconcileFollowFromServer(
   qc: QueryClient,
   trainerId: string,
-  ctx: FollowMutationContext | undefined,
+  _ctx: FollowMutationContext | undefined,
   serverFollowing: boolean,
+  viewerId?: string | null,
 ) {
   const infoKey = followInfoKey(trainerId);
   const current = qc.getQueryData<SubscriptionInfo>(infoKey);
+  // Boolean is authoritative — always reflect the latest server state.
   if (current && current.isFollowing !== serverFollowing) {
     qc.setQueryData<SubscriptionInfo>(infoKey, {
       ...current,
       isFollowing: serverFollowing,
     });
   }
-  const wasFollowing = ctx?.prevInfo?.isFollowing ?? !serverFollowing;
-  const expectedDelta = serverFollowing === wasFollowing ? 0 : serverFollowing ? 1 : -1;
-  const appliedDelta = ctx?.delta ?? 0;
-  const diff = expectedDelta - appliedDelta;
-  if (diff !== 0) bumpFollowersCache(qc, trainerId, diff);
+  const finished = endBurst(trainerId);
+  if (!finished) return; // more clicks still in flight; wait for the last one
+
+  const {
+    baselineFollowers,
+    baselineFollowing,
+    baselineViewerFollowing,
+  } = finished;
+  if (baselineFollowers != null && baselineFollowing != null) {
+    const trueDelta = serverFollowing === baselineFollowing ? 0 : serverFollowing ? 1 : -1;
+    const target = Math.max(0, baselineFollowers + trueDelta);
+    const counts = qc.getQueryData<FollowCounts>(followCountsKey(trainerId));
+    if (counts && counts.followers !== target) {
+      qc.setQueryData<FollowCounts>(followCountsKey(trainerId), {
+        ...counts,
+        followers: target,
+      });
+    }
+    if (
+      viewerId &&
+      viewerId !== trainerId &&
+      baselineViewerFollowing != null
+    ) {
+      const viewerKey = followCountsKey(viewerId);
+      const viewerCounts = qc.getQueryData<FollowCounts>(viewerKey);
+      const viewerTarget = Math.max(0, baselineViewerFollowing + trueDelta);
+      if (viewerCounts && viewerCounts.following !== viewerTarget) {
+        qc.setQueryData<FollowCounts>(viewerKey, {
+          ...viewerCounts,
+          following: viewerTarget,
+        });
+      }
+    }
+  }
 }
 
-export function invalidateFollow(qc: QueryClient, trainerId: string) {
+export function invalidateFollow(
+  qc: QueryClient,
+  trainerId: string,
+  viewerId?: string,
+) {
   qc.invalidateQueries({ queryKey: followInfoKey(trainerId) });
   qc.invalidateQueries({ queryKey: followCountsKey(trainerId) });
+  if (viewerId && viewerId !== trainerId) {
+    qc.invalidateQueries({ queryKey: followCountsKey(viewerId) });
+  }
 }
 
 // ————————————————————————————————————————————————————————————

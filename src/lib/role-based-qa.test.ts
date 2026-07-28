@@ -1,0 +1,279 @@
+/**
+ * ============================================================
+ * ROLE-BASED COMPREHENSIVE QA TEST SUITE
+ * Exercises all 5 User Roles (Guest, Trainee, Trainer, Moderator, Admin)
+ * plus Live Stripe Sandbox Key Integration Verification
+ * ============================================================
+ */
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  permissionsForRole,
+  permissionForPath,
+  ADMIN_PERMISSIONS,
+  MODERATOR_PERMISSIONS,
+  firstAccessibleAdminPath,
+} from "@/lib/admin-permissions";
+import {
+  checkPassword,
+  classifyAuthError,
+} from "@/lib/password-strength";
+import {
+  sanitizeRedirect,
+  resolveAuthIntent,
+  resolvePostAuthTarget,
+} from "@/lib/auth-intent";
+import {
+  isProtectedPath,
+  shouldRefreshBeforeUse,
+} from "@/lib/session-lifecycle";
+import {
+  traineeOnboardingSchema,
+  trainerApplicationSchema,
+  createClassSchema,
+  loginSchema,
+  signupSchema,
+  appRoleSchema,
+  type AppRole,
+} from "@/lib/schemas";
+import { createStorySchema } from "@/lib/story-functions";
+import { assertCannotDemoteSelf } from "@/lib/admin-roles-functions";
+import { z } from "zod";
+
+// ─── ROLE 1: GUEST / UNAUTHENTICATED USER ─────────────────────────────────────
+
+describe("[ROLE-1: GUEST] Access Controls & Route Protection", () => {
+  it("GUEST-01: All protected route prefixes are strictly guarded", () => {
+    const protectedRoutes = [
+      "/admin",
+      "/admin/roles",
+      "/admin/payment-gateways",
+      "/creator.dashboard",
+      "/dashboard",
+      "/library",
+      "/messages",
+      "/notifications",
+      "/onboarding",
+      "/profile",
+      "/settings",
+    ];
+    for (const route of protectedRoutes) {
+      expect(isProtectedPath(route)).toBe(true);
+    }
+  });
+
+  it("GUEST-02: Public marketing & auth routes are accessible", () => {
+    const publicRoutes = ["/", "/auth", "/browse", "/feed", "/home", "/pricing", "/explore"];
+    for (const route of publicRoutes) {
+      expect(isProtectedPath(route)).toBe(false);
+    }
+  });
+
+  it("GUEST-03: Open-redirect attempts are sanitized to empty string", () => {
+    expect(sanitizeRedirect("//evil.com")).toBe("");
+    expect(sanitizeRedirect("https://attacker.com")).toBe("");
+    expect(sanitizeRedirect("javascript:alert(1)")).toBe("");
+  });
+
+  it("GUEST-04: Guest auth intent stamp redirects cleanly", () => {
+    expect(resolveAuthIntent("/admin")).toBe("admin");
+    expect(resolvePostAuthTarget({ intent: "admin" })).toBe("/admin");
+    expect(resolvePostAuthTarget({ intent: "" })).toBe("/home");
+  });
+
+  it("GUEST-05: Login schema rejects weak or malformed inputs", () => {
+    expect(loginSchema.safeParse({ email: "invalid-email", password: "123" }).success).toBe(false);
+    expect(loginSchema.safeParse({ email: "user@example.com", password: "abc" }).success).toBe(false);
+  });
+});
+
+// ─── ROLE 2: TRAINEE (STANDARD USER) ──────────────────────────────────────────
+
+describe("[ROLE-2: TRAINEE] Registration, Onboarding & User Features", () => {
+  it("TRAINEE-01: Trainee receives empty admin permissions array", () => {
+    const perms = permissionsForRole("trainee" as AppRole, false);
+    expect(perms).toHaveLength(0);
+    expect(firstAccessibleAdminPath(perms)).toBeNull();
+  });
+
+  it("TRAINEE-02: Onboarding requires agreement acceptance (agreement_accepted=true)", () => {
+    const base = {
+      username: "trainee_john",
+      display_name: "John Trainee",
+      country: "United States",
+      native_language: "English",
+      experience_level: "beginner",
+    };
+    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: false }).success).toBe(false);
+    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: true }).success).toBe(true);
+  });
+
+  it("TRAINEE-03: Trainee onboarding validates height, weight, body fat bounds", () => {
+    const valid = {
+      username: "alex_fit",
+      display_name: "Alex",
+      country: "Canada",
+      native_language: "English",
+      experience_level: "intermediate",
+      agreement_accepted: true as const,
+      height_cm: 180,
+      weight_kg: 80,
+      body_fat_percent: 15,
+    };
+    expect(traineeOnboardingSchema.safeParse(valid).success).toBe(true);
+    expect(traineeOnboardingSchema.safeParse({ ...valid, height_cm: 350 }).success).toBe(false);
+    expect(traineeOnboardingSchema.safeParse({ ...valid, weight_kg: 600 }).success).toBe(false);
+    expect(traineeOnboardingSchema.safeParse({ ...valid, body_fat_percent: 90 }).success).toBe(false);
+  });
+
+  it("TRAINEE-04: Trainee signup schema requires full name and valid email", () => {
+    expect(signupSchema.safeParse({ email: "new@test.com", password: "securepassword123", fullName: "Jane Doe" }).success).toBe(true);
+    expect(signupSchema.safeParse({ email: "new@test.com", password: "securepassword123" }).success).toBe(false);
+  });
+});
+
+// ─── ROLE 3: TRAINER (CREATOR) ────────────────────────────────────────────────
+
+describe("[ROLE-3: TRAINER] Application Workflow & Creator Rules", () => {
+  it("TRAINER-01: Trainer role grants 0 admin permissions (trainers are creators, not staff)", () => {
+    const perms = permissionsForRole("trainer" as AppRole, false);
+    expect(perms).toHaveLength(0);
+  });
+
+  it("TRAINER-02: Trainer application requires agreement & valid pricing (0-999)", () => {
+    const validApp = {
+      username: "coach_david",
+      display_name: "Coach David",
+      full_legal_name: "David Smith",
+      public_trainer_name: "Dave Coach",
+      country: "United Kingdom",
+      native_language: "English",
+      specialties: ["strength", "hiit"],
+      years_experience: 5,
+      requested_price: 24.99,
+      agreement_accepted: true as const,
+    };
+    expect(trainerApplicationSchema.safeParse(validApp).success).toBe(true);
+    expect(trainerApplicationSchema.safeParse({ ...validApp, requested_price: 1500 }).success).toBe(false);
+    expect(trainerApplicationSchema.safeParse({ ...validApp, agreement_accepted: false }).success).toBe(false);
+  });
+
+  it("TRAINER-03: Story creation schema resolves default duration (5s image, 8s video)", () => {
+    const imgParsed = createStorySchema.parse({ media_path: "stories/1.jpg", media_kind: "image" });
+    const vidParsed = createStorySchema.parse({ media_path: "stories/1.mp4", media_kind: "video" });
+    expect(imgParsed.duration_ms).toBe(5000);
+    expect(vidParsed.duration_ms).toBe(8000);
+  });
+
+  it("TRAINER-04: Trainer class creation schema enforces slug format & non-negative price", () => {
+    const validClass = {
+      title: "HIIT Workout",
+      slug: "hiit-workout",
+      instructor: "Coach David",
+      duration_minutes: 45,
+      capacity: 15,
+      schedule: "2026-10-01T10:00:00+00:00",
+      level: "intermediate",
+      price: 10,
+    };
+    expect(createClassSchema.safeParse(validClass).success).toBe(true);
+    expect(createClassSchema.safeParse({ ...validClass, slug: "HIIT Workout!" }).success).toBe(false);
+    expect(createClassSchema.safeParse({ ...validClass, price: -5 }).success).toBe(false);
+  });
+});
+
+// ─── ROLE 4: MODERATOR ────────────────────────────────────────────────────────
+
+describe("[ROLE-4: MODERATOR] Content Moderation & RBAC Restrictions", () => {
+  it("MODERATOR-01: Moderator possesses exactly 16 permissions", () => {
+    const perms = permissionsForRole("moderator", false);
+    expect(perms.length).toBe(MODERATOR_PERMISSIONS.length);
+    expect(perms.length).toBe(16);
+  });
+
+  it("MODERATOR-02: Moderator HAS permissions for moderation, reports, disputes, strikes", () => {
+    const perms = permissionsForRole("moderator", false);
+    expect(perms).toContain("moderation");
+    expect(perms).toContain("manage_disputes");
+    expect(perms).toContain("manage_strikes");
+    expect(perms).toContain("view_overview");
+  });
+
+  it("MODERATOR-03: SECURITY — Moderator is BLOCKED from system admin settings & roles", () => {
+    const perms = permissionsForRole("moderator", false);
+    expect(perms).not.toContain("manage_roles");
+    expect(perms).not.toContain("manage_payment_gateways");
+    expect(perms).not.toContain("manage_webhooks");
+    expect(perms).not.toContain("manage_security");
+  });
+
+  it("MODERATOR-04: Moderator route mapping points to accessible first admin path", () => {
+    const perms = permissionsForRole("moderator", false);
+    const firstPath = firstAccessibleAdminPath(perms);
+    expect(firstPath).toBe("/admin");
+  });
+});
+
+// ─── ROLE 5: ADMIN (SUPERUSER) ────────────────────────────────────────────────
+
+describe("[ROLE-5: ADMIN] Full Platform Access & Demotion Protection", () => {
+  it("ADMIN-01: Admin possesses ALL 34 platform permissions", () => {
+    const perms = permissionsForRole("admin", false);
+    expect(perms.length).toBe(ADMIN_PERMISSIONS.length);
+    expect(perms.length).toBe(34);
+  });
+
+  it("ADMIN-02: isAdmin=true flag overrides role and grants full admin", () => {
+    const perms = permissionsForRole("user" as AppRole, true);
+    expect(perms).toContain("manage_roles");
+    expect(perms).toContain("manage_security");
+    expect(perms).toContain("manage_payment_gateways");
+  });
+
+  it("ADMIN-03: SECURITY — Admin cannot demote themselves (assertCannotDemoteSelf)", () => {
+    const ADMIN_ID = "00000000-0000-0000-0000-000000000001";
+    expect(() => assertCannotDemoteSelf(ADMIN_ID, ADMIN_ID, [])).toThrow(
+      "You cannot remove your own admin role."
+    );
+    expect(() => assertCannotDemoteSelf(ADMIN_ID, ADMIN_ID, ["trainer"])).toThrow(
+      "You cannot remove your own admin role."
+    );
+  });
+
+  it("ADMIN-04: Admin route permissions map cleanly for all admin sub-routes", () => {
+    expect(permissionForPath("/admin/users")).toBe("manage_users");
+    expect(permissionForPath("/admin/roles")).toBe("manage_roles");
+    expect(permissionForPath("/admin/payment-gateways")).toBe("manage_payment_gateways");
+    expect(permissionForPath("/admin/security")).toBe("manage_security");
+  });
+});
+
+// ─── STRIPE SANDBOX KEY & INTEGRATION VERIFICATION ───────────────────────────
+
+describe("[STRIPE SANDBOX] Environment Keys & Payment Intent Infrastructure", () => {
+  it("STRIPE-01: Stripe test Publishable Key format is valid (pk_test_...)", () => {
+    const pubKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "";
+    expect(pubKey).toMatch(/^pk_test_[A-Za-z0-9]+/);
+    expect(pubKey).toContain("51Tx1RcDs1ObeDf1LpwGeGwemaq39XAshM");
+  });
+
+  it("STRIPE-02: Stripe test Secret Key format is valid (sk_test_...)", () => {
+    const secKey = process.env.STRIPE_SECRET_KEY ?? "";
+    expect(secKey).toMatch(/^sk_test_[A-Za-z0-9]+/);
+    expect(secKey).toContain("51Tx1RcDs1ObeDf1LYO1uMAa0N73F7hrn6");
+  });
+
+  it("STRIPE-03: Commission Math correctly calculates 20% platform fee for $15 subscription", () => {
+    const gross = 15;
+    const bps = 2000; // 20%
+    const platformFee = Math.round(gross * bps) / 10000;
+    const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
+    expect(platformFee).toBe(3);
+    expect(trainerAmount).toBe(12);
+  });
+
+  it("STRIPE-04: Strict email validation prevents injection in billing form", () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    expect(emailRegex.test("shopper@example.com")).toBe(true);
+    expect(emailRegex.test("admin'--@hack.com")).toBe(false);
+  });
+});

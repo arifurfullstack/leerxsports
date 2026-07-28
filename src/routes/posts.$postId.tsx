@@ -32,6 +32,7 @@ import {
   type CommentNode,
 } from "@/lib/engagement-functions";
 import type { PostEngagement } from "@/lib/engagement-functions";
+import { getPostUnlockInfo, unlockPost, type UnlockInfo } from "@/lib/unlock-functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,9 +54,15 @@ const postQuery = (postId: string) =>
 
 export const Route = createFileRoute("/posts/$postId")({
   loader: async ({ context, params }) => {
-    const post = await context.queryClient.ensureQueryData(postQuery(params.postId));
-    if (!post) throw notFound();
-    return { post };
+    try {
+      const post = await context.queryClient.ensureQueryData(postQuery(params.postId));
+      if (!post) throw notFound();
+      return { post };
+    } catch (e) {
+      if (e instanceof Error && e.message === "Not Found") throw e;
+      console.error("Post detail loader error:", e);
+      return { post: null };
+    }
   },
   head: ({ loaderData }) => {
     if (!loaderData?.post) {
@@ -125,10 +132,6 @@ function PostDetailPage() {
 
   if (!post) return <NotFoundState />;
 
-  const isVideo =
-    post.kind === "short" ||
-    /\.(mp4|webm|mov)(\?|$)/i.test(post.media_url ?? "");
-  const locked = post.is_premium;
   const trainerHref = post.trainer.username ?? post.trainer.user_id;
   const trainerName =
     post.trainer.display_name ?? post.trainer.username ?? "Athlete";
@@ -140,6 +143,8 @@ function PostDetailPage() {
   const listPage = useServerFn(listCommentsPage);
   const addFn = useServerFn(addComment);
   const viewFn = useServerFn(logPostView);
+  const unlockInfoFn = useServerFn(getPostUnlockInfo);
+  const unlockFn = useServerFn(unlockPost);
 
   // Log a view once per session per post (best-effort, non-blocking).
   useEffect(() => {
@@ -159,6 +164,37 @@ function PostDetailPage() {
     enabled: signedIn,
   });
 
+  // Server-side unlock gate — returns a fresh signed URL when the caller
+  // owns, subscribes to, or has purchased this post.
+  const unlockKey = ["post-unlock", post.id] as const;
+  const unlockQ = useQuery({
+    queryKey: unlockKey,
+    queryFn: () => unlockInfoFn({ data: { postId: post.id } }),
+    enabled: signedIn && post.is_premium,
+    staleTime: 30 * 60 * 1000,
+  });
+  const unlockMut = useMutation({
+    mutationFn: () => unlockFn({ data: { postId: post.id } }),
+    onSuccess: (res) => {
+      toast.success(res.alreadyUnlocked ? "Already unlocked" : "Unlocked");
+      qc.invalidateQueries({ queryKey: unlockKey });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const unlockInfo: UnlockInfo | undefined = unlockQ.data;
+  const effectiveMediaUrl = post.is_premium
+    ? unlockInfo?.media_url ?? null
+    : post.media_url;
+  const effectiveThumbUrl = post.is_premium
+    ? unlockInfo?.thumbnail_url ?? null
+    : post.thumbnail_url;
+  const isVideo =
+    post.kind === "short" ||
+    /\.(mp4|webm|mov)(\?|$)/i.test(effectiveMediaUrl ?? "");
+  const locked = post.is_premium && !unlockInfo?.unlocked;
+  const unlockPrice = unlockInfo?.price ?? 0;
+  const unlockCurrency = unlockInfo?.currency ?? "USD";
+
   const engKey = ["post-engagement", post.id] as const;
 
   const respectMut = useMutation({
@@ -174,6 +210,7 @@ function PostDetailPage() {
             respect_count: post.respect_count,
             save_count: post.save_count,
             comment_count: 0,
+    share_count: 0,
           },
         };
       const nextActive = !base.respect;
@@ -207,6 +244,7 @@ function PostDetailPage() {
             respect_count: post.respect_count,
             save_count: post.save_count,
             comment_count: 0,
+    share_count: 0,
           },
         };
       const nextActive = !base.save;
@@ -311,6 +349,7 @@ function PostDetailPage() {
     respect_count: post.respect_count,
     save_count: post.save_count,
     comment_count: 0,
+    share_count: 0,
   };
 
   const logShareChannel = (channel: string) => {
@@ -400,27 +439,59 @@ function PostDetailPage() {
                 <Lock className="h-8 w-8 text-primary" />
                 <p className="font-display uppercase tracking-widest text-primary">Premium</p>
                 <p className="max-w-sm text-sm text-white/70">
-                  Subscribe to {trainerName} to unlock this post.
+                  Unlock this post from {trainerName} — one-time purchase, yours forever.
                 </p>
+                {signedIn ? (
+                  <Button
+                    type="button"
+                    onClick={() => unlockMut.mutate()}
+                    disabled={unlockMut.isPending || unlockPrice <= 0}
+                    className="mt-2 rounded-full px-5"
+                    style={{
+                      backgroundColor: "var(--premium)",
+                      color: "var(--premium-foreground)",
+                    }}
+                  >
+                    {unlockMut.isPending ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        Unlocking…
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-1.5 h-3.5 w-3.5" />
+                        Unlock · {unlockCurrency === "USD" ? "$" : ""}
+                        {unlockPrice.toFixed(2)}
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Link
+                    to="/auth"
+                    className="mt-2 inline-flex items-center rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground"
+                  >
+                    Sign in to unlock
+                  </Link>
+                )}
                 <Link
                   to="/trainers/$username"
                   params={{ username: trainerHref }}
-                  className="mt-2 inline-flex items-center rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground"
+                  className="text-[10px] uppercase tracking-widest text-white/50 hover:text-white/80"
                 >
-                  View trainer
+                  Or subscribe to {trainerName}
                 </Link>
               </div>
-            ) : isVideo && post.media_url ? (
+            ) : isVideo && effectiveMediaUrl ? (
               <video
-                src={post.media_url}
+                src={effectiveMediaUrl}
                 controls
                 playsInline
-                poster={post.thumbnail_url ?? undefined}
+                poster={effectiveThumbUrl ?? undefined}
                 className="h-full max-h-[80vh] w-full object-contain"
               />
-            ) : post.media_url ? (
+            ) : effectiveMediaUrl ? (
               <img
-                src={post.media_url}
+                src={effectiveMediaUrl}
                 alt={post.caption ?? `Post by ${trainerName}`}
                 className="h-full max-h-[80vh] w-full object-contain"
               />
@@ -932,13 +1003,17 @@ function NotFoundStateImpl() {
 }
 
 function ErrorState({ error }: { error: Error }) {
+  const isHtml = error?.message?.includes("<html") || error?.message?.includes("<!doctype");
+  const cleanMsg = isHtml
+    ? "Unable to connect to the server. Please check your network connection and try again."
+    : error?.message || "Something went wrong loading this post.";
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="font-display text-2xl">Something went wrong</h1>
-      <p className="text-sm text-muted-foreground">{error.message}</p>
+      <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">Something went wrong</h1>
+      <p className="text-sm text-muted-foreground">{cleanMsg}</p>
       <Link
         to="/feed"
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground"
+        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground shadow-md"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to feed
       </Link>

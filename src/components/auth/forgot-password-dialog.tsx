@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -60,11 +59,6 @@ export function ForgotPasswordDialog({
               If an account exists for <strong>{email}</strong>, a reset link is on its way.
               Check your inbox (and spam folder).
             </div>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/verify-email" search={{ email, source: "reset" }}>
-                See next steps
-              </Link>
-            </Button>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">

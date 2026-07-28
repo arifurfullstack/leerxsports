@@ -2,11 +2,13 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { queryOptions, useSuspenseQuery, useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { getTraineeProfile, updateTraineeProfile } from "@/lib/transformation-functions";
+import { getTraineeProfile, updateTraineeProfile, getTraineePosts } from "@/lib/transformation-functions";
 import { getFollowCounts } from "@/lib/trainer-functions";
 import { getFollowState, toggleFollow } from "@/lib/subscription-functions";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { PostDetailDialog } from "@/components/post-detail-dialog";
+import { LazyImage } from "@/components/ui/lazy-image";
 import {
   Play,
   MapPin,
@@ -19,7 +21,6 @@ import {
   Percent,
   Activity,
   Trophy,
-  Sparkles,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -37,6 +38,9 @@ import {
   UserPlus,
   UserCheck,
   Users,
+  LayoutGrid,
+  Heart,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -56,6 +60,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { TabPanel } from "@/components/tab-panel";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 const traineeQueryOptions = (username: string) =>
   queryOptions({
@@ -153,6 +158,7 @@ function TraineePage() {
   });
   const isFollowing = stateQ.data?.isFollowing ?? false;
   const followMut = useMutation({
+    scope: { id: `follow:${targetId}` },
     mutationFn: () => runToggle({ data: { trainerId: targetId } }),
     onMutate: async () => {
       await Promise.all([
@@ -169,16 +175,40 @@ function TraineePage() {
         });
       }
       qc.setQueryData(followStateKey, { isFollowing: willFollow });
-      return { prevCounts, prevState };
+      const viewerCountsKey = currentUserId
+        ? (["follow-counts", currentUserId] as const)
+        : null;
+      let prevViewerCounts:
+        | { followers: number; following: number; subscribers: number }
+        | undefined;
+      if (viewerCountsKey && currentUserId !== targetId) {
+        prevViewerCounts = qc.getQueryData(viewerCountsKey);
+        if (prevViewerCounts) {
+          qc.setQueryData(viewerCountsKey, {
+            ...prevViewerCounts,
+            following: Math.max(
+              0,
+              prevViewerCounts.following + (willFollow ? 1 : -1),
+            ),
+          });
+        }
+      }
+      return { prevCounts, prevState, prevViewerCounts };
     },
     onError: (err, _v, ctx) => {
       if (ctx?.prevCounts) qc.setQueryData(followCountsKey, ctx.prevCounts);
       if (ctx?.prevState) qc.setQueryData(followStateKey, ctx.prevState);
+      if (ctx?.prevViewerCounts && currentUserId) {
+        qc.setQueryData(["follow-counts", currentUserId], ctx.prevViewerCounts);
+      }
       toast.error(err instanceof Error ? err.message : "Couldn't update follow");
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: followCountsKey });
       qc.invalidateQueries({ queryKey: followStateKey });
+      if (currentUserId && currentUserId !== targetId) {
+        qc.invalidateQueries({ queryKey: ["follow-counts", currentUserId] });
+      }
     },
   });
   const onFollowClick = () => {
@@ -299,8 +329,11 @@ function TraineePage() {
                       </span>
                     )}
                   </div>
-                  <h1 className="mt-2 truncate bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text font-display text-3xl uppercase tracking-tight text-transparent sm:text-5xl">
-                    {p.display_name ?? p.username}
+                  <h1 className="mt-2 flex items-center gap-2 bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text font-display text-3xl uppercase tracking-tight text-transparent sm:text-5xl">
+                    <span className="truncate">{p.display_name ?? p.username}</span>
+                    {p.is_verified && (
+                      <VerifiedBadge size="xl" className="text-transparent-none" />
+                    )}
                   </h1>
                   <p className="mt-0.5 text-sm text-muted-foreground">@{p.username}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -324,61 +357,71 @@ function TraineePage() {
                 </div>
               </div>
               {/* Actions */}
-              <div className="relative mt-5 flex flex-wrap items-center gap-2 border-t border-border/70 pt-4">
-                {!isOwner && (
-                  <Button
-                    onClick={onFollowClick}
-                    size="sm"
-                    variant={isFollowing ? "outline" : "default"}
-                    disabled={followMut.isPending}
-                    className="gap-2"
-                    aria-pressed={isFollowing}
-                    aria-label={isFollowing ? "Unfollow this athlete" : "Follow this athlete"}
-                  >
-                    {followMut.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : isFollowing ? (
-                      <UserCheck className="h-4 w-4" />
-                    ) : (
-                      <UserPlus className="h-4 w-4" />
-                    )}
-                    {isFollowing ? "Following" : "Follow"}
+              <div className="relative mt-5 flex flex-wrap items-center gap-2.5 border-t border-border/70 pt-4">
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-800 bg-neutral-950/90 p-2 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
+                  {!isOwner && (
+                    <Button
+                      onClick={onFollowClick}
+                      size="default"
+                      disabled={followMut.isPending}
+                      aria-pressed={isFollowing}
+                      aria-label={isFollowing ? "Unfollow this athlete" : "Follow this athlete"}
+                      className={`group relative overflow-hidden rounded-xl px-5 font-bold uppercase tracking-wider transition-all duration-200 ease-out transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
+                        isFollowing
+                          ? "border border-neutral-700 bg-neutral-900/90 text-neutral-200 hover:border-red-500/60 hover:bg-red-950/40 hover:text-rose-300"
+                          : "bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10"
+                      }`}
+                    >
+                      {followMut.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" />
+                      ) : isFollowing ? (
+                        <>
+                          <UserCheck className="mr-2 h-4 w-4 text-emerald-400 transition-transform group-hover:scale-110" />
+                          <span>Following</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-4 w-4 text-black transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
+                          <span>Follow</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <div className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/80 px-3.5 py-2 text-xs backdrop-blur-md">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-white" />
+                      <span className="font-semibold text-white tabular-nums">
+                        {countsQ.data?.followers ?? 0}
+                      </span>
+                      <span className="text-neutral-400">followers</span>
+                    </span>
+                    <span className="h-3.5 w-px bg-neutral-800" aria-hidden />
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="font-semibold text-white tabular-nums">
+                        {countsQ.data?.following ?? 0}
+                      </span>
+                      <span className="text-neutral-400">following</span>
+                    </span>
+                  </div>
+                  <Button asChild size="default" className="group rounded-xl border border-neutral-700 bg-neutral-900 font-bold uppercase tracking-wider text-white gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/60 hover:bg-neutral-800 hover:text-white shadow-lg">
+                    <Link to="/trainers">
+                      Find a creator <ArrowRight className="h-4 w-4 text-neutral-300 transition-transform group-hover:translate-x-1 group-hover:text-white" />
+                    </Link>
                   </Button>
-                )}
-                <div className="flex items-center gap-3 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3 w-3 text-primary" />
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {countsQ.data?.followers ?? 0}
-                    </span>
-                    <span className="text-muted-foreground">followers</span>
-                  </span>
-                  <span className="h-3 w-px bg-border" aria-hidden />
-                  <span className="inline-flex items-center gap-1">
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {countsQ.data?.following ?? 0}
-                    </span>
-                    <span className="text-muted-foreground">following</span>
-                  </span>
+                  <Button onClick={share} variant="outline" size="default" className="group rounded-xl border border-neutral-800 bg-neutral-900/80 gap-2 px-4 font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md">
+                    <Share2 className="h-4 w-4 text-neutral-400 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12 group-hover:text-white" /> Share profile
+                  </Button>
+                  {isOwner && (
+                    <Button
+                      onClick={() => setEditing(true)}
+                      variant="secondary"
+                      size="default"
+                      className="group rounded-xl border border-neutral-800 bg-neutral-900/80 gap-2 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
+                    >
+                      <Pencil className="h-4 w-4 text-neutral-300 transition-transform group-hover:rotate-12 group-hover:text-white" /> Edit profile
+                    </Button>
+                  )}
                 </div>
-                <Button asChild size="sm" className="gap-2 shadow-lg shadow-primary/20">
-                  <Link to="/trainers">
-                    Find a trainer <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button onClick={share} variant="outline" size="sm" className="gap-2">
-                  <Share2 className="h-4 w-4" /> Share profile
-                </Button>
-                {isOwner && (
-                  <Button
-                    onClick={() => setEditing(true)}
-                    variant="secondary"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Pencil className="h-4 w-4" /> Edit profile
-                  </Button>
-                )}
                 {p.bio && (
                   <span className="ml-auto hidden max-w-md truncate text-xs italic text-muted-foreground sm:inline">
                     "{p.bio.replace(/\s+/g, " ").slice(0, 90)}
@@ -507,7 +550,7 @@ function TraineePage() {
           </section>
         )}
 
-        {/* Tabs: Transformation / Records */}
+        {/* Tabs: Transformation / Posts / Records */}
         <section className="mt-10 pb-20">
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList aria-label="Profile sections">
@@ -515,7 +558,13 @@ function TraineePage() {
                 value="transformation"
                 className="gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                <Sparkles className="h-3.5 w-3.5" /> Transformation
+                <Trophy className="h-3.5 w-3.5" /> Transformation
+              </TabsTrigger>
+              <TabsTrigger
+                value="posts"
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" /> Posts
               </TabsTrigger>
               <TabsTrigger
                 value="records"
@@ -528,6 +577,12 @@ function TraineePage() {
             <TabsContent value="transformation" className="mt-5">
               <TabPanel tabKey="transformation">
                 <TransformationGallery p={p} />
+              </TabPanel>
+            </TabsContent>
+
+            <TabsContent value="posts" className="mt-5">
+              <TabPanel tabKey="posts">
+                <TraineePostsGallery userId={p.user_id} currentUserId={currentUserId} />
               </TabPanel>
             </TabsContent>
 
@@ -557,11 +612,11 @@ function TraineePage() {
               Ready for the next chapter?
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Pair up with a trainer who can guide {p.display_name ?? "this athlete"} toward the next milestone.
+              Pair up with a creator who can guide {p.display_name ?? "this athlete"} toward the next milestone.
             </p>
             <Button asChild className="mt-4 gap-2">
               <Link to="/trainers">
-                Browse trainers <ArrowRight className="h-4 w-4" />
+                Browse creators <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -584,6 +639,74 @@ function EmptyBlock({ text }: { text: string }) {
     <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
       {text}
     </div>
+  );
+}
+
+function TraineePostsGallery({ userId, currentUserId }: { userId: string; currentUserId: string | null }) {
+  const fetchPosts = useServerFn(getTraineePosts);
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["trainee-posts", userId],
+    queryFn: () => fetchPosts({ data: { userId } }),
+  });
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return <EmptyBlock text="No uploaded posts or media yet." />;
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-1 sm:gap-3">
+        {posts.map((post) => (
+          <button
+            key={post.id}
+            type="button"
+            onClick={() => setSelectedPostId(post.id)}
+            className="group relative aspect-square overflow-hidden rounded-md border border-border/40 bg-muted text-left focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <LazyImage
+              src={post.thumbnail_url || post.media_url}
+              alt={post.caption || "User post"}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            {post.kind === "short" && (
+              <span className="absolute right-1.5 top-1.5 rounded bg-black/70 p-1 text-white">
+                <Play className="h-3 w-3 fill-current" />
+              </span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center gap-4 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="flex items-center gap-1 text-xs font-bold text-white">
+                <Heart className="h-4 w-4 fill-white" /> {post.respect_count ?? 0}
+              </span>
+              <span className="flex items-center gap-1 text-xs font-bold text-white">
+                <MessageSquare className="h-4 w-4 fill-white" /> {post.comment_count ?? 0}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {selectedPostId && (() => {
+        const selectedPost = posts.find((p) => p.id === selectedPostId);
+        if (!selectedPost) return null;
+        return (
+          <PostDetailDialog
+            post={selectedPost as any}
+            currentUserId={currentUserId}
+            isSignedIn={!!currentUserId}
+            open={!!selectedPostId}
+            onOpenChange={(open) => !open && setSelectedPostId(null)}
+          />
+        );
+      })()}
+    </>
   );
 }
 
@@ -659,12 +782,10 @@ function TransformationGallery({ p }: { p: any }) {
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
-              <img
+              <LazyImage
                 src={t.thumbnail_url ?? t.media_url}
-                alt=""
+                alt={t.notes || "Transformation thumbnail"}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-                decoding="async"
               />
             )}
             <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90" />
@@ -724,11 +845,12 @@ function TransformationGallery({ p }: { p: any }) {
                     className="max-h-[92vh] w-full object-contain"
                   />
                 ) : (
-                  <img
+                  <LazyImage
                     key={activeEntry.id}
                     src={activeEntry.media_url}
                     alt={activeEntry.notes ?? `${activeEntry.view_angle} view transformation photo from ${activeDate}`}
-                    className="max-h-[92vh] w-full object-contain"
+                    objectFit="contain"
+                    className="max-h-[92vh] w-full"
                   />
                 )}
 
@@ -795,12 +917,16 @@ function TransformationGallery({ p }: { p: any }) {
 }
 
 function TraineeError({ error }: { error: Error }) {
+  const isHtml = error?.message?.includes("<html") || error?.message?.includes("<!doctype");
+  const cleanMsg = isHtml
+    ? "Unable to connect to the server. Please try again."
+    : error?.message || "Something went wrong.";
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 text-center">
-      <div>
+      <div className="mx-auto max-w-md">
         <h1 className="font-display text-2xl uppercase">Profile unavailable</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <Link to="/" className="mt-4 inline-block text-sm underline">
+        <p className="mt-2 text-sm text-muted-foreground">{cleanMsg}</p>
+        <Link to="/" className="mt-4 inline-block text-sm font-semibold underline">
           Back home
         </Link>
       </div>

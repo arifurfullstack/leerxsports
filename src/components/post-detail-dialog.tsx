@@ -17,6 +17,8 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LazyImage } from "@/components/ui/lazy-image";
 import type { Post } from "@/lib/trainer-functions";
 import { TranslateToggle } from "./translate-toggle";
 import {
@@ -36,12 +39,18 @@ import {
   getPostEngagement,
   listCommentsPage,
   logShare,
+  syncGlobalPostCounts,
   toggleRespect,
   toggleSave,
   type CommentNode,
+  type PostEngagement,
 } from "@/lib/engagement-functions";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ShareSheet, type ShareChannel } from "@/components/share-sheet";
+import { VideoPlayer } from "@/components/video-player";
+
+type PendingCommentNode = CommentNode & { pending?: boolean };
 
 export function PostDetailDialog({
   post,
@@ -74,13 +83,13 @@ export function PostDetailDialog({
 }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const locked = post.is_premium && !unlockedUrl;
+  const locked = (post?.is_premium ?? false) && !unlockedUrl;
 
-  const mediaSrc = post.is_premium
+  const mediaSrc = post?.is_premium
     ? unlockedUrl ?? ""
-    : post.media_url;
+    : (post?.media_url ?? "");
   const isVideo =
-    post.kind === "short" ||
+    post?.kind === "short" ||
     /\.(mp4|webm|mov)(\?|$)/i.test(mediaSrc);
 
   const getEng = useServerFn(getPostEngagement);
@@ -92,12 +101,12 @@ export function PostDetailDialog({
   const delFn = useServerFn(deleteComment);
 
   const engQ = useQuery({
-    queryKey: ["post-engagement", post.id],
+    queryKey: ["post-engagement", post?.id],
     queryFn: () => getEng({ data: { postId: post.id } }),
-    enabled: isSignedIn && open,
+    enabled: isSignedIn && open && !!post,
   });
   const commentsQ = useInfiniteQuery({
-    queryKey: ["post-comments", post.id, commentSort],
+    queryKey: ["post-comments", post?.id, commentSort],
     queryFn: ({ pageParam }) =>
       listPage({
         data: {
@@ -109,13 +118,21 @@ export function PostDetailDialog({
       }),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
-    enabled: isSignedIn && open && !locked,
+    enabled: isSignedIn && open && !locked && !!post,
   });
 
-  const allComments = useMemo<CommentNode[]>(
+  const allComments = useMemo<PendingCommentNode[]>(
     () => (commentsQ.data?.pages ?? []).flatMap((p) => p.comments),
     [commentsQ.data],
   );
+
+  // Count realtime-inserted comments from other users that arrive while the
+  // viewer isn't at the edge of the list. Rendered as a floating pill.
+  const [newCommentsCount, setNewCommentsCount] = useState(0);
+  useEffect(() => {
+    // Reset when switching post or closing panel.
+    setNewCommentsCount(0);
+  }, [post.id, panel, commentSort]);
 
   // Realtime: stream new/updated/deleted comments for this post
   useEffect(() => {
@@ -130,16 +147,22 @@ export function PostDetailDialog({
           table: "comments",
           filter: `post_id=eq.${post.id}`,
         },
-        () => {
+        (payload) => {
           qc.invalidateQueries({ queryKey: ["post-comments", post.id] });
           qc.invalidateQueries({ queryKey: ["post-engagement", post.id] });
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as { author_id?: string } | null;
+            if (row?.author_id && row.author_id !== currentUserId) {
+              setNewCommentsCount((n) => n + 1);
+            }
+          }
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [open, locked, post.id, qc]);
+  }, [open, locked, post.id, qc, currentUserId]);
 
   useEffect(() => {
     if (!open) return;
@@ -165,52 +188,262 @@ export function PostDetailDialog({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onPrev, onNext]);
 
+  const engKey = ["post-engagement", post.id] as const;
+  const commentsKey = ["post-comments", post.id, commentSort] as const;
+  const applyEng = (patch: (prev: PostEngagement) => PostEngagement) => {
+    qc.setQueryData<PostEngagement>(engKey, (prev) => {
+      const base: PostEngagement =
+        prev ?? {
+          respect: false,
+          save: false,
+          counts: {
+            respect_count: post.respect_count,
+            save_count: post.save_count,
+            comment_count: 0,
+    share_count: 0,
+          },
+        };
+      return patch(base);
+    });
+  };
+  const invalidateFeeds = () => {
+    qc.invalidateQueries({ queryKey: ["post-comments", post.id] });
+    qc.invalidateQueries({ queryKey: engKey });
+    qc.invalidateQueries({ queryKey: ["home"] });
+    qc.invalidateQueries({ queryKey: ["shorts-feed"] });
+    qc.invalidateQueries({ queryKey: ["explore-feed"] });
+    qc.invalidateQueries({ queryKey: ["feed"] });
+    qc.invalidateQueries({ queryKey: ["trainee-posts"] });
+  };
+
   const respectMut = useMutation({
     mutationFn: () => respectFn({ data: { postId: post.id } }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["post-engagement", post.id] }),
-    onError: (e: Error) => toast.error(e.message),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: engKey });
+      const previous = qc.getQueryData<PostEngagement>(engKey);
+      const isRespecting = !previous?.respect;
+      applyEng((p) => ({
+        ...p,
+        respect: !p.respect,
+        counts: {
+          ...p.counts,
+          respect_count: Math.max(0, p.counts.respect_count + (p.respect ? -1 : 1)),
+        },
+      }));
+      syncGlobalPostCounts(qc, post.id, { respectDelta: isRespecting ? 1 : -1 });
+      return { previous, isRespecting };
+    },
+    onError: (e: Error, _v, ctx) => {
+      if (ctx?.previous) qc.setQueryData(engKey, ctx.previous);
+      if (ctx) syncGlobalPostCounts(qc, post.id, { respectDelta: ctx.isRespecting ? -1 : 1 });
+      toast.error(e.message);
+    },
+    onSettled: () => invalidateFeeds(),
+  });
+
+  type CommentsPageShape = {
+    comments: PendingCommentNode[];
+    nextCursor: string | null;
+    totalRoots: number;
+  };
+  type CommentsInfinite = {
+    pages: CommentsPageShape[];
+    pageParams: Array<string | null>;
+  };
+
+  const addMut = useMutation({
+    mutationFn: (body: string) => addFn({ data: { postId: post.id, body } }),
+    onMutate: async (body: string) => {
+      await qc.cancelQueries({ queryKey: ["post-comments", post.id] });
+      const prevPages = qc.getQueryData<CommentsInfinite>(commentsKey);
+      const prevEng = qc.getQueryData<PostEngagement>(engKey);
+
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const me = qc.getQueryData<{
+        user_id: string;
+        username: string | null;
+        display_name: string | null;
+        avatar_url: string | null;
+      } | null>(["navbar-user"]);
+      const temp: PendingCommentNode = {
+        id: tempId,
+        post_id: post.id,
+        author_id: currentUserId ?? "",
+        parent_id: null,
+        body,
+        status: "visible",
+        created_at: new Date().toISOString(),
+        author: {
+          username: me?.username ?? null,
+          display_name: me?.display_name ?? "You",
+          avatar_url: me?.avatar_url ?? null,
+        },
+        pending: true,
+      };
+
+      qc.setQueryData<CommentsInfinite>(commentsKey, (old) => {
+        if (!old || old.pages.length === 0) {
+          return {
+            pages: [{ comments: [temp], nextCursor: null, totalRoots: 1 }],
+            pageParams: [null],
+          };
+        }
+        const pages = old.pages.map((p, i) => {
+          if (commentSort === "newest" && i === 0) {
+            return {
+              ...p,
+              comments: [temp, ...p.comments],
+              totalRoots: p.totalRoots + 1,
+            };
+          }
+          if (commentSort === "oldest" && i === old.pages.length - 1 && !p.nextCursor) {
+            return {
+              ...p,
+              comments: [...p.comments, temp],
+              totalRoots: p.totalRoots + 1,
+            };
+          }
+          return { ...p, totalRoots: p.totalRoots + 1 };
+        });
+        return { ...old, pages };
+      });
+
+      applyEng((p) => ({
+        ...p,
+        counts: { ...p.counts, comment_count: p.counts.comment_count + 1 },
+      }));
+
+      return { prevPages, prevEng, tempId };
+    },
+    onSuccess: (real, _body, ctx) => {
+      if (!ctx?.tempId) return;
+      qc.setQueryData<CommentsInfinite>(commentsKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((p) => ({
+            ...p,
+            comments: p.comments.map((c) =>
+              c.id === ctx.tempId ? { ...real, pending: false } : c,
+            ),
+          })),
+        };
+      });
+    },
+    onError: (err: Error, _body, ctx) => {
+      if (ctx?.prevPages !== undefined) qc.setQueryData(commentsKey, ctx.prevPages);
+      if (ctx?.prevEng !== undefined) qc.setQueryData(engKey, ctx.prevEng);
+      toast.error(err.message || "Failed to post comment.");
+    },
+    onSettled: () => invalidateFeeds(),
+  });
+
+  const delMut = useMutation({
+    mutationFn: (commentId: string) => delFn({ data: { commentId } }),
+    onMutate: async (commentId: string) => {
+      await qc.cancelQueries({ queryKey: ["post-comments", post.id] });
+      const prevPages = qc.getQueryData<CommentsInfinite>(commentsKey);
+      const prevEng = qc.getQueryData<PostEngagement>(engKey);
+      let removedRoot = false;
+      qc.setQueryData<CommentsInfinite>(commentsKey, (old) => {
+        if (!old) return old;
+        const pages = old.pages.map((p) => {
+          const target = p.comments.find((c) => c.id === commentId);
+          if (target && target.parent_id === null) removedRoot = true;
+          return {
+            ...p,
+            comments: p.comments.filter((c) => c.id !== commentId && c.parent_id !== commentId),
+            totalRoots: removedRoot ? Math.max(0, p.totalRoots - 1) : p.totalRoots,
+          };
+        });
+        return { ...old, pages };
+      });
+      applyEng((p) => ({
+        ...p,
+        counts: {
+          ...p.counts,
+          comment_count: Math.max(0, p.counts.comment_count - 1),
+        },
+      }));
+      syncGlobalPostCounts(qc, post.id, { commentDelta: -1 });
+      return { prevPages, prevEng };
+    },
+    onError: (err: Error, _id, ctx) => {
+      if (ctx?.prevPages !== undefined) qc.setQueryData(commentsKey, ctx.prevPages);
+      if (ctx?.prevEng !== undefined) qc.setQueryData(engKey, ctx.prevEng);
+      syncGlobalPostCounts(qc, post.id, { commentDelta: +1 });
+      toast.error(err.message || "Failed to delete comment.");
+    },
+    onSettled: () => invalidateFeeds(),
   });
   const saveMut = useMutation({
     mutationFn: () => saveFn({ data: { postId: post.id } }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["post-engagement", post.id] }),
-    onError: (e: Error) => toast.error(e.message),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: engKey });
+      const previous = qc.getQueryData<PostEngagement>(engKey);
+      const isSaving = !previous?.save;
+      applyEng((p) => ({
+        ...p,
+        save: !p.save,
+        counts: {
+          ...p.counts,
+          save_count: Math.max(0, p.counts.save_count + (p.save ? -1 : 1)),
+        },
+      }));
+      syncGlobalPostCounts(qc, post.id, { saveDelta: isSaving ? 1 : -1 });
+      return { previous, isSaving };
+    },
+    onError: (e: Error, _v, ctx) => {
+      if (ctx?.previous) qc.setQueryData(engKey, ctx.previous);
+      if (ctx) syncGlobalPostCounts(qc, post.id, { saveDelta: ctx.isSaving ? -1 : 1 });
+      toast.error(e.message);
+    },
+    onSettled: () => invalidateFeeds(),
   });
 
   const requireAuth = (cb: () => void) => {
     if (!isSignedIn) {
-      navigate({ to: "/auth" });
+      import("@/lib/auth-gate").then((m) =>
+        m.openAuthGate({ action: "interact with this post" }),
+      );
       return;
     }
     cb();
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    let channel: string | null = null;
-    if (navigator.share) {
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/posts/${post.id}`
+      : `/posts/${post.id}`;
+  const handleShared = async (channel: ShareChannel) => {
+    const previous = qc.getQueryData<PostEngagement>(engKey);
+    applyEng((p) => ({
+      ...p,
+      counts: { ...p.counts, share_count: p.counts.share_count + 1 },
+    }));
+    if (isSignedIn) {
       try {
-        await navigator.share({ url, title: post.caption ?? "LEER Sports" });
-        channel = "native";
+        await shareFn({ data: { postId: post.id, channel } });
+        qc.invalidateQueries({ queryKey: engKey });
       } catch {
-        return;
+        if (previous) qc.setQueryData(engKey, previous);
       }
-    } else {
-      await navigator.clipboard.writeText(url);
-      channel = "clipboard";
-      toast.success("Link copied");
-    }
-    if (isSignedIn && channel) {
-      shareFn({ data: { postId: post.id, channel } }).catch(() => {});
     }
   };
 
-  const counts = engQ.data?.counts ?? {
-    respect_count: post.respect_count,
-    save_count: post.save_count,
-    comment_count: 0,
+  const totalCommentsCount =
+    commentsQ.data?.pages?.[0]?.totalRoots ??
+    (allComments.length > 0 ? allComments.length : (engQ.data?.counts.comment_count ?? post?.comment_count ?? 0));
+
+  const counts = {
+    respect_count: engQ.data?.counts.respect_count ?? post?.respect_count ?? 0,
+    save_count: engQ.data?.counts.save_count ?? post?.save_count ?? 0,
+    comment_count: totalCommentsCount,
+    share_count: engQ.data?.counts.share_count ?? 0,
   };
+
+  if (!post || !open) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,17 +492,19 @@ export function PostDetailDialog({
                 </p>
               </div>
             ) : isVideo && mediaSrc ? (
-              <video
+              <VideoPlayer
                 src={mediaSrc}
-                controls
-                playsInline
-                className="h-full max-h-[70vh] w-full object-contain"
+                poster={post.thumbnail_url ?? undefined}
+                title={post.caption ?? "Post video"}
+                aspectRatio="16/9"
+                className="max-h-[70vh] w-full"
               />
             ) : mediaSrc ? (
-              <img
+              <LazyImage
                 src={mediaSrc}
                 alt={post.caption ?? "Post"}
-                className="h-full max-h-[70vh] w-full object-contain"
+                objectFit="contain"
+                className="h-full max-h-[70vh] w-full"
               />
             ) : null}
 
@@ -352,11 +587,20 @@ export function PostDetailDialog({
                 }
               />
               <IconBtn
-                onClick={handleShare}
+                onClick={() => setShareOpen(true)}
                 label="Share post"
+                count={counts.share_count}
                 icon={<Share2 className="h-5 w-5" />}
               />
             </div>
+            <ShareSheet
+              open={shareOpen}
+              onOpenChange={setShareOpen}
+              url={shareUrl}
+              title={post.caption ?? "LEER Sports"}
+              description={post.caption ?? undefined}
+              onShared={handleShared}
+            />
 
             {/* Comments */}
             <div className="min-h-0 flex-1">
@@ -403,10 +647,11 @@ export function PostDetailDialog({
                   onLoadMore={() => commentsQ.fetchNextPage()}
                   currentUserId={currentUserId}
                   onDelete={async (id) => {
-                    await delFn({ data: { commentId: id } });
-                    qc.invalidateQueries({ queryKey: ["post-comments", post.id] });
-                    qc.invalidateQueries({ queryKey: ["post-engagement", post.id] });
+                    await delMut.mutateAsync(id);
                   }}
+                  sort={commentSort}
+                  newCommentsCount={newCommentsCount}
+                  onClearNewComments={() => setNewCommentsCount(0)}
                 />
                 </>
               )}
@@ -416,9 +661,7 @@ export function PostDetailDialog({
             {!locked && (
               <CommentComposer
                 onSubmit={async (body) => {
-                  await addFn({ data: { postId: post.id, body } });
-                  qc.invalidateQueries({ queryKey: ["post-comments", post.id] });
-                  qc.invalidateQueries({ queryKey: ["post-engagement", post.id] });
+                  await addMut.mutateAsync(body);
                 }}
                 requireAuth={() => requireAuth(() => {})}
                 isSignedIn={isSignedIn}
@@ -502,6 +745,9 @@ function CommentThread({
   onLoadMore,
   currentUserId,
   onDelete,
+  sort,
+  newCommentsCount,
+  onClearNewComments,
 }: {
   postId: string;
   comments: CommentNode[];
@@ -511,6 +757,9 @@ function CommentThread({
   onLoadMore: () => void;
   currentUserId: string | null;
   onDelete: (id: string) => Promise<void>;
+  sort: "newest" | "oldest";
+  newCommentsCount: number;
+  onClearNewComments: () => void;
 }) {
   const tree = useMemo(() => {
     const byParent = new Map<string | null, CommentNode[]>();
@@ -523,23 +772,26 @@ function CommentThread({
   }, [comments]);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollWrapRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !hasNextPage) return;
+    const wrap = scrollWrapRef.current;
+    const root =
+      wrap?.querySelector<HTMLDivElement>("[data-radix-scroll-area-viewport]") ?? null;
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting && !isFetchingNextPage) onLoadMore();
         }
       },
-      { rootMargin: "120px" },
+      { root, rootMargin: "240px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+  }, [hasNextPage, isFetchingNextPage, onLoadMore, loading]);
 
   // Persist scroll offset per post id in sessionStorage; restore on mount/post switch.
-  const scrollWrapRef = useRef<HTMLDivElement | null>(null);
   const storageKey = `post-scroll:${postId}`;
   useEffect(() => {
     const wrap = scrollWrapRef.current;
@@ -577,6 +829,45 @@ function CommentThread({
     };
   }, [storageKey, loading, comments.length]);
 
+  // Track whether the viewer is parked at the "latest" edge so the
+  // new-comments pill can auto-hide once they arrive at it.
+  const [atLatestEdge, setAtLatestEdge] = useState(true);
+  useEffect(() => {
+    const wrap = scrollWrapRef.current;
+    const viewport = wrap?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!viewport) return;
+    const check = () => {
+      const threshold = 24;
+      if (sort === "newest") {
+        setAtLatestEdge(viewport.scrollTop <= threshold);
+      } else {
+        const max = viewport.scrollHeight - viewport.clientHeight;
+        setAtLatestEdge(max - viewport.scrollTop <= threshold);
+      }
+    };
+    check();
+    viewport.addEventListener("scroll", check, { passive: true });
+    return () => viewport.removeEventListener("scroll", check);
+  }, [sort, comments.length, loading]);
+
+  useEffect(() => {
+    if (atLatestEdge && newCommentsCount > 0) onClearNewComments();
+  }, [atLatestEdge, newCommentsCount, onClearNewComments]);
+
+  const jumpToLatest = () => {
+    const viewport = scrollWrapRef.current?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!viewport) return;
+    viewport.scrollTo({
+      top: sort === "newest" ? 0 : viewport.scrollHeight,
+      behavior: "smooth",
+    });
+    onClearNewComments();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
@@ -593,8 +884,31 @@ function CommentThread({
     );
   }
 
+  const showPill = newCommentsCount > 0 && !atLatestEdge;
+
   return (
-    <div ref={scrollWrapRef} className="h-full">
+    <div ref={scrollWrapRef} className="relative h-full">
+      {showPill && (
+        <button
+          type="button"
+          onClick={jumpToLatest}
+          className={cn(
+            "absolute left-1/2 z-10 -translate-x-1/2 rounded-full bg-foreground px-3 py-1.5 text-[11px] font-medium uppercase tracking-widest text-background shadow-lg transition-all hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            sort === "newest" ? "top-2" : "bottom-2",
+          )}
+          aria-live="polite"
+          aria-label={`${newCommentsCount} new comment${newCommentsCount === 1 ? "" : "s"} — jump to latest`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            {sort === "newest" ? (
+              <ArrowUp className="h-3 w-3" />
+            ) : (
+              <ArrowDown className="h-3 w-3" />
+            )}
+            {newCommentsCount} new
+          </span>
+        </button>
+      )}
     <ScrollArea className="h-[320px]">
       <ul className="space-y-3 p-4">
         {roots.map((c) => (
@@ -613,6 +927,17 @@ function CommentThread({
           <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Loading more…
         </div>
       )}
+      {hasNextPage && !isFetchingNextPage && (
+        <div className="flex justify-center py-3">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            className="text-xs uppercase tracking-widest text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Load more comments
+          </button>
+        </div>
+      )}
       {!hasNextPage && roots.length > 5 && (
         <div className="py-3 text-center text-[10px] uppercase tracking-widest text-muted-foreground">
           End of thread
@@ -629,14 +954,21 @@ function CommentItem({
   currentUserId,
   onDelete,
 }: {
-  comment: CommentNode;
-  replies: CommentNode[];
+  comment: PendingCommentNode;
+  replies: PendingCommentNode[];
   currentUserId: string | null;
   onDelete: (id: string) => Promise<void>;
 }) {
   const isMine = currentUserId === comment.author_id;
+  const isPending = !!comment.pending;
   return (
-    <li>
+    <li
+      className={cn(
+        "transition-opacity",
+        isPending && "opacity-60",
+      )}
+      aria-busy={isPending || undefined}
+    >
       <div className="flex items-start gap-2">
         <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted">
           {comment.author.avatar_url ? (
@@ -656,7 +988,7 @@ function CommentItem({
             <span className="truncate text-xs font-medium">
               {comment.author.display_name ?? comment.author.username ?? "User"}
             </span>
-            {isMine && (
+            {isMine && !isPending && (
               <button
                 type="button"
                 onClick={() => onDelete(comment.id)}
@@ -665,6 +997,11 @@ function CommentItem({
               >
                 Delete
               </button>
+            )}
+            {isPending && (
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Sending…
+              </span>
             )}
           </div>
           <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">
@@ -700,48 +1037,94 @@ function CommentComposer({
 }) {
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const MAX = 2000;
+  const trimmed = body.trim();
+  const remaining = MAX - body.length;
+  const nearLimit = remaining <= 100;
+
+  const validate = (value: string): string | null => {
+    if (!value.trim()) return "Comment can't be empty.";
+    if (value.trim().length < 2) return "Comment must be at least 2 characters.";
+    if (value.length > MAX) return `Comment must be ${MAX} characters or fewer.`;
+    return null;
+  };
 
   const submit = async () => {
     if (!isSignedIn) return requireAuth();
-    const trimmed = body.trim();
-    if (!trimmed) return;
-    if (trimmed.length > 2000) {
-      toast.error("Comment is too long.");
+    const msg = validate(body);
+    if (msg) {
+      setError(msg);
       return;
     }
+    setError(null);
     try {
       setBusy(true);
       await onSubmit(trimmed);
       setBody("");
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to post comment.",
-      );
+      const message = e instanceof Error ? e.message : "Failed to post comment.";
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
   };
 
+  const errorId = "comment-composer-error";
+  const counterId = "comment-composer-counter";
+  const disabled = busy || !trimmed || trimmed.length < 2 || body.length > MAX;
+
   return (
-    <div className="flex items-end gap-2 border-t border-border p-3">
-      <Textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder={isSignedIn ? "Add a comment…" : "Sign in to comment"}
-        rows={2}
-        maxLength={2000}
-        disabled={busy}
-        onFocus={() => !isSignedIn && requireAuth()}
-        className="min-h-[44px] resize-none"
-      />
-      <Button
-        size="sm"
-        onClick={submit}
-        disabled={busy || !body.trim()}
-        aria-label="Post comment"
-      >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-      </Button>
+    <div className="border-t border-border p-3">
+      <div className="flex items-end gap-2">
+        <Textarea
+          value={body}
+          onChange={(e) => {
+            setBody(e.target.value);
+            if (error) setError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void submit();
+            }
+          }}
+          placeholder={isSignedIn ? "Add a comment…" : "Sign in to comment"}
+          rows={2}
+          maxLength={MAX}
+          disabled={busy}
+          onFocus={() => !isSignedIn && requireAuth()}
+          aria-invalid={!!error}
+          aria-describedby={`${error ? errorId + " " : ""}${counterId}`}
+          className={`min-h-[44px] resize-none ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+        />
+        <Button
+          size="sm"
+          onClick={submit}
+          disabled={disabled}
+          aria-label="Post comment"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        </Button>
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+        <p
+          id={errorId}
+          role="alert"
+          aria-live="polite"
+          className={`text-destructive ${error ? "" : "sr-only"}`}
+        >
+          {error ?? ""}
+        </p>
+        <span
+          id={counterId}
+          className={`ml-auto tabular-nums ${nearLimit ? "text-destructive" : "text-muted-foreground"}`}
+        >
+          {body.length}/{MAX}
+        </span>
+      </div>
     </div>
   );
 }

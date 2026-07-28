@@ -8,16 +8,16 @@ describe("checkPassword", () => {
     expect(r.issues.some((i) => i.includes(String(PASSWORD_MIN_LENGTH)))).toBe(true);
   });
 
-  it("requires at least one number", () => {
+  it("allows passwords without numbers", () => {
     const r = checkPassword("abcdefghij");
-    expect(r.ok).toBe(false);
-    expect(r.issues).toContain("Add at least one number");
+    expect(r.ok).toBe(true);
+    expect(r.issues).toEqual([]);
   });
 
-  it("rejects common passwords", () => {
+  it("allows common passwords while scoring them low", () => {
     const r = checkPassword("password1");
-    expect(r.ok).toBe(false);
-    expect(r.issues).toContain("This password is too common");
+    expect(r.ok).toBe(true);
+    expect(r.score).toBeLessThan(3);
   });
 
   it("passes for a reasonably strong password", () => {

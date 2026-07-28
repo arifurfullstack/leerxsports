@@ -76,66 +76,86 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.375rem;
 
-  /* Dark-first LEER palette */
-  --background: oklch(0.08 0.005 20);           /* deep black */
-  --foreground: oklch(0.98 0.005 0);            /* white */
+  /* ---------- Gymshark-inspired dark palette ----------
+     Near-pure black base, warm off-white text, layered charcoal
+     surfaces, a single neon-red conversion accent, and a signature
+     "chrome" white primary for CTAs. Monochrome-dominant: red is
+     reserved for premium/locked/destructive states so it stays loud
+     when it appears. */
+  --background: #000000;                          /* 100% Solid Deep Black (#000000) per PDF spec */
+  --foreground: oklch(0.985 0.003 90);          /* warm off-white */
 
-  --card: oklch(0.14 0.008 20);                 /* dark charcoal */
-  --card-foreground: oklch(0.98 0.005 0);
+  --card: #0d0d0d;                              /* solid charcoal card */
+  --card-foreground: oklch(0.985 0.003 90);
 
-  --popover: oklch(0.14 0.008 20);
-  --popover-foreground: oklch(0.98 0.005 0);
+  --popover: oklch(0.09 0.005 20);
+  --popover-foreground: oklch(0.985 0.003 90);
 
-  /* Neon red premium accent */
-  --primary: oklch(0.62 0.24 27);
-  --primary-foreground: oklch(0.99 0.005 0);
+  /* Chrome / bone-white primary — Gymshark CTAs are white-on-black. */
+  --primary: oklch(0.985 0.003 90);
+  --primary-foreground: oklch(0.06 0.005 20);
 
-  --secondary: oklch(0.18 0.008 20);
-  --secondary-foreground: oklch(0.96 0.005 0);
+  --secondary: oklch(0.14 0.006 20);
+  --secondary-foreground: oklch(0.96 0.004 90);
 
-  --muted: oklch(0.18 0.008 20);
-  --muted-foreground: oklch(0.68 0.01 20);
+  --muted: oklch(0.13 0.006 20);
+  --muted-foreground: oklch(0.66 0.01 30);
 
-  --accent: oklch(0.62 0.24 27);
-  --accent-foreground: oklch(0.99 0.005 0);
+  --accent: oklch(0.16 0.008 20);
+  --accent-foreground: oklch(0.985 0.003 90);
 
-  --destructive: oklch(0.60 0.24 27);
+  --destructive: oklch(0.62 0.24 27);
   --destructive-foreground: oklch(0.99 0.005 0);
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.62 0.24 27);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.985 0.003 90 / 60%);
 
   --chart-1: oklch(0.62 0.24 27);
-  --chart-2: oklch(0.78 0.16 85);
-  --chart-3: oklch(0.62 0.15 260);
-  --chart-4: oklch(0.72 0.14 160);
-  --chart-5: oklch(0.60 0.20 320);
+  --chart-2: oklch(0.985 0.003 90);
+  --chart-3: oklch(0.60 0.01 30);
+  --chart-4: oklch(0.40 0.01 30);
+  --chart-5: oklch(0.25 0.008 20);
 
-  --sidebar: oklch(0.10 0.006 20);
-  --sidebar-foreground: oklch(0.96 0.005 0);
-  --sidebar-primary: oklch(0.62 0.24 27);
-  --sidebar-primary-foreground: oklch(0.99 0.005 0);
-  --sidebar-accent: oklch(0.16 0.008 20);
-  --sidebar-accent-foreground: oklch(0.96 0.005 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.24 27);
+  --sidebar: oklch(0.065 0.004 20);
+  --sidebar-foreground: oklch(0.96 0.004 90);
+  --sidebar-primary: oklch(0.985 0.003 90);
+  --sidebar-primary-foreground: oklch(0.06 0.005 20);
+  --sidebar-accent: oklch(0.13 0.006 20);
+  --sidebar-accent-foreground: oklch(0.96 0.004 90);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.985 0.003 90 / 60%);
 
   /* Legacy tokens kept for compatibility (mapped to new palette) */
   --sport: oklch(0.62 0.24 27);
   --sport-foreground: oklch(0.99 0.005 0);
   --coral: oklch(0.62 0.24 27);
   --coral-foreground: oklch(0.99 0.005 0);
-  --navy: oklch(0.14 0.008 20);
-  --navy-foreground: oklch(0.98 0.005 0);
+  --navy: oklch(0.10 0.005 20);
+  --navy-foreground: oklch(0.985 0.003 90);
 
-  /* Premium + status tokens */
+  /* Signature neon-red conversion accent — reserved for premium /
+     locked / paid unlock CTAs so the color reads as "money moment". */
   --premium: oklch(0.62 0.24 27);
   --premium-foreground: oklch(0.99 0.005 0);
   --success: oklch(0.72 0.17 155);
   --warning: oklch(0.80 0.16 85);
+
+  /* Surface + gradient + shadow tokens for premium tile depth. */
+  --surface-1: oklch(0.075 0.004 20);
+  --surface-2: oklch(0.10 0.005 20);
+  --surface-3: oklch(0.14 0.007 20);
+  --hairline: oklch(1 0 0 / 6%);
+  --hairline-strong: oklch(1 0 0 / 14%);
+
+  --gradient-premium: linear-gradient(135deg, oklch(0.62 0.24 27), oklch(0.55 0.22 15));
+  --gradient-chrome:  linear-gradient(180deg, oklch(1 0 0 / 96%), oklch(0.85 0.005 90 / 92%));
+  --gradient-fade:    linear-gradient(180deg, transparent, oklch(0.045 0.003 20 / 92%));
+
+  --shadow-elevated: 0 1px 0 oklch(1 0 0 / 6%) inset, 0 20px 60px -30px oklch(0 0 0 / 80%);
+  --shadow-premium:  0 0 0 1px oklch(0.62 0.24 27 / 40%), 0 20px 60px -20px oklch(0.62 0.24 27 / 45%);
 
   /* ---------- Shared typography scale ----------
      A single source of truth for size, line-height, tracking and
@@ -254,14 +274,99 @@
   }
 
   .locked-blur {
-    filter: blur(28px) saturate(0.7);
-    transform: scale(1.05);
+    filter: blur(28px) saturate(1.4) contrast(1.15);
+    opacity: 0.20 !important;
+    transform: scale(1.12);
+  }
+
+  @keyframes lock-vibes-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.25), inset 0 0 10px 1px rgba(255, 255, 255, 0.15);
+    }
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 0 32px 6px rgba(255, 255, 255, 0.5), inset 0 0 18px 2px rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  @keyframes lock-vibes-ring {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.4);
+      opacity: 0.15;
+    }
+    100% {
+      transform: scale(0.9);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-lock-vibes {
+    animation: lock-vibes-pulse 2.4s ease-in-out infinite;
+  }
+
+  .animate-lock-ring {
+    animation: lock-vibes-ring 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   .font-display {
     font-family: var(--font-display);
     letter-spacing: 0.02em;
   }
+}
+
+/* ---------- Gymshark-inspired surface + accent utilities ---------- */
+@utility surface-1 {
+  background-color: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+@utility surface-2 {
+  background-color: var(--surface-2);
+  border: 1px solid var(--hairline);
+}
+@utility surface-3 {
+  background-color: var(--surface-3);
+  border: 1px solid var(--hairline-strong);
+}
+@utility hairline {
+  border: 1px solid var(--hairline);
+}
+@utility hairline-b {
+  border-bottom: 1px solid var(--hairline);
+}
+@utility hairline-t {
+  border-top: 1px solid var(--hairline);
+}
+@utility gradient-premium {
+  background-image: var(--gradient-premium);
+  color: var(--premium-foreground);
+}
+@utility gradient-chrome {
+  background-image: var(--gradient-chrome);
+  color: var(--primary-foreground);
+}
+@utility gradient-fade-b {
+  background-image: var(--gradient-fade);
+}
+@utility shadow-elevated {
+  box-shadow: var(--shadow-elevated);
+}
+@utility shadow-premium {
+  box-shadow: var(--shadow-premium);
+}
+@utility ring-premium {
+  box-shadow: 0 0 0 1px var(--premium), 0 0 24px -6px color-mix(in oklch, var(--premium) 55%, transparent);
+}
+@utility text-premium {
+  color: var(--premium);
+}
+@utility bg-premium {
+  background-color: var(--premium);
+  color: var(--premium-foreground);
 }
 
 /* Typography scale utilities — one rule per role, driven by the tokens
@@ -463,6 +568,29 @@
      lifts don't repaint the tile's contents. */
   transform: translateZ(0);
   backface-visibility: hidden;
+  position: relative;
+}
+
+/* Gymshark-style diagonal sheen. Clipped by `contain: paint` on the
+   tile so no overflow escapes. Idle = off-canvas, hover/focus = sweeps
+   across. Pointer-events off so it never blocks clicks. */
+.tile-anim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in oklch, var(--foreground) 8%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translate3d(-120%, 0, 0);
+  opacity: 0;
+  transition:
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+  z-index: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -471,9 +599,15 @@
     animation-delay: var(--tile-delay, 0ms);
     will-change: transform, opacity;
   }
-  .tile-anim:hover {
+  .tile-anim:hover,
+  .tile-anim:focus-within {
     transform: translate3d(0, -3px, 0);
     box-shadow: 0 18px 40px -24px color-mix(in oklch, var(--primary) 40%, transparent);
+  }
+  .tile-anim:hover::before,
+  .tile-anim:focus-within::before {
+    transform: translate3d(120%, 0, 0);
+    opacity: 1;
   }
   .tile-anim:active {
     transform: translate3d(0, -1px, 0) scale(0.997);
@@ -485,6 +619,13 @@
   .tile-anim {
     animation: none;
     transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+  .tile-anim::before {
+    display: none;
+  }
+  .tile-anim:hover,
+  .tile-anim:focus-within {
+    border-color: color-mix(in oklch, var(--premium) 55%, transparent);
   }
 }
 
@@ -528,14 +669,95 @@
   animation: fade-in-soft 0.4s ease-out both;
 }
 
+/* ---------- Glass tile ----------
+   Frosted card surface used by the feed grid. Semi-transparent card tint
+   with a hairline border and backdrop blur so the ambient halo behind the
+   tile bleeds through the edges. Colors stay on semantic tokens. */
+@utility glass-tile {
+  background: color-mix(in oklch, var(--card) 55%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+}
+
 @keyframes fade-in-soft {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
+/* ---------- Instagram-style double-tap heart burst ---------- */
+@keyframes heart-burst {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-8deg); }
+  20%  { opacity: 1; transform: scale(1.35) rotate(4deg); }
+  40%  { transform: scale(0.95) rotate(-2deg); }
+  60%  { transform: scale(1.1) rotate(0deg); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes heart-ring {
+  0%   { opacity: 0.7; transform: scale(0.4); }
+  100% { opacity: 0;   transform: scale(2.2); }
+}
+@keyframes heart-spark {
+  0%   { opacity: 0; transform: translate(0,0) scale(0.4); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: var(--spark-transform) scale(1); }
+}
+.animate-heart-burst {
+  animation: heart-burst 900ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  filter: drop-shadow(0 8px 24px color-mix(in oklch, var(--primary) 60%, transparent));
+}
+.animate-heart-ring {
+  animation: heart-ring 700ms ease-out forwards;
+}
+.animate-heart-spark {
+  animation: heart-spark 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-heart-burst,
+  .animate-heart-ring,
+  .animate-heart-spark { animation: none; opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .section-fade-in {
     animation: none;
+  }
+}
+
+/* ---------- Gymshark-style link micro-underline ----------
+   A left-anchored 1px underline that expands on hover/focus.
+   Reduced-motion falls back to a static full-width underline so
+   users still get the affordance without movement. */
+@utility gym-underline {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gym-underline::after {
+    transition: none;
+  }
+  .gym-underline:hover::after,
+  .gym-underline:focus-visible::after {
+    transform: scaleX(1);
   }
 }
 

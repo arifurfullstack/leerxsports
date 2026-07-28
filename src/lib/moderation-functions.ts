@@ -35,7 +35,7 @@ const reportSchema = z.object({
 /** Submit a report on any moderable target. Reporter is the current user. */
 export const submitReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => reportSchema.parse(input))
+  .validator((input) => reportSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("reports").insert({
       reporter_id: context.userId,
@@ -92,7 +92,7 @@ export const adminListReports = createServerFn({ method: "GET" })
 
 export const adminHideTarget = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         target_type: z.enum(REPORT_TARGETS),
@@ -182,7 +182,7 @@ export const adminHideTarget = createServerFn({ method: "POST" })
 
 export const adminResolveReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         reportId: z.string().uuid(),
@@ -210,7 +210,7 @@ export const adminResolveReport = createServerFn({ method: "POST" })
 /** Trainer strike: hidden yellow card. Auto-triggers ban prompt at 3 active. */
 export const adminIssueStrike = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         trainerId: z.string().uuid(),
@@ -260,7 +260,7 @@ export const adminListStrikes = createServerFn({ method: "GET" })
 
 export const adminRevokeStrike = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -283,199 +283,3 @@ export const adminRevokeStrike = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ============ Coaching disputes ============
-
-export const openCoachingDispute = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        threadId: z.string().uuid(),
-        reason: z.string().min(10).max(2000),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: thread, error: tErr } = await supabase
-      .from("coaching_requests")
-      .select("id, subscriber_id, trainer_id, status, completed_at")
-      .eq("id", data.threadId)
-      .maybeSingle();
-    if (tErr) throw new Error(tErr.message);
-    if (!thread) throw new Error("Thread not found.");
-    if (
-      thread.subscriber_id !== userId &&
-      thread.trainer_id !== userId
-    ) {
-      throw new Error("Only participants can open disputes.");
-    }
-    if (thread.status !== "coaching_completed") {
-      throw new Error("Disputes can only be opened after coaching completes.");
-    }
-
-    // Enforce dispute window from platform_settings
-    const { data: settings } = await supabase
-      .from("platform_settings")
-      .select("dispute_window_hours")
-      .eq("id", true)
-      .maybeSingle();
-    const windowHrs = settings?.dispute_window_hours ?? 24;
-    if (thread.completed_at) {
-      const deadline =
-        new Date(thread.completed_at).getTime() + windowHrs * 3600 * 1000;
-      if (Date.now() > deadline) {
-        throw new Error("Dispute window has closed.");
-      }
-    }
-
-    const { data: existing } = await supabase
-      .from("coaching_disputes")
-      .select("id")
-      .eq("thread_id", data.threadId)
-      .maybeSingle();
-    if (existing) throw new Error("A dispute already exists for this thread.");
-
-    const { data: row, error } = await supabase
-      .from("coaching_disputes")
-      .insert({
-        thread_id: data.threadId,
-        opener_id: userId,
-        reason: data.reason,
-        status: "open",
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-
-    // Freeze the trainer's associated transaction (if any).
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
-      .from("transactions")
-      .update({ status: "frozen" })
-      .eq("trainer_id", thread.trainer_id)
-      .eq("payer_id", thread.subscriber_id)
-      .eq("kind", "tip")
-      .contains("metadata", { threadId: data.threadId });
-
-    return { ok: true, disputeId: row.id };
-  });
-
-export type AdminDisputeRow = {
-  id: string;
-  thread_id: string;
-  opener_id: string;
-  reason: string;
-  status:
-    | "open"
-    | "under_review"
-    | "resolved_trainer"
-    | "resolved_trainee"
-    | "withdrawn";
-  verdict: string | null;
-  created_at: string;
-};
-
-export const adminListDisputes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<AdminDisputeRow[]> => {
-    await requireAdmin(context);
-    const { data, error } = await context.supabase
-      .from("coaching_disputes")
-      .select("id, thread_id, opener_id, reason, status, verdict, created_at")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) throw new Error(error.message);
-    return (data ?? []) as AdminDisputeRow[];
-  });
-
-export const adminResolveDispute = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        disputeId: z.string().uuid(),
-        outcome: z.enum(["resolved_trainer", "resolved_trainee"]),
-        verdict: z.string().max(2000).optional(),
-        issueStrike: z.boolean().optional(),
-        refund: z.boolean().optional(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    await requireAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: dispute, error: dErr } = await supabaseAdmin
-      .from("coaching_disputes")
-      .select("id, thread_id")
-      .eq("id", data.disputeId)
-      .maybeSingle();
-    if (dErr) throw new Error(dErr.message);
-    if (!dispute) throw new Error("Dispute not found.");
-
-    const { data: thread } = await supabaseAdmin
-      .from("coaching_requests")
-      .select("id, subscriber_id, trainer_id, credit_id")
-      .eq("id", dispute.thread_id)
-      .maybeSingle();
-    if (!thread) throw new Error("Thread not found.");
-
-    const { error: updErr } = await supabaseAdmin
-      .from("coaching_disputes")
-      .update({
-        status: data.outcome,
-        verdict: data.verdict ?? null,
-        resolved_by: context.userId,
-        resolved_at: new Date().toISOString(),
-      })
-      .eq("id", data.disputeId);
-    if (updErr) throw new Error(updErr.message);
-
-    if (data.outcome === "resolved_trainee") {
-      // Restore credit if present
-      if (thread.credit_id) {
-        await supabaseAdmin
-          .from("feedback_credits")
-          .update({ status: "available" })
-          .eq("id", thread.credit_id);
-      }
-      // Optional refund: mark related tip transactions refunded
-      if (data.refund) {
-        await supabaseAdmin
-          .from("transactions")
-          .update({ status: "refunded" })
-          .eq("trainer_id", thread.trainer_id)
-          .eq("payer_id", thread.subscriber_id)
-          .contains("metadata", { threadId: thread.id });
-      }
-      if (data.issueStrike) {
-        await supabaseAdmin.from("trainer_strikes").insert({
-          trainer_id: thread.trainer_id,
-          reason: data.verdict ?? "Dispute resolved in favor of subscriber",
-          dispute_id: data.disputeId,
-          issued_by: context.userId,
-          status: "active",
-        });
-        const { count } = await supabaseAdmin
-          .from("trainer_strikes")
-          .select("id", { count: "exact", head: true })
-          .eq("trainer_id", thread.trainer_id)
-          .eq("status", "active");
-        await supabaseAdmin
-          .from("trainer_profiles")
-          .update({ strike_count: count ?? 0 })
-          .eq("user_id", thread.trainer_id);
-      }
-    } else {
-      // Trainer wins — unfreeze frozen transactions on this thread
-      await supabaseAdmin
-        .from("transactions")
-        .update({ status: "succeeded" })
-        .eq("trainer_id", thread.trainer_id)
-        .eq("status", "frozen")
-        .contains("metadata", { threadId: thread.id });
-    }
-
-    return { ok: true };
-  });

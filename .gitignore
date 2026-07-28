@@ -1,25 +1,30 @@
-# Dependency directories
+# Dependencies
 node_modules/
-jspm_packages/
-web_modules/
+.pnpm-store/
 
-# Build and Tooling Outputs
+# Build & Runtime Outputs
 dist/
 dist-ssr/
 .output/
-.vinxi/
-.tanstack/
 .nitro/
-build/
-out/
-.next/
-.svelte-kit/
-.nuxt/
-.vercel/
-.serverless/
-*.tsbuildinfo
+.tanstack/
+.vinxi/
+.nixpacks/
+.turbo/
+.cache/
 
-# Logs
+# Lovable local workspace files
+.lovable/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+
+# Logs, Debugging & Temp files
 logs/
 *.log
 npm-debug.log*
@@ -27,38 +32,28 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*.tmp
+*.temp
+*.bak
 
-# Test/Coverage directories
+# Testing & Visual Regression
 coverage/
 .nyc_output/
-cypress/screenshots/
-cypress/videos/
 tests/visual/screenshots/
-artifacts/
+playwright-report/
+test-results/
 
-# Local Environment Variables and Secrets
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
-!.env.example
+# Wrangler / Serverless
+.wrangler/
 
-# IDEs, Editors, and OS-specific files
+# OS & IDE Files
 .DS_Store
 Thumbs.db
-Desktop.ini
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-*.patch
-
-# Supabase Local Files
-supabase/.temp/
+.vscode/*
+!.vscode/extensions.json

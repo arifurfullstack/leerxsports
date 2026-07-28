@@ -27,7 +27,7 @@ export function Hero() {
             at your pace, track your progress, and find your next challenge.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link to="/classes">
+            <Link to="/feed">
               <Button size="lg">Browse classes</Button>
             </Link>
             <Link to="/auth">

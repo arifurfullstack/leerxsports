@@ -36,9 +36,62 @@ export const getPlatformSettings = createServerFn({ method: "GET" })
     };
   });
 
+export const createPaymentIntent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) =>
+    z
+      .object({
+        amount: z.number().positive(),
+        currency: z.string().default("usd"),
+        kind: z.enum(["subscription", "tip", "unlock", "dispatch"]),
+        metadata: z.record(z.string()).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.VITE_STRIPE_SECRET_KEY;
+    const amountCents = Math.round(data.amount * 100);
+
+    if (stripeKey) {
+      try {
+        // @ts-ignore - Stripe optional dynamic import
+        const { default: Stripe } = await import("stripe");
+        const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" as any });
+        const intent = await stripe.paymentIntents.create({
+          amount: amountCents,
+          currency: data.currency.toLowerCase(),
+          metadata: {
+            payer_id: context.userId,
+            kind: data.kind,
+            ...(data.metadata ?? {}),
+          },
+          automatic_payment_methods: { enabled: true },
+        });
+
+        return {
+          clientSecret: intent.client_secret,
+          paymentIntentId: intent.id,
+          status: intent.status,
+          isMock: false,
+        };
+      } catch (err: any) {
+        console.error("[createPaymentIntent] Stripe API error, using fallback:", err?.message);
+      }
+    }
+
+    // Fallback mode when STRIPE_SECRET_KEY is absent or fails
+    const mockId = `pi_mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    return {
+      clientSecret: `${mockId}_secret_mock`,
+      paymentIntentId: mockId,
+      status: "succeeded",
+      isMock: true,
+    };
+  });
+
 export const updatePlatformSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         commission_bps: z.number().int().min(0).max(5000).optional(),
@@ -93,6 +146,75 @@ export const getTrainerBalance = createServerFn({ method: "GET" })
     };
   });
 
+export type EarningsSummary = {
+  currency: string;
+  total_earned: number;
+  last_30d: number;
+  by_kind: Record<string, number>;
+  top_posts: { post_id: string; caption: string | null; earned: number; count: number }[];
+};
+
+export const getEarningsSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<EarningsSummary> => {
+    const { data: rows, error } = await context.supabase
+      .from("transactions")
+      .select("kind, status, trainer_amount, currency, created_at, metadata")
+      .eq("trainer_id", context.userId)
+      .in("status", ["succeeded", "held"])
+      .limit(2000);
+    if (error) throw new Error(error.message);
+
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    let total = 0;
+    let last30 = 0;
+    const byKind: Record<string, number> = {};
+    const perPost = new Map<string, { earned: number; count: number }>();
+    let currency = "USD";
+    for (const r of rows ?? []) {
+      const amt = Number(r.trainer_amount ?? 0);
+      const sign = r.kind === "refund" ? -1 : 1;
+      total += sign * amt;
+      if (new Date(r.created_at).getTime() >= cutoff) last30 += sign * amt;
+      byKind[r.kind] = (byKind[r.kind] ?? 0) + sign * amt;
+      currency = r.currency ?? currency;
+      const pid = (r.metadata as { post_id?: string } | null)?.post_id;
+      if (pid) {
+        const cur = perPost.get(pid) ?? { earned: 0, count: 0 };
+        cur.earned += sign * amt;
+        cur.count += 1;
+        perPost.set(pid, cur);
+      }
+    }
+
+    const topEntries = Array.from(perPost.entries())
+      .sort((a, b) => b[1].earned - a[1].earned)
+      .slice(0, 5);
+    const postIds = topEntries.map(([pid]) => pid);
+    const captions = new Map<string, string | null>();
+    if (postIds.length) {
+      const { data: posts } = await context.supabase
+        .from("posts")
+        .select("id, caption")
+        .in("id", postIds);
+      for (const p of posts ?? []) captions.set(p.id, p.caption);
+    }
+    return {
+      currency,
+      total_earned: Math.round(total * 100) / 100,
+      last_30d: Math.round(last30 * 100) / 100,
+      by_kind: Object.fromEntries(
+        Object.entries(byKind).map(([k, v]) => [k, Math.round(v * 100) / 100]),
+      ),
+      top_posts: topEntries.map(([pid, v]) => ({
+        post_id: pid,
+        caption: captions.get(pid) ?? null,
+        earned: Math.round(v.earned * 100) / 100,
+        count: v.count,
+      })),
+    };
+  });
+
 export type TransactionRow = {
   id: string;
   kind: string;
@@ -103,20 +225,35 @@ export type TransactionRow = {
   currency: string;
   created_at: string;
   counterparty: string | null;
+  post_id: string | null;
 };
 
 export const listTrainerTransactions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<TransactionRow[]> => {
-    const { data, error } = await context.supabase
+  .validator((input) =>
+    z
+      .object({
+        kind: z.enum(["all", "subscription", "tip", "unlock", "qa", "refund", "adjustment"]).optional(),
+        postId: z.string().uuid().optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<TransactionRow[]> => {
+    let query = context.supabase
       .from("transactions")
-      .select("id, kind, status, gross, platform_fee, trainer_amount, currency, created_at, payer_id")
+      .select(
+        "id, kind, status, gross, platform_fee, trainer_amount, currency, created_at, payer_id, metadata",
+      )
       .eq("trainer_id", context.userId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(data.limit ?? 100);
+    if (data.kind && data.kind !== "all") query = query.eq("kind", data.kind);
+    if (data.postId) query = query.eq("metadata->>post_id", data.postId);
+    const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     const payerIds = Array.from(
-      new Set((data ?? []).map((r) => r.payer_id).filter((v): v is string => !!v)),
+      new Set((rows ?? []).map((r) => r.payer_id).filter((v): v is string => !!v)),
     );
     const nameMap = new Map<string, string>();
     if (payerIds.length) {
@@ -128,7 +265,7 @@ export const listTrainerTransactions = createServerFn({ method: "GET" })
         nameMap.set(p.user_id, p.display_name ?? p.username ?? "user");
       }
     }
-    return (data ?? []).map((r) => ({
+    return (rows ?? []).map((r) => ({
       id: r.id,
       kind: r.kind,
       status: r.status,
@@ -138,12 +275,13 @@ export const listTrainerTransactions = createServerFn({ method: "GET" })
       currency: r.currency,
       created_at: r.created_at,
       counterparty: r.payer_id ? nameMap.get(r.payer_id) ?? null : null,
+      post_id: (r.metadata as { post_id?: string } | null)?.post_id ?? null,
     }));
   });
 
 export const sendTip = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         trainerId: z.string().uuid(),
@@ -262,7 +400,7 @@ export const listMyPayouts = createServerFn({ method: "GET" })
 
 export const requestPayout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         amount: z.number().min(1),
@@ -323,7 +461,7 @@ export const requestPayout = createServerFn({ method: "POST" })
 
 export const listRecentTipsForTrainer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("tips")

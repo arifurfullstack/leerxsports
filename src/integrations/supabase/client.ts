@@ -27,6 +27,23 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+// Ensure WebSocket is polyfilled for SSR
+if (typeof window === "undefined" && typeof globalThis !== "undefined" && !globalThis.WebSocket) {
+  class NodeWebSocketPolyfill {
+    static CONNECTING = 0;
+    static OPEN = 1;
+    static CLOSING = 2;
+    static CLOSED = 3;
+    readyState = 3;
+    constructor() {}
+    addEventListener() {}
+    removeEventListener() {}
+    send() {}
+    close() {}
+  }
+  (globalThis as any).WebSocket = NodeWebSocketPolyfill;
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)

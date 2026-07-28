@@ -8,7 +8,8 @@ import {
   Dumbbell,
   Trophy,
   Check,
-  Sparkles,
+  Activity,
+  Crown,
   Flame,
   Waves,
   Bike,
@@ -20,6 +21,7 @@ import {
   Plus,
   X,
   ShieldCheck,
+  BadgeCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHasBeenInView } from "@/hooks/use-hero-perf";
@@ -35,7 +37,7 @@ import {
  * Homepage — supplemental sections rendered under the Kinetic Bento.
  * Direction: "Editorial high-impact" — oversized display numerals, ruled
  * dividers, full-bleed coral testimonial flood, split-rule pricing.
- * Palette locked: Charcoal & Ember (#1a1a1a / #2d2d2d / #4a4a4a / #e85d3a).
+ * Palette locked: Charcoal & Ember (#1a1a1a / #2d2d2d / #4a4a4a / var(--premium)).
  * Every block lazy-mounts once in view so below-fold work stays cheap.
  */
 export function HomeSections() {
@@ -67,7 +69,7 @@ function HowItWorksSection() {
       icon: UserCheck,
       kicker: "02",
       title: "Subscribe",
-      body: "Unlock a trainer's full library — programs, live sessions, and their private community feed.",
+      body: "Unlock a creator's full library including programs, live sessions, and their private community feed.",
     },
     {
       icon: Video,
@@ -84,11 +86,11 @@ function HowItWorksSection() {
       className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-baseline md:justify-between">
-        <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-[#e85d3a] text-[clamp(3.5rem,10vw,7rem)]">
+        <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-premium text-[clamp(3.5rem,10vw,7rem)]">
           Process
         </h2>
-        <p className="reveal max-w-xs text-xs font-sans font-bold uppercase tracking-[0.28em] text-white/50" style={{ ["--reveal-delay" as string]: "120ms" }}>
-          A tight loop between you and a real coach — nothing between.
+        <p className="reveal max-w-xs text-xs font-sans font-bold uppercase tracking-[0.28em] text-muted-foreground" style={{ ["--reveal-delay" as string]: "120ms" }}>
+          A tight loop between you and a real coach with nothing in between.
         </p>
       </div>
       <ol
@@ -99,22 +101,22 @@ function HowItWorksSection() {
         {steps.map((s, i) => (
           <li
             key={s.kicker}
-            className={`tile-anim group relative border-t border-white/15 pt-14 ${
+            className={`tile-anim group relative border-t border-border pt-14 ${
               i === 1 ? "md:mt-24" : ""
             }`}
             style={{ ["--tile-delay" as string]: `${i * 80}ms` }}
           >
-            <span className="absolute left-0 top-4 font-display text-4xl leading-none tracking-tight text-[#e85d3a] md:text-5xl">
+            <span className="absolute left-0 top-4 font-display text-4xl leading-none tracking-tight text-premium md:text-5xl">
               {s.kicker}
             </span>
             <s.icon
               aria-hidden
-              className="absolute right-0 top-5 h-6 w-6 text-white/25 transition-colors group-hover:text-[#e85d3a]"
+              className="absolute right-0 top-5 h-6 w-6 text-muted-foreground/60 transition-colors group-hover:text-premium"
             />
-            <h3 className="font-display uppercase text-white text-3xl leading-[0.95] md:text-4xl">
+            <h3 className="font-display uppercase text-foreground text-3xl leading-[0.95] md:text-4xl">
               {s.title}
             </h3>
-            <p className="mt-5 max-w-sm text-base font-sans leading-relaxed text-white/60">
+            <p className="mt-5 max-w-sm text-base font-sans leading-relaxed text-muted-foreground">
               {s.body}
             </p>
           </li>
@@ -144,7 +146,7 @@ function DisciplinesSection() {
       label: "Conditioning",
       count: "98 pros",
       blurb:
-        "Zone 2, threshold, and VO2 work programmed to move your engine — not just crush you.",
+        "Zone 2, threshold, and VO2 work programmed to move your engine efficiently.",
       focus: ["Zone 2 base", "Threshold intervals", "VO2 max"],
     },
     {
@@ -176,7 +178,7 @@ function DisciplinesSection() {
       label: "Outdoor",
       count: "44 pros",
       blurb:
-        "Trail running, hiking, and expedition prep — strength and conditioning that transfers to the terrain.",
+        "Trail running, hiking, and expedition prep with strength and conditioning that transfers to the terrain.",
       focus: ["Trail running", "Alpine prep", "Load carry"],
     },
     {
@@ -184,11 +186,11 @@ function DisciplinesSection() {
       label: "Combat",
       count: "62 pros",
       blurb:
-        "Boxing, MMA, BJJ, and Muay Thai — technical drills, sparring prep, and fight-camp cycles.",
+        "Boxing, MMA, BJJ, and Muay Thai with technical drills, sparring prep, and fight-camp cycles.",
       focus: ["Striking", "Grappling", "Fight camp"],
     },
     {
-      icon: Sparkles,
+      icon: Activity,
       label: "Mobility",
       count: "29 pros",
       blurb:
@@ -201,17 +203,17 @@ function DisciplinesSection() {
       ref={ref}
       aria-label="Disciplines"
       data-inview={seen ? "true" : "false"}
-      className="relative border-y border-white/10 bg-white/[0.04]"
+      className="relative border-y border-border bg-white/[0.04]"
     >
       <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-white text-[clamp(3.5rem,10vw,7rem)]">
+          <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(3.5rem,10vw,7rem)]">
             Disciplines
           </h2>
           <Link
-            to="/browse"
+            to="/feed"
             onClick={() => track("home_cta_click", { section: "disciplines", target: "browse_all" })}
-            className="reveal group inline-flex items-center gap-2 text-sm font-sans uppercase tracking-[0.2em] text-white/80 hover:text-[#e85d3a]"
+            className="reveal group inline-flex items-center gap-2 text-sm font-sans uppercase tracking-[0.2em] text-foreground hover:text-premium"
             style={{ ["--reveal-delay" as string]: "120ms" }}
           >
             Browse all
@@ -219,7 +221,7 @@ function DisciplinesSection() {
           </Link>
         </div>
         <div
-          className={`mt-14 -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-4 pb-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-4 md:gap-4 ${
+          className={`mt-14 -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-4 pb-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:gap-4 lg:grid-cols-4 ${
             seen ? "opacity-100" : "opacity-0"
           } transition-opacity duration-500`}
         >
@@ -239,48 +241,39 @@ function DisciplinesSection() {
                   track("home_tile_click", { section: "disciplines", label: c.label });
                 }
               }}
-              className={`tile-anim group relative aspect-square w-[46vw] max-w-[240px] shrink-0 snap-start overflow-hidden border bg-[#1f1f1f] text-left transition-[transform,border-color,background-color] duration-300 [-webkit-tap-highlight-color:transparent] touch-manipulation select-none hover:border-[#e85d3a]/60 hover:bg-[#242424] active:border-[#e85d3a] active:bg-[#242424] motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70 sm:w-auto sm:max-w-none sm:shrink sm:snap-none ${
-                isOpen ? "border-[#e85d3a] bg-[#242424]" : "border-white/10"
+              className={`tile-anim group relative aspect-square w-[46vw] max-w-[240px] shrink-0 snap-start overflow-hidden border bg-card text-left transition-[transform,border-color,background-color] duration-300 [-webkit-tap-highlight-color:transparent] touch-manipulation select-none hover:border-premium/60 hover:bg-card active:border-premium active:bg-card motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70 sm:w-auto sm:max-w-none sm:shrink sm:snap-none ${
+                isOpen ? "border-premium bg-card" : "border-border"
               }`}
               style={{ ["--tile-delay" as string]: `${i * 45}ms` }}
             >
               {/* Ember wash */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[#e85d3a]/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-active:opacity-100"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-premium/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-active:opacity-100"
               />
-              {/* Subtle scanline grid */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.12] group-active:opacity-[0.12]"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(#e85d3a 1px, transparent 1px), linear-gradient(90deg, #e85d3a 1px, transparent 1px)",
-                  backgroundSize: "22px 22px",
-                }}
-              />
+
 
               {/* Content */}
               <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <span className="font-display text-xs leading-none text-white/25 transition-colors duration-300 group-hover:text-[#e85d3a] group-active:text-[#e85d3a]">
+                  <span className="font-display text-xs leading-none text-muted-foreground/60 transition-colors duration-300 group-hover:text-premium group-active:text-premium">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span
                     aria-hidden
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e85d3a]/10 text-[#e85d3a] ring-1 ring-inset ring-[#e85d3a]/30 transition-transform duration-500 motion-safe:group-hover:scale-110 motion-safe:group-hover:-rotate-6 motion-safe:group-active:scale-110 sm:h-12 sm:w-12"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-premium/10 text-premium ring-1 ring-inset ring-premium/30 transition-transform duration-500 motion-safe:group-hover:scale-110 motion-safe:group-hover:-rotate-6 motion-safe:group-active:scale-110 sm:h-12 sm:w-12"
                   >
                     <c.icon className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.75} />
                   </span>
                 </div>
                 <div>
-                  <div className="mb-1 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-[#e85d3a] opacity-80 md:text-[11px]">
+                  <div className="mb-1 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-premium opacity-80 md:text-[11px]">
                     {c.count}
                   </div>
-                  <div className="font-display uppercase leading-[0.9] tracking-tight text-white text-2xl sm:text-3xl transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-active:-translate-y-0.5">
+                  <div className="font-display uppercase leading-[0.9] tracking-tight text-foreground text-2xl sm:text-3xl transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-active:-translate-y-0.5">
                     {c.label}
                   </div>
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-white/50 group-hover:text-white/80 group-active:text-white/80">
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-muted-foreground group-hover:text-foreground group-active:text-foreground">
                     <Plus
                       className={`h-3 w-3 transition-transform duration-300 ${
                         isOpen ? "rotate-45" : "rotate-0"
@@ -294,7 +287,7 @@ function DisciplinesSection() {
               {/* Decorative corner accent — snaps in on hover */}
               <div
                 aria-hidden
-                className={`pointer-events-none absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-[#e85d3a] transition-transform duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-active:translate-x-0 group-active:translate-y-0 ${
+                className={`pointer-events-none absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-premium transition-transform duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-active:translate-x-0 group-active:translate-y-0 ${
                   isOpen ? "translate-x-0 translate-y-0" : "translate-x-4 translate-y-4"
                 }`}
               />
@@ -305,7 +298,7 @@ function DisciplinesSection() {
         {/* Mobile swipe hint */}
         <div
           aria-hidden
-          className="mt-2 flex items-center gap-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-white/40 sm:hidden"
+          className="mt-2 flex items-center gap-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-muted-foreground/70 sm:hidden"
         >
           <span>Swipe</span>
           <ArrowRight className="h-3 w-3" />
@@ -327,13 +320,13 @@ function DisciplinesSection() {
                   id={panelId}
                   role="region"
                   aria-label={`${c.label} details`}
-                  className="relative border border-[#e85d3a]/40 bg-[#1a1a1a] p-6 sm:p-8"
+                  className="relative border border-premium/40 bg-card p-6 sm:p-8"
                 >
                   <button
                     type="button"
                     onClick={() => setOpenIdx(null)}
                     aria-label="Close details"
-                    className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-[#e85d3a] hover:text-[#e85d3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                    className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-foreground/80 transition hover:border-premium hover:text-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -341,28 +334,28 @@ function DisciplinesSection() {
                     <div className="flex items-center gap-4">
                       <span
                         aria-hidden
-                        className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#e85d3a]/10 text-[#e85d3a] ring-1 ring-inset ring-[#e85d3a]/40"
+                        className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-premium/10 text-premium ring-1 ring-inset ring-premium/40"
                       >
                         <Icon className="h-7 w-7" strokeWidth={1.75} />
                       </span>
                       <div>
-                        <div className="text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-[#e85d3a]">
+                        <div className="text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-premium">
                           {c.count}
                         </div>
-                        <h3 className="mt-1 font-display uppercase leading-[0.9] tracking-tight text-white text-3xl sm:text-4xl">
+                        <h3 className="mt-1 font-display uppercase leading-[0.9] tracking-tight text-foreground text-3xl sm:text-4xl">
                           {c.label}
                         </h3>
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="max-w-2xl text-base font-sans leading-relaxed text-white/70">
+                      <p className="max-w-2xl text-base font-sans leading-relaxed text-foreground/80">
                         {c.blurb}
                       </p>
                       <ul className="mt-5 flex flex-wrap gap-2">
                         {c.focus.map((f) => (
                           <li
                             key={f}
-                            className="border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-white/75"
+                            className="border border-border bg-white/[0.03] px-3 py-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-foreground/75"
                           >
                             {f}
                           </li>
@@ -370,7 +363,7 @@ function DisciplinesSection() {
                       </ul>
                       <div className="mt-6">
                         <Link
-                          to="/browse"
+                          to="/feed"
                           onClick={() =>
                             track("home_cta_click", {
                               section: "disciplines",
@@ -378,7 +371,7 @@ function DisciplinesSection() {
                               label: c.label,
                             })
                           }
-                          className="group inline-flex items-center gap-2 border border-[#e85d3a] bg-[#e85d3a] px-5 py-2.5 text-xs font-sans font-bold uppercase tracking-[0.24em] text-[#1a1a1a] transition hover:bg-[#ff6b45] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                          className="group inline-flex items-center gap-2 border border-premium bg-[var(--premium)] px-5 py-2.5 text-xs font-sans font-bold uppercase tracking-[0.24em] text-background transition hover:bg-premium/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                         >
                           Browse {c.label} pros
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -406,32 +399,36 @@ function TrainerSpotlightSection() {
       ref={ref}
       aria-label="Trainer spotlight"
       data-inview={seen ? "true" : "false"}
-      className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6"
+      className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28"
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="grid gap-6 md:grid-cols-[1.6fr_1fr] md:items-end md:gap-10">
         <div className="reveal">
-          <div className="text-xs font-sans font-bold uppercase tracking-[0.28em] text-[#e85d3a]">
+          <div className="inline-flex items-center gap-3 text-[10px] font-sans font-bold uppercase tracking-[0.32em] text-premium">
+            <span className="h-px w-8 bg-premium" aria-hidden />
             Meet the pros
           </div>
-          <h2 className="mt-3 font-display uppercase leading-[0.9] tracking-tighter text-white text-[clamp(3rem,9vw,6.5rem)]">
-            Verified Pros
+          <h2 className="mt-4 font-display italic uppercase leading-[0.85] tracking-tighter text-foreground text-[clamp(3rem,10vw,7.5rem)]">
+            Verified <span className="text-premium">Pros.</span>
           </h2>
         </div>
-        <p className="reveal max-w-xs text-xs font-sans font-bold uppercase tracking-[0.28em] text-white/50" style={{ ["--reveal-delay" as string]: "120ms" }}>
-          Olympians, national champions, and certified pros — verified before they publish.
+        <p
+          className="reveal max-w-sm text-sm font-sans leading-relaxed text-foreground/55 md:text-right"
+          style={{ ["--reveal-delay" as string]: "120ms" }}
+        >
+          Olympians, national champions, and certified pros, verified before they publish.
         </p>
       </div>
-      <div className={`mt-10 ${seen ? "opacity-100" : "opacity-0"} transition-opacity duration-500`}>
+      <div className={`mt-12 ${seen ? "opacity-100" : "opacity-0"} transition-opacity duration-500`}>
         <TrainerSpotlight />
       </div>
-      <div className="mt-8 text-center">
+      <div className="mt-10 flex justify-center">
         <Link
-          to="/browse"
+          to="/feed"
           onClick={() => track("home_cta_click", { section: "trainer_spotlight", target: "see_all_pros" })}
-          className="group inline-flex items-center gap-2 text-sm font-sans uppercase tracking-[0.2em] text-white/85 hover:text-[#e85d3a]"
+          className="group inline-flex items-center gap-3 border border-border px-8 py-4 text-xs font-sans font-bold uppercase tracking-[0.28em] text-foreground transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
         >
           See every pro
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
     </section>
@@ -921,7 +918,7 @@ function PricingSection() {
       unit: "forever",
       tag: "Entry-level access",
       body: "Browse verified pros, preview programs, follow public feeds.",
-      features: ["Public feed", "Trainer previews", "Community read access"],
+      features: ["Public feed", "Creator previews", "Community read access"],
       cta: "Start free",
       to: "/auth" as const,
       accent: false,
@@ -931,15 +928,15 @@ function PricingSection() {
       price: "19",
       unit: "/mo · per pro",
       tag: "Professional oversight",
-      body: "Full access to one trainer's library plus one private video review per month.",
+      body: "Full access to one creator's library plus one private video review per month.",
       features: [
         "All programs from your pro",
         "1 private video coaching / mo",
         "Members-only community",
         "Multilingual captions",
       ],
-      cta: "See trainers",
-      to: "/browse" as const,
+      cta: "See creators",
+      to: "/explore" as const,
       accent: true,
     },
   ];
@@ -956,17 +953,17 @@ function PricingSection() {
         className="pointer-events-none absolute inset-x-0 top-1/3 -z-10 mx-auto h-[520px] max-w-4xl opacity-60"
         style={{
           background:
-            "radial-gradient(50% 50% at 50% 50%, color-mix(in oklch, #e85d3a 22%, transparent) 0%, transparent 70%)",
+            "radial-gradient(50% 50% at 50% 50%, color-mix(in oklch, var(--premium) 22%, transparent) 0%, transparent 70%)",
         }}
       />
       <div className="text-center reveal">
-        <div className="text-xs font-sans font-bold uppercase tracking-[0.28em] text-[#e85d3a]">
+        <div className="text-xs font-sans font-bold uppercase tracking-[0.28em] text-premium">
           Membership
         </div>
-        <h2 className="mt-4 font-display uppercase leading-[0.9] tracking-tighter text-white text-[clamp(3.25rem,10vw,7rem)]">
+        <h2 className="mt-4 font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(3.25rem,10vw,7rem)]">
           Investment
         </h2>
-        <p className="mx-auto mt-5 max-w-xl text-sm font-sans text-white/60">
+        <p className="mx-auto mt-5 max-w-xl text-sm font-sans text-muted-foreground">
           Every subscription pays the pro directly. No hidden fees on the member side.
         </p>
       </div>
@@ -980,8 +977,8 @@ function PricingSection() {
             key={t.name}
             className={`tile-anim group relative flex flex-col overflow-hidden rounded-3xl p-7 transition-all duration-500 sm:p-9 md:p-10 ${
               t.accent
-                ? "border border-[#e85d3a]/60 bg-gradient-to-b from-[#241612] via-[#1a1a1a] to-[#1a1a1a] shadow-[0_30px_80px_-30px_rgba(232,93,58,0.55)] motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-[0_40px_100px_-30px_rgba(232,93,58,0.7)]"
-                : "border border-white/10 bg-[#1a1a1a]/80 backdrop-blur motion-safe:hover:-translate-y-1 motion-safe:hover:border-white/25"
+                ? "border border-premium/60 bg-gradient-to-b from-premium/15 via-card to-card shadow-[0_30px_80px_-30px_color-mix(in oklch, var(--premium) 55%, transparent)] motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-[0_40px_100px_-30px_color-mix(in oklch, var(--premium) 70%, transparent)]"
+                : "border border-border bg-card/80 backdrop-blur motion-safe:hover:-translate-y-1 motion-safe:hover:border-hairline-strong"
             }`}
             style={{ ["--tile-delay" as string]: `${i * 100}ms` }}
           >
@@ -989,7 +986,7 @@ function PricingSection() {
             {t.accent && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute -top-24 right-[-20%] h-64 w-64 rounded-full bg-[#e85d3a]/25 blur-3xl"
+                className="pointer-events-none absolute -top-24 right-[-20%] h-64 w-64 rounded-full bg-premium/25 blur-3xl"
               />
             )}
 
@@ -997,21 +994,21 @@ function PricingSection() {
             <div className="relative flex items-center justify-between gap-3">
               <span
                 className={`text-[10px] font-sans font-bold uppercase tracking-[0.24em] ${
-                  t.accent ? "text-[#e85d3a]" : "text-white/50"
+                  t.accent ? "text-premium" : "text-muted-foreground"
                 }`}
               >
                 {t.tag}
               </span>
               {t.accent && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e85d3a] px-3 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-white shadow-lg shadow-[#e85d3a]/40">
-                  <Sparkles className="h-3 w-3" aria-hidden />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-premium px-3 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-foreground shadow-lg shadow-premium/40">
+                  <BadgeCheck className="h-3 w-3" aria-hidden />
                   Recommended
                 </span>
               )}
             </div>
 
             {/* Name */}
-            <h3 className="relative mt-5 font-display uppercase text-white text-4xl leading-none tracking-tight md:text-5xl">
+            <h3 className="relative mt-5 font-display uppercase text-foreground text-4xl leading-none tracking-tight md:text-5xl">
               {t.name}
             </h3>
 
@@ -1020,7 +1017,7 @@ function PricingSection() {
               {t.price !== "0" && (
                 <span
                   className={`mb-3 font-display text-2xl leading-none ${
-                    t.accent ? "text-[#e85d3a]" : "text-white/60"
+                    t.accent ? "text-premium" : "text-muted-foreground"
                   }`}
                 >
                   $
@@ -1028,12 +1025,12 @@ function PricingSection() {
               )}
               <span
                 className={`font-display leading-none tracking-tight text-[clamp(3.5rem,9vw,5.5rem)] ${
-                  t.accent ? "text-white" : "text-white"
+                  t.accent ? "text-foreground" : "text-foreground"
                 }`}
               >
                 {t.price === "0" ? "Free" : t.price}
               </span>
-              <span className="mb-3 ml-1 text-xs font-sans font-medium uppercase tracking-[0.2em] text-white/50">
+              <span className="mb-3 ml-1 text-xs font-sans font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 {t.unit}
               </span>
             </div>
@@ -1041,12 +1038,12 @@ function PricingSection() {
             {/* Divider */}
             <div
               className={`relative mt-7 h-px w-full ${
-                t.accent ? "bg-gradient-to-r from-[#e85d3a]/60 via-white/10 to-transparent" : "bg-white/10"
+                t.accent ? "bg-gradient-to-r from-premium/60 via-white/10 to-transparent" : "bg-muted"
               }`}
             />
 
             {/* Body copy */}
-            <p className="relative mt-6 text-sm font-sans leading-relaxed text-white/70 sm:text-base">
+            <p className="relative mt-6 text-sm font-sans leading-relaxed text-foreground/80 sm:text-base">
               {t.body}
             </p>
 
@@ -1055,13 +1052,13 @@ function PricingSection() {
               {t.features.map((f) => (
                 <li
                   key={f}
-                  className="flex items-start gap-3 text-sm font-sans text-white/85"
+                  className="flex items-start gap-3 text-sm font-sans text-foreground"
                 >
                   <span
                     className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
                       t.accent
-                        ? "bg-[#e85d3a] text-white"
-                        : "bg-white/10 text-white/80"
+                        ? "bg-premium text-foreground"
+                        : "bg-muted text-foreground"
                     }`}
                   >
                     <Check aria-hidden className="h-3 w-3" strokeWidth={3} />
@@ -1077,8 +1074,8 @@ function PricingSection() {
               onClick={() => track("home_cta_click", { section: "pricing", tier: t.name })}
               className={`group/cta relative mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-sans font-bold uppercase tracking-[0.22em] transition-all duration-300 ${
                 t.accent
-                  ? "bg-[#e85d3a] text-white shadow-lg shadow-[#e85d3a]/30 hover:bg-white hover:text-[#1a1a1a] hover:shadow-xl hover:shadow-[#e85d3a]/40"
-                  : "border border-white/25 text-white hover:border-white hover:bg-white hover:text-[#1a1a1a]"
+                  ? "bg-premium text-foreground shadow-lg shadow-premium/30 hover:bg-foreground hover:text-background hover:shadow-xl hover:shadow-premium/40"
+                  : "border border-border text-foreground hover:border-foreground hover:bg-foreground hover:text-background"
               }`}
             >
               {t.cta}
@@ -1086,7 +1083,7 @@ function PricingSection() {
             </Link>
 
             {/* Fine print */}
-            <p className="relative mt-4 text-center text-[10px] font-sans uppercase tracking-[0.2em] text-white/35">
+            <p className="relative mt-4 text-center text-[10px] font-sans uppercase tracking-[0.2em] text-foreground/35">
               {t.accent ? "Cancel anytime · Pro-rated" : "No card required"}
             </p>
           </article>
@@ -1094,12 +1091,12 @@ function PricingSection() {
       </div>
 
       {/* Trust row */}
-      <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[11px] font-sans uppercase tracking-[0.22em] text-white/45">
-        <span className="inline-flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-[#e85d3a]" /> Secure payment</span>
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[11px] font-sans uppercase tracking-[0.22em] text-foreground/45">
+        <span className="inline-flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-premium" /> Secure payment</span>
         <span className="hidden h-3 w-px bg-white/15 sm:block" />
-        <span className="inline-flex items-center gap-2"><Check className="h-3.5 w-3.5 text-[#e85d3a]" strokeWidth={3} /> Cancel anytime</span>
+        <span className="inline-flex items-center gap-2"><Check className="h-3.5 w-3.5 text-premium" strokeWidth={3} /> Cancel anytime</span>
         <span className="hidden h-3 w-px bg-white/15 sm:block" />
-        <span className="inline-flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-[#e85d3a]" /> Pro paid directly</span>
+        <span className="inline-flex items-center gap-2"><Crown className="h-3.5 w-3.5 text-premium" /> Pro paid directly</span>
       </div>
     </section>
   );
@@ -1115,72 +1112,101 @@ function FinalCtaSection() {
       ref={ctaRef}
       aria-label="Join LEER"
       data-inview={seen ? "true" : "false"}
-      className="relative isolate overflow-hidden border-t border-white/10 bg-[#1a1a1a]"
+      className="relative isolate overflow-hidden border-t border-border bg-background"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
           background:
-            "radial-gradient(60% 60% at 50% 20%, color-mix(in oklch, #e85d3a 22%, transparent) 0%, transparent 70%)",
+            "radial-gradient(50% 60% at 20% 40%, color-mix(in oklch, var(--premium) 14%, transparent) 0%, transparent 70%)",
         }}
       />
-      <div className="relative mx-auto max-w-6xl px-4 py-28 sm:px-6 md:py-32">
-        <div className="grid gap-16 md:grid-cols-[1.4fr_1fr] md:items-center">
-          <div>
-            <div className="reveal text-xs font-sans font-bold uppercase tracking-[0.28em] text-[#e85d3a]">
-              Restricted area
+      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28">
+        <div className="grid grid-cols-1 border border-border lg:grid-cols-12">
+          {/* Left: Headline + CTAs */}
+          <div className="flex flex-col justify-between gap-16 border-b border-border p-8 sm:p-12 lg:col-span-7 lg:border-b-0 lg:border-r lg:p-16">
+            <div>
+              <span className="reveal inline-block bg-premium px-2 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-background">
+                Restricted area
+              </span>
+              <h2
+                className="reveal mt-8 font-display italic uppercase leading-[0.85] tracking-tighter text-foreground text-[clamp(3.5rem,11vw,8.5rem)]"
+                style={{ ["--reveal-delay" as string]: "80ms" }}
+              >
+                Don&rsquo;t play
+                <br />
+                <span className="text-premium">catch up.</span>
+              </h2>
             </div>
-            <h2 className="reveal mt-5 font-display uppercase leading-[0.85] tracking-tighter text-white text-[clamp(3.75rem,11vw,8.5rem)]" style={{ ["--reveal-delay" as string]: "80ms" }}>
-              Don&rsquo;t play
-              <br />
-              <span className="text-[#e85d3a]">catch up.</span>
-            </h2>
-            <p className="reveal mt-6 max-w-md text-base font-sans text-white/55" style={{ ["--reveal-delay" as string]: "180ms" }}>
-              Get weekly elite drills, strategy breakdowns, and training tips delivered directly to your inbox. Stay ahead of the competition.
-            </p>
-            <div className="reveal mt-10 flex flex-col gap-3 sm:flex-row" style={{ ["--reveal-delay" as string]: "260ms" }}>
+            <div
+              className="reveal flex flex-col gap-3 sm:flex-row"
+              style={{ ["--reveal-delay" as string]: "220ms" }}
+            >
               <Link
                 to="/auth"
                 onClick={() => track("home_cta_click", { section: "final_cta", target: "signup" })}
-                className="group inline-flex items-center justify-center gap-2 bg-[#e85d3a] px-8 py-4 text-sm font-sans font-bold uppercase tracking-[0.22em] text-white transition-all hover:bg-white hover:text-[#1a1a1a]"
+                className="group inline-flex items-center justify-center gap-2 bg-premium px-8 py-4 text-xs font-sans font-bold uppercase tracking-[0.28em] text-background transition-all duration-300 hover:bg-foreground hover:text-background"
               >
                 Create your account
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
-                to="/browse"
+                to="/feed"
                 onClick={() => track("home_cta_click", { section: "final_cta", target: "browse" })}
-                className="inline-flex items-center justify-center gap-2 border border-white/25 px-8 py-4 text-sm font-sans font-bold uppercase tracking-[0.22em] text-white transition-all hover:bg-white hover:text-[#1a1a1a]"
+                className="inline-flex items-center justify-center gap-2 border border-border px-8 py-4 text-xs font-sans font-bold uppercase tracking-[0.28em] text-foreground transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
               >
                 Browse trainers
               </Link>
             </div>
           </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              track("home_cta_click", { section: "final_cta", target: "newsletter" });
-            }}
-            className="flex flex-col gap-4"
-            aria-label="Newsletter signup"
-          >
-            <label className="text-xs font-sans font-bold uppercase tracking-[0.28em] text-white/60">
-              Weekly drills, straight to inbox
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="EMAIL ADDRESS"
-              className="w-full border-b border-white/25 bg-transparent py-4 text-sm font-sans font-bold uppercase tracking-[0.2em] text-white placeholder:text-white/25 focus:border-[#e85d3a] focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="w-full bg-[#e85d3a] py-5 text-sm font-sans font-bold uppercase tracking-[0.22em] text-white transition-all hover:bg-white hover:text-[#1a1a1a]"
-            >
-              Subscribe
-            </button>
-          </form>
+
+          {/* Right: Newsletter */}
+          <div className="flex flex-col justify-center bg-card p-8 sm:p-12 lg:col-span-5 lg:p-16">
+            <div className="max-w-sm">
+              <h3
+                className="reveal font-display text-3xl italic uppercase tracking-tight text-foreground sm:text-4xl"
+                style={{ ["--reveal-delay" as string]: "120ms" }}
+              >
+                Join the roster
+              </h3>
+              <p
+                className="reveal mt-4 text-sm font-sans leading-relaxed text-foreground/55"
+                style={{ ["--reveal-delay" as string]: "180ms" }}
+              >
+                Weekly training drills, professional insights, and restricted gear drops delivered to your inbox.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  track("home_cta_click", { section: "final_cta", target: "newsletter" });
+                }}
+                className="reveal mt-8"
+                style={{ ["--reveal-delay" as string]: "240ms" }}
+                aria-label="Newsletter signup"
+              >
+                <input
+                  type="email"
+                  required
+                  placeholder="EMAIL ADDRESS"
+                  className="w-full border-b-2 border-border bg-transparent py-4 text-sm font-sans font-bold uppercase tracking-[0.24em] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-premium"
+                />
+                <button
+                  type="submit"
+                  className="mt-6 w-full bg-foreground py-4 text-xs font-sans font-bold uppercase tracking-[0.28em] text-background transition-all duration-300 hover:bg-premium hover:text-background"
+                >
+                  Subscribe
+                </button>
+              </form>
+              <p className="mt-6 text-[10px] font-sans uppercase leading-loose tracking-[0.24em] text-muted-foreground/70">
+                By subscribing you agree to our{" "}
+                <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">
+                  Privacy Policy
+                </Link>
+                . No spam, only performance.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

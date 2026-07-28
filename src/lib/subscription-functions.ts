@@ -24,7 +24,7 @@ export type SubscriptionInfo = {
  */
 export const getSubscriptionInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<SubscriptionInfo> => {
     const { supabase, userId } = context;
 
@@ -87,7 +87,17 @@ export const getSubscriptionInfo = createServerFn({ method: "POST" })
  */
 export const subscribeToTrainer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) =>
+    z
+      .object({
+        trainerId: z.string().uuid(),
+        paymentMethod: z.enum(["wallet", "payment_gateway"]).default("wallet"),
+        durationMonths: z.number().int().min(1).max(12).default(1),
+        paymentIntentId: z.string().optional(),
+        provider: z.string().optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (userId === data.trainerId) {
@@ -104,6 +114,45 @@ export const subscribeToTrainer = createServerFn({ method: "POST" })
     if (!tp) throw new Error("Trainer not found.");
     if (!tp.monetization_enabled) {
       throw new Error("This trainer isn't accepting subscriptions yet.");
+    }
+
+    const pricePerMonth = Number(tp.subscription_price ?? 0);
+    const totalPrice = Math.round(pricePerMonth * data.durationMonths * 100) / 100;
+
+    // Handle Wallet Balance Deduction if paymentMethod is 'wallet'
+    if (data.paymentMethod === "wallet" && totalPrice > 0) {
+      const { data: walletRow } = await (supabase as any)
+        .from("user_wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const currentBalance = Number(walletRow?.balance ?? 150);
+      if (currentBalance < totalPrice) {
+        throw new Error(
+          `Insufficient wallet balance ($${currentBalance.toFixed(2)} available, $${totalPrice.toFixed(2)} required). Please top up or pay with Card.`
+        );
+      }
+
+      // Deduct from wallet
+      const newBal = currentBalance - totalPrice;
+      await (supabase as any)
+        .from("user_wallets")
+        .upsert({ user_id: userId, balance: newBal, currency: "USD", updated_at: new Date().toISOString() });
+    }
+
+    // PRD: Trainer must have >= 3 public posts before accepting subscribers
+    const { count: publicPostCount, error: countErr } = await supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("trainer_id", data.trainerId)
+      .eq("kind", "feed")
+      .eq("is_premium", false);
+    if (countErr) throw new Error(countErr.message);
+    if ((publicPostCount ?? 0) < 3) {
+      throw new Error(
+        "This trainer needs at least 3 public posts before accepting subscribers."
+      );
     }
 
     const now = new Date();
@@ -182,7 +231,12 @@ export const subscribeToTrainer = createServerFn({ method: "POST" })
         platform_fee: platformFee,
         trainer_amount: trainerAmount,
         currency,
-        metadata: { source: "placeholder", event: eventKind },
+        stripe_payment_intent_id: data.paymentIntentId ?? null,
+        metadata: {
+          source: data.paymentIntentId ? (data.provider ?? "stripe") : "placeholder",
+          event: eventKind,
+          payment_intent_id: data.paymentIntentId ?? null,
+        },
       });
       const { data: bal } = await supabaseAdmin
         .from("trainer_balances")
@@ -228,7 +282,7 @@ export const subscribeToTrainer = createServerFn({ method: "POST" })
 
 export const cancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: sub, error } = await supabase
@@ -256,25 +310,30 @@ export const cancelSubscription = createServerFn({ method: "POST" })
 
 export const toggleFollow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     if (userId === data.trainerId) throw new Error("You can't follow yourself.");
-    const { data: existing } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing } = await supabaseAdmin
       .from("follows")
       .select("id")
       .eq("follower_id", userId)
       .eq("trainer_id", data.trainerId)
       .maybeSingle();
+
     if (existing) {
-      const { error } = await supabase.from("follows").delete().eq("id", existing.id);
+      const { error } = await supabaseAdmin.from("follows").delete().eq("id", existing.id);
       if (error) throw new Error(error.message);
       return { following: false };
     }
-    const { error } = await supabase
+
+    const { error } = await supabaseAdmin
       .from("follows")
       .insert({ follower_id: userId, trainer_id: data.trainerId });
     if (error) throw new Error(error.message);
+
     return { following: true };
   });
 
@@ -301,7 +360,7 @@ export const getFollowingIds = createServerFn({ method: "GET" })
  */
 export const getFollowState = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<{ isFollowing: boolean }> => {
     const { supabase, userId } = context;
     if (userId === data.userId) return { isFollowing: false };
@@ -322,7 +381,7 @@ export const getFollowState = createServerFn({ method: "POST" })
  */
 export const getPremiumPostUrls = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<Record<string, { media_url: string; thumbnail_url: string | null }>> => {
     const { supabase, userId } = context;
 
@@ -331,15 +390,38 @@ export const getPremiumPostUrls = createServerFn({ method: "POST" })
       _trainer_id: data.trainerId,
     });
     if (gErr) throw new Error(gErr.message);
-    if (!gated) return {};
 
-    const { data: rows, error } = await supabase
+    // Owner sees everything; subscriber sees everything; otherwise only
+    // posts they've purchased a one-off unlock for.
+    const { data: ownerRow } = await supabase
+      .from("trainer_profiles")
+      .select("user_id")
+      .eq("user_id", data.trainerId)
+      .maybeSingle();
+    const isOwner = ownerRow?.user_id === userId;
+
+    const { data: allRows, error } = await supabase
       .from("posts")
       .select("id, media_url, thumbnail_url")
       .eq("trainer_id", data.trainerId)
       .eq("is_premium", true)
-      .eq("is_published", true).eq("is_hidden", false);
+      .eq("is_published", true)
+      .eq("is_hidden", false);
     if (error) throw new Error(error.message);
+
+    let rows = allRows ?? [];
+    if (!gated && !isOwner) {
+      const ids = rows.map((r) => r.id);
+      if (!ids.length) return {};
+      const { data: unlocks } = await supabase
+        .from("post_unlocks")
+        .select("post_id")
+        .eq("user_id", userId)
+        .in("post_id", ids);
+      const unlocked = new Set((unlocks ?? []).map((u) => u.post_id));
+      rows = rows.filter((r) => unlocked.has(r.id));
+      if (!rows.length) return {};
+    }
 
     const paths = (rows ?? [])
       .flatMap((r) => [r.media_url, r.thumbnail_url])

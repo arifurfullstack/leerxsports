@@ -46,9 +46,12 @@ export type CommunityHit = {
 };
 
 function buildClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  // Use a fresh client bound to the anon role; RLS on trainer_profiles / posts / community_posts already filters visibility.
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
   const { createClient } = require("@supabase/supabase-js") as typeof import("@supabase/supabase-js");
   return createClient(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
@@ -59,6 +62,7 @@ export const searchTrainers = createServerFn({ method: "POST" })
   .validator((input) => searchSchema.parse(input))
   .handler(async ({ data }) => {
     const supabase = buildClient();
+    if (!supabase) return [];
     let q = supabase
       .from("trainer_profiles")
       .select(
@@ -122,6 +126,7 @@ export const searchPosts = createServerFn({ method: "POST" })
   .validator((input) => z.object({ q: z.string().min(1).max(200), limit: z.number().min(1).max(50).default(20) }).parse(input))
   .handler(async ({ data }) => {
     const supabase = buildClient();
+    if (!supabase) return [];
     const { data: rows, error } = await supabase
       .from("posts")
       .select("id, trainer_id, caption, media_url, thumbnail_url, is_premium, created_at, is_hidden, is_published")
@@ -147,6 +152,7 @@ export const searchCommunity = createServerFn({ method: "POST" })
   .validator((input) => z.object({ q: z.string().min(1).max(200), limit: z.number().min(1).max(50).default(20) }).parse(input))
   .handler(async ({ data }) => {
     const supabase = buildClient();
+    if (!supabase) return [];
     const { data: rows, error } = await supabase
       .from("community_posts")
       .select("id, author_id, title, body, created_at, status")

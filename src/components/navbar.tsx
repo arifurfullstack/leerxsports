@@ -11,23 +11,92 @@ import {
   MessageSquare,
   Settings as SettingsIcon,
   Home,
+  Newspaper,
   Compass,
-  LayoutGrid,
   Clapperboard,
   Dumbbell,
   Users,
-  GraduationCap,
-  Info,
   LogIn,
+  HelpCircle,
+  BookMarked,
+  LineChart,
+  Tag,
+  ChevronDown,
   Sparkles,
+  LayoutDashboard,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfileMode } from "@/lib/profile-mode-context";
 import { Button } from "./ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { isAdmin } from "@/lib/auth-functions";
 import { NotificationBell } from "./notification-bell";
+import { HeaderSearch } from "./header-search";
+import { UserAvatar } from "./user-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { AvatarImage } from "./ui/avatar";
+
+type NavLink = {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent: string;
+  hover: string;
+};
+
+// Primary nav: the few most-important destinations. Keep this tight.
+const HOVER = "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0";
+const BASE_PRIMARY_LINKS: NavLink[] = [
+  { to: "/feed",      label: "Feed",      icon: Newspaper,    accent: "text-foreground/60", hover: HOVER },
+  { to: "/explore",   label: "Explore",   icon: Compass,      accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+  { to: "/trainers",  label: "Creators",  icon: Dumbbell,     accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+  { to: "/shorts",    label: "Shorts",    icon: Clapperboard, accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+  { to: "/community", label: "Community", icon: Users,        accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+  { to: "/pricing",   label: "Pricing",   icon: Tag,          accent: "text-foreground/60", hover: HOVER },
+];
+
+function getPrimaryLinks(authed: boolean): NavLink[] {
+  if (!authed) return BASE_PRIMARY_LINKS;
+  return [
+    { to: "/home", label: "Home", icon: Home, accent: "text-foreground/60", hover: HOVER },
+    ...BASE_PRIMARY_LINKS,
+  ];
+}
+
+// Secondary sub-nav: related pages that live one shelf below.
+function getSecondaryLinks(authed: boolean): NavLink[] {
+  const links: NavLink[] = [];
+  if (authed) {
+    links.push(
+      { to: "/library",           label: "Library",  icon: BookMarked, accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+      { to: "/qa",                label: "Paid Q&A", icon: HelpCircle, accent: "text-premium",       hover: "hover:bg-premium/10 hover:text-premium" },
+      { to: "/creator/dashboard", label: "Earnings", icon: LineChart,  accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
+    );
+  }
+  return links;
+}
+
+function initialsFrom(user: User | null): string {
+  const src =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "?";
+  const parts = src.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "?";
+  const second = parts[1]?.[0] ?? "";
+  return (first + second).toUpperCase();
+}
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -35,8 +104,10 @@ export function Navbar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const checkAdmin = useServerFn(isAdmin);
+  const { mode, switchMode } = useProfileMode();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -44,6 +115,27 @@ export function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Close mobile drawer on Escape, and lock body scroll while open.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
+
+  // Close the drawer whenever the route changes.
+  useEffect(() => {
+    const unsub = router.subscribe("onResolved", () => setMobileOpen(false));
+    return () => unsub();
+  }, [router]);
 
   const handleAdminClick = (e: React.MouseEvent) => {
     if (!user) {
@@ -63,8 +155,6 @@ export function Navbar() {
         }),
       )
         .then(async () => {
-          // Wait until the /auth route is mounted AND the router is idle
-          // (loaders resolved, pending components flushed) before dismissing.
           await new Promise<void>((resolve) => {
             const check = () => {
               const s = router.state;
@@ -105,6 +195,31 @@ export function Navbar() {
         } catch {
           setIsAdminUser(false);
         }
+        try {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("avatar_url, avatar_urls")
+            .eq("user_id", u.id)
+            .maybeSingle();
+          const urls = (prof?.avatar_urls as { sm?: string; md?: string; lg?: string } | null) ?? null;
+          const resolved =
+            (prof?.avatar_url as string | null) ||
+            urls?.sm ||
+            urls?.md ||
+            urls?.lg ||
+            (u.user_metadata?.avatar_url as string | null) ||
+            (u.user_metadata?.picture as string | null) ||
+            null;
+          setAvatarUrl(resolved);
+        } catch {
+          const fallback =
+            (u.user_metadata?.avatar_url as string | null) ||
+            (u.user_metadata?.picture as string | null) ||
+            null;
+          setAvatarUrl(fallback);
+        }
+      } else {
+        setAvatarUrl(null);
       }
       return u;
     },
@@ -112,126 +227,63 @@ export function Navbar() {
   });
 
   const handleLogout = async () => {
-    // Sign-out hygiene: cancel in-flight queries → clear cache → sign out →
-    // replace history so back-button can't restore protected shells.
+    const { markManualSignOut } = await import("@/lib/session-lifecycle");
+    markManualSignOut();
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     setUser(null);
     setIsAdminUser(false);
-    router.navigate({ to: "/auth", replace: true });
+    router.navigate({ to: "/", replace: true });
   };
 
-  // Each link owns a coordinated hover palette: icon tint + soft background wash +
-  // matching ring + colored glow. Kept as literal class strings so Tailwind's JIT
-  // includes them at build time.
-  // Base transition helpers.
-  // `motion-safe:` scopes movement to users who haven't set prefers-reduced-motion.
-  // Under reduced motion we still show hover *feedback* (color, bg, ring, shadow)
-  // but skip transforms, gradient sweeps, and the drawer height animation.
-  const navLinks = [
-    {
-      to: "/feed",
-      label: "Feed",
-      icon: Home,
-      accent: "text-sky-500",
-      hover:
-        "hover:bg-sky-500/10 hover:text-sky-600 hover:ring-sky-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-sky-500/60 dark:hover:text-sky-300",
-    },
-    {
-      to: "/explore",
-      label: "Explore",
-      icon: Compass,
-      accent: "text-fuchsia-500",
-      hover:
-        "hover:bg-fuchsia-500/10 hover:text-fuchsia-600 hover:ring-fuchsia-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-fuchsia-500/60 dark:hover:text-fuchsia-300",
-    },
-    {
-      to: "/browse",
-      label: "Browse",
-      icon: LayoutGrid,
-      accent: "text-emerald-500",
-      hover:
-        "hover:bg-emerald-500/10 hover:text-emerald-600 hover:ring-emerald-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-emerald-500/60 dark:hover:text-emerald-300",
-    },
-    {
-      to: "/shorts",
-      label: "Shorts",
-      icon: Clapperboard,
-      accent: "text-rose-500",
-      hover:
-        "hover:bg-rose-500/10 hover:text-rose-600 hover:ring-rose-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-rose-500/60 dark:hover:text-rose-300",
-    },
-    {
-      to: "/trainers",
-      label: "Trainers",
-      icon: Dumbbell,
-      accent: "text-orange-500",
-      hover:
-        "hover:bg-orange-500/10 hover:text-orange-600 hover:ring-orange-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-orange-500/60 dark:hover:text-orange-300",
-    },
-    {
-      to: "/community",
-      label: "Community",
-      icon: Users,
-      accent: "text-violet-500",
-      hover:
-        "hover:bg-violet-500/10 hover:text-violet-600 hover:ring-violet-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-violet-500/60 dark:hover:text-violet-300",
-    },
-    {
-      to: "/coaching",
-      label: "Coaching",
-      icon: GraduationCap,
-      accent: "text-amber-500",
-      hover:
-        "hover:bg-amber-500/10 hover:text-amber-600 hover:ring-amber-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-amber-500/60 dark:hover:text-amber-300",
-    },
-    {
-      to: "/about",
-      label: "About",
-      icon: Info,
-      accent: "text-cyan-500",
-      hover:
-        "hover:bg-cyan-500/10 hover:text-cyan-600 hover:ring-cyan-500/25 motion-safe:hover:shadow-[0_6px_20px_-10px] motion-safe:hover:shadow-cyan-500/60 dark:hover:text-cyan-300",
-    },
-  ];
+  const primary = getPrimaryLinks(!!user);
+  const secondary = getSecondaryLinks(!!user);
+  const initials = initialsFrom(user);
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "";
 
   return (
     <header
       data-scrolled={scrolled || mobileOpen ? "true" : "false"}
       className={`sticky top-0 z-50 w-full transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-out ${
         scrolled || mobileOpen
-          ? "border-b border-border/80 bg-background/85 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70"
-          : "border-b border-transparent bg-background/40 backdrop-blur-sm supports-[backdrop-filter]:bg-background/30"
+          ? "border-b border-hairline-strong bg-background/90 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/75"
+          : "border-b border-hairline bg-background/60 backdrop-blur-md supports-[backdrop-filter]:bg-background/40"
       }`}
     >
       <div
-        className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent transition-opacity duration-300 ${
+        className={`pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-premium/70 to-transparent transition-opacity duration-300 ${
           scrolled ? "opacity-100" : "opacity-0"
         }`}
       />
+
+      {/* Row 1: primary navbar */}
       <div
-        className={`mx-auto flex max-w-7xl items-center gap-2 px-3 transition-[height] duration-300 ease-out sm:gap-4 sm:px-6 lg:px-8 ${
+        className={`grid w-full grid-cols-[auto_1fr_auto] items-center gap-2 px-3 transition-[height] duration-300 ease-out sm:gap-4 sm:px-6 lg:px-10 xl:px-14 ${
           scrolled ? "h-14" : "h-16"
         }`}
       >
         {/* Logo */}
         <Link
-          to="/"
-          className="group flex shrink-0 items-center gap-2.5 text-foreground"
+          to={isAdminUser ? "/admin" : "/"}
+          className="group flex min-w-0 shrink-0 items-center gap-2.5 text-foreground"
         >
-          <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-fuchsia-500 to-orange-500 shadow-lg shadow-fuchsia-500/25 transition-[box-shadow,transform] duration-300 group-hover:shadow-fuchsia-500/50 motion-safe:group-hover:scale-105">
-            <span className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 opacity-0 transition-opacity duration-500 motion-safe:group-hover:opacity-100" />
-            <span className="relative font-display text-sm font-bold tracking-widest text-white">L</span>
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-foreground text-background transition-transform duration-300 motion-safe:group-hover:rotate-6">
+            <span className="block h-3.5 w-3.5 rotate-45 bg-background" />
+            <span className="pointer-events-none absolute -bottom-1 -right-1 h-1.5 w-1.5 rounded-full bg-premium shadow-[0_0_10px_var(--premium)]" />
           </span>
-          <span className="hidden bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text font-display text-sm uppercase tracking-[0.28em] transition-all duration-300 group-hover:from-sky-500 group-hover:via-fuchsia-500 group-hover:to-orange-500 group-hover:text-transparent sm:inline">
-            LEER Sports
+          <span className="font-display text-xl uppercase leading-none tracking-[0.02em] text-foreground sm:text-2xl">
+            LEER {isAdminUser && <span className="ml-1.5 rounded border border-primary/30 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] lowercase tracking-normal text-primary">admin</span>}
           </span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="mx-2 hidden flex-1 items-center justify-center gap-0.5 lg:flex">
-          {navLinks.map((link) => {
+        {/* Primary desktop nav — kept tight. Shown at xl+ to avoid overlapping the logo on tablets and small laptops. */}
+        <nav className="hidden min-w-0 items-center justify-center gap-0.5 xl:flex">
+          {primary.map((link) => {
             const Icon = link.icon;
             return (
               <Link
@@ -239,143 +291,203 @@ export function Navbar() {
                 to={link.to}
                 activeProps={{
                   className:
-                    "!text-foreground bg-primary/10 ring-1 ring-primary/25 shadow-sm",
+                    "!text-foreground [&>span.nav-underline-marker]:scale-x-100 [&>span.nav-underline-marker]:opacity-100",
                 }}
-                className={`group relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground ring-1 ring-transparent transition-[color,background-color,box-shadow,transform,border-color] duration-200 motion-safe:hover:-translate-y-0.5 ${link.hover}`}
+                activeOptions={{ exact: link.to === "/" }}
+                className={`group relative flex items-center gap-1.5 rounded-sm px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/60 transition-colors duration-200 ${link.hover}`}
               >
-                <Icon
-                  className={`h-4 w-4 transition-transform duration-200 ${link.accent} motion-safe:group-hover:scale-110 motion-safe:group-hover:rotate-[-4deg]`}
-                />
+                <Icon className="h-3.5 w-3.5 opacity-70 transition-opacity group-hover:opacity-100" />
                 <span>{link.label}</span>
+                <span
+                  aria-hidden
+                  className="nav-underline-marker pointer-events-none absolute inset-x-2 -bottom-0.5 h-[2px] origin-center scale-x-0 rounded-none bg-premium opacity-0 shadow-[0_0_8px_var(--premium)] transition-all duration-300"
+                />
               </Link>
             );
           })}
         </nav>
 
-        {/* Desktop actions */}
-        <div className="ml-auto hidden shrink-0 items-center gap-1.5 lg:flex">
-          <Link
-            to="/search"
-            aria-label="Search"
-            className="group flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-sky-500 transition-[color,background-color,box-shadow,transform,border-color] duration-200 hover:border-sky-500/40 hover:bg-sky-500/10 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-sky-500/60"
-          >
-            <Search className="h-4 w-4 transition-transform motion-safe:group-hover:scale-110" />
-          </Link>
+        {/* Right cluster */}
+        <div className="col-start-3 flex shrink-0 items-center justify-end gap-0.5 justify-self-end sm:gap-1.5">
+          <HeaderSearch />
+
           {user ? (
             <>
               <NotificationBell />
               <Link
                 to="/messages"
                 aria-label="Messages"
-                className="group flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-violet-500 transition-[color,background-color,box-shadow,transform,border-color] duration-200 hover:border-violet-500/40 hover:bg-violet-500/10 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-violet-500/60"
-              >
-                <MessageSquare className="h-4 w-4 transition-transform motion-safe:group-hover:scale-110" />
-              </Link>
-              {isAdminUser && (
-                <Link to="/admin" onClick={handleAdminClick}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="group text-amber-500 transition-[color,background-color,box-shadow,transform] hover:bg-amber-500/10 hover:text-amber-600 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-amber-500/60"
-                  >
-                    <Shield className="mr-1.5 h-4 w-4" />
-                    Admin
-                  </Button>
-                </Link>
-              )}
-              <Link to="/dashboard">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="group transition-[color,background-color,box-shadow,transform] hover:bg-emerald-500/10 hover:text-emerald-600 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-emerald-500/60"
-                >
-                  <UserIcon className="mr-1.5 h-4 w-4 text-emerald-500" />
-                  Dashboard
-                </Button>
-              </Link>
-              <Link
-                to="/settings"
-                aria-label="Settings"
-                className="group flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-[color,background-color,box-shadow,transform,border-color] duration-200 hover:border-foreground/30 hover:text-foreground motion-safe:hover:-translate-y-0.5"
-              >
-                <SettingsIcon className="h-4 w-4 transition-transform duration-500 motion-safe:group-hover:rotate-90" />
-              </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="border-rose-500/30 text-rose-500 transition-[color,background-color,box-shadow,transform,border-color] hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-600 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-rose-500/60"
-              >
-                <LogOut className="mr-1.5 h-4 w-4" />
-                Log out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link to="/admin" onClick={handleAdminClick}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-amber-500 transition-[color,background-color,box-shadow,transform] hover:bg-amber-500/10 hover:text-amber-600 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_6px_18px_-8px] motion-safe:hover:shadow-amber-500/60"
-                >
-                  <Shield className="mr-1.5 h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm" className="transition-[color,background-color,transform] motion-safe:hover:-translate-y-0.5">
-                  <LogIn className="mr-1.5 h-4 w-4" />
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button
-                  size="sm"
-                  className="relative overflow-hidden bg-gradient-to-r from-sky-500 via-fuchsia-500 to-orange-500 bg-[length:200%_100%] bg-[position:0%_50%] text-white shadow-md shadow-fuchsia-500/30 transition-[background-position,transform,box-shadow] duration-500 hover:shadow-lg hover:shadow-fuchsia-500/50 motion-safe:hover:-translate-y-0.5 motion-safe:hover:bg-[position:100%_50%]"
-                >
-                  <Sparkles className="mr-1.5 h-4 w-4" />
-                  Get started
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile / tablet compact actions */}
-        <div className="ml-auto flex items-center gap-1 lg:hidden">
-          <Link
-            to="/search"
-            aria-label="Search"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-sky-500 transition-colors hover:bg-sky-500/10"
-          >
-            <Search className="h-4 w-4" />
-          </Link>
-          {user && (
-            <>
-              <NotificationBell />
-              <Link
-                to="/messages"
-                aria-label="Messages"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-violet-500 transition-colors hover:bg-violet-500/10"
+                className="hidden h-9 w-9 items-center justify-center rounded-sm border border-hairline bg-accent/40 text-foreground/70 transition-colors hover:border-hairline-strong hover:bg-accent hover:text-foreground sm:flex"
               >
                 <MessageSquare className="h-4 w-4" />
               </Link>
+
+              {/* User avatar dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="ml-0.5 hidden items-center gap-2 rounded-sm border border-hairline bg-accent/40 py-1 pl-1 pr-2 text-sm text-foreground transition-colors hover:border-hairline-strong hover:bg-accent sm:flex"
+                    aria-label="Open user menu"
+                  >
+                    <UserAvatar src={avatarUrl} name={displayName || initials} size="sm" className="h-7 w-7" />
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel className="flex items-center gap-3 py-2">
+                    <UserAvatar src={avatarUrl} name={displayName || initials} size="md" className="h-9 w-9" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className={`inline-block h-2 w-2 rounded-full ${mode === "creator" ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
+                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {mode === "creator" ? "Creator Profile" : "Athlete Profile"}
+                        </p>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+
+                  {/* Mode Switcher Segmented Control */}
+                  <div className="mx-2 my-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+                    <div className="grid grid-cols-2 gap-1 rounded-md border border-hairline bg-background/80 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => switchMode("normal")}
+                        className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
+                          mode === "normal"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <UserIcon className="h-3 w-3" /> Athlete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => switchMode("creator")}
+                        className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
+                          mode === "creator"
+                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Sparkles className="h-3 w-3" /> Creator
+                      </button>
+                    </div>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Account
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to={mode === "creator" ? "/creator/dashboard" : "/dashboard"} className="flex w-full items-center font-semibold text-foreground">
+                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary" /> {mode === "creator" ? "Creator Studio" : "Athlete Dashboard"}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex w-full items-center">
+                      <UserIcon className="mr-2 h-4 w-4 text-premium" /> My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/messages" className="flex w-full items-center">
+                      <MessageSquare className="mr-2 h-4 w-4 text-foreground/70" /> Messages
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex w-full items-center">
+                      <SettingsIcon className="mr-2 h-4 w-4 text-foreground/70" /> Settings
+                    </Link>
+                  </DropdownMenuItem>
+
+                  {mode === "normal" ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Content
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/library" className="flex w-full items-center">
+                          <BookMarked className="mr-2 h-4 w-4 text-foreground/70" /> My Library
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/qa" className="flex w-full items-center">
+                          <HelpCircle className="mr-2 h-4 w-4 text-premium" /> Paid Q&amp;A Inbox
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-amber-500">
+                        Creator Studio
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/creator/dashboard" className="flex w-full items-center">
+                          <LineChart className="mr-2 h-4 w-4 text-amber-500" /> Earnings &amp; Payouts
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
+                  {isAdminUser && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Staff
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" onClick={handleAdminClick} className="flex w-full items-center">
+                          <Shield className="mr-2 h-4 w-4 text-premium" /> Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-premium focus:text-premium"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
+          ) : (
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70 hover:text-foreground">
+                  <LogIn className="mr-1.5 h-4 w-4" /> Log in
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button
+                  size="sm"
+                  className="relative overflow-hidden rounded-sm bg-premium px-4 text-[11px] font-bold uppercase tracking-[0.18em] text-premium-foreground shadow-none transition-all hover:bg-premium hover:shadow-[0_0_20px_-2px_var(--premium)]"
+                >
+                  Get started
+                </Button>
+              </Link>
+            </div>
           )}
+
+          {/* Mobile hamburger */}
           <button
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-hairline bg-accent/40 text-foreground transition-colors hover:border-hairline-strong hover:bg-accent xl:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav-drawer"
           >
             <Menu
-              className={`absolute h-5 w-5 transition-opacity duration-200 motion-safe:transition-all motion-safe:duration-300 motion-reduce:transform-none ${
+              className={`absolute h-5 w-5 transition-all duration-300 ${
                 mobileOpen ? "rotate-90 scale-50 opacity-0" : "rotate-0 scale-100 opacity-100"
               }`}
             />
             <X
-              className={`absolute h-5 w-5 transition-opacity duration-200 motion-safe:transition-all motion-safe:duration-300 motion-reduce:transform-none ${
+              className={`absolute h-5 w-5 transition-all duration-300 ${
                 mobileOpen ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"
               }`}
             />
@@ -383,50 +495,100 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer: absolute-positioned overlay so open/close never shifts page content.
-          Animated via grid-rows [0fr] -> [1fr] with overflow hidden — a layout-safe
-          height transition that works without measuring content. Under
-          prefers-reduced-motion the drawer opens/closes instantly (opacity only,
-          no height animation) via motion-safe:. */}
+      {/* Row 2: secondary sub-nav (desktop only) */}
+      {/* Secondary links now live inside the user avatar dropdown to keep the header a single row. */}
+
+      {/* Mobile drawer */}
       <div
         id="mobile-nav-drawer"
         aria-hidden={!mobileOpen}
-        className={`absolute inset-x-0 top-full grid overflow-hidden transition-opacity duration-150 motion-safe:transition-[grid-template-rows,opacity] motion-safe:duration-300 motion-safe:ease-out lg:hidden ${
+        className={`absolute inset-x-0 top-full grid overflow-hidden transition-opacity duration-150 motion-safe:transition-[grid-template-rows,opacity] motion-safe:duration-300 xl:hidden ${
           mobileOpen ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="min-h-0 overflow-hidden border-t border-border bg-background/95 shadow-lg shadow-black/5 backdrop-blur-xl">
-          <nav className="mx-auto grid max-w-7xl grid-cols-2 gap-2 px-4 py-4 sm:grid-cols-3 sm:px-6">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileOpen(false)}
-                  tabIndex={mobileOpen ? 0 : -1}
-                  activeProps={{ className: "bg-primary/10 ring-1 ring-primary/30 text-foreground" }}
-                  className={`group flex items-center gap-2.5 rounded-xl border border-border/60 bg-card px-3 py-2.5 text-sm font-medium text-muted-foreground transition-[color,background-color,box-shadow,border-color] duration-200 motion-safe:active:scale-[0.98] ${link.hover}`}
-                >
-                  <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${link.accent} motion-safe:group-hover:scale-110`} />
-                  <span className="truncate">{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="mx-auto max-w-7xl border-t border-border/60 px-4 py-4 sm:px-6">
+        <div className="min-h-0 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t border-hairline-strong bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_18px_40px_-18px_rgba(0,0,0,0.7)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+          {user && (
+            <div className="mx-auto flex max-w-7xl items-center gap-3 border-b border-hairline px-4 py-3 sm:px-6">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-foreground text-sm font-semibold text-background">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">Signed in</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">Main</p>
+            <nav className="grid grid-cols-2 gap-2">
+              {primary.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    tabIndex={mobileOpen ? 0 : -1}
+                    activeProps={{ className: "!bg-accent !text-foreground !border-premium/60" }}
+                    activeOptions={{ exact: link.to === "/" }}
+                    className={`group flex items-center gap-2.5 rounded-sm border border-hairline bg-accent/40 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70 transition-colors ${link.hover}`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-70" />
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {secondary.length > 0 && (
+          <div className="mx-auto max-w-7xl border-t border-hairline px-4 py-3 sm:px-6">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">Explore more</p>
+            <nav className="grid grid-cols-2 gap-2">
+              {secondary.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    tabIndex={mobileOpen ? 0 : -1}
+                    activeProps={{ className: "!bg-accent !text-foreground !border-premium/60" }}
+                    className={`group flex items-center gap-2.5 rounded-sm border border-hairline bg-accent/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/70 transition-colors ${link.hover}`}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+          )}
+
+          <div className="mx-auto max-w-7xl border-t border-hairline px-4 py-3 sm:px-6">
             {user ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2">
                 <Link to="/dashboard" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <UserIcon className="mr-2 h-4 w-4 text-emerald-500" />
-                    Dashboard
+                  <Button variant="outline" size="sm" className="w-full justify-start border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
+                    <UserIcon className="mr-2 h-4 w-4 text-foreground/70" /> Dashboard
+                  </Button>
+                </Link>
+                <Link to="/profile" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
+                  <Button variant="outline" size="sm" className="w-full justify-start border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
+                    <UserIcon className="mr-2 h-4 w-4 text-premium" /> My Profile
+                  </Button>
+                </Link>
+                <Link to="/messages" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
+                  <Button variant="outline" size="sm" className="w-full justify-start border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
+                    <MessageSquare className="mr-2 h-4 w-4 text-foreground/70" /> Messages
                   </Button>
                 </Link>
                 <Link to="/settings" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <SettingsIcon className="mr-2 h-4 w-4" />
-                    Settings
+                  <Button variant="outline" size="sm" className="w-full justify-start border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
+                    <SettingsIcon className="mr-2 h-4 w-4 text-foreground/70" /> Settings
                   </Button>
                 </Link>
                 {isAdminUser && (
@@ -438,9 +600,8 @@ export function Navbar() {
                       setMobileOpen(false);
                     }}
                   >
-                    <Button variant="outline" size="sm" className="w-full justify-start border-amber-500/30 text-amber-600">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin
+                    <Button variant="outline" size="sm" className="w-full justify-start border-premium/40 bg-premium/[0.06] text-premium hover:border-premium/60 hover:bg-premium/10">
+                      <Shield className="mr-2 h-4 w-4" /> Admin
                     </Button>
                   </Link>
                 )}
@@ -448,30 +609,27 @@ export function Navbar() {
                   variant="outline"
                   size="sm"
                   tabIndex={mobileOpen ? 0 : -1}
-                  className="w-full justify-start border-rose-500/30 text-rose-500 hover:bg-rose-500/10"
+                  className="col-span-2 w-full justify-start border-premium/30 bg-premium/[0.04] text-premium hover:border-premium/60 hover:bg-premium/10"
                   onClick={() => {
                     setMobileOpen(false);
                     handleLogout();
                   }}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  <LogOut className="mr-2 h-4 w-4" /> Log out
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Link to="/auth" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Log in
+                  <Button variant="outline" size="sm" className="w-full border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
+                    <LogIn className="mr-2 h-4 w-4" /> Log in
                   </Button>
                 </Link>
                 <Link to="/auth" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
                   <Button
                     size="sm"
-                    className="w-full bg-gradient-to-r from-sky-500 via-fuchsia-500 to-orange-500 text-white"
+                    className="w-full rounded-sm bg-premium text-[11px] font-bold uppercase tracking-[0.18em] text-premium-foreground hover:bg-premium hover:shadow-[0_0_20px_-2px_var(--premium)]"
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
                     Get started
                   </Button>
                 </Link>
@@ -484,9 +642,8 @@ export function Navbar() {
                     setMobileOpen(false);
                   }}
                 >
-                  <Button variant="ghost" size="sm" className="w-full text-amber-500 hover:bg-amber-500/10">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Go to Admin
+                  <Button variant="ghost" size="sm" className="w-full text-foreground/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0">
+                    <Shield className="mr-2 h-4 w-4" /> Go to Admin
                   </Button>
                 </Link>
               </div>

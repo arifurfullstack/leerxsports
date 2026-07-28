@@ -41,6 +41,7 @@ describe("applyOptimisticFollow", () => {
     expect(qc.getQueryData<FollowCounts>(followCountsKey(TRAINER))).toEqual({
       followers: 11,
       following: 3,
+      subscribers: 0,
     });
     expect(ctx.prevInfo?.isFollowing).toBe(false);
     expect(ctx.prevCounts).toEqual({ followers: 10, following: 3, subscribers: 0 });
@@ -113,6 +114,7 @@ describe("rollbackOptimisticFollow", () => {
     expect(qc.getQueryData<FollowCounts>(followCountsKey(TRAINER))).toEqual({
       followers: 3,
       following: 0,
+      subscribers: 0,
     });
   });
 });

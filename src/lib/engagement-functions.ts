@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import type { QueryClient } from "@tanstack/react-query";
+
 export type PostEngagement = {
   respect: boolean;
   save: boolean;
@@ -9,20 +11,51 @@ export type PostEngagement = {
     respect_count: number;
     save_count: number;
     comment_count: number;
+    share_count: number;
   };
 };
 
+export function syncGlobalPostCounts(
+  qc: QueryClient,
+  postId: string,
+  deltas: { commentDelta?: number; respectDelta?: number; saveDelta?: number },
+) {
+  const patch = (old: any) => {
+    if (!old) return old;
+    if (Array.isArray(old)) {
+      return old.map((p) => {
+        if (p && typeof p === "object" && "id" in p && p.id === postId) {
+          return {
+            ...p,
+            comment_count: Math.max(0, (p.comment_count ?? 0) + (deltas.commentDelta ?? 0)),
+            respect_count: Math.max(0, (p.respect_count ?? 0) + (deltas.respectDelta ?? 0)),
+            save_count: Math.max(0, (p.save_count ?? 0) + (deltas.saveDelta ?? 0)),
+          };
+        }
+        return p;
+      });
+    }
+    return old;
+  };
+
+  qc.setQueriesData({}, patch);
+}
+
 export const getPostEngagement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<PostEngagement> => {
     const { supabase, userId } = context;
-    const [postRes, respectRes, saveRes] = await Promise.all([
+    const [postRes, respectCountRes, respectRes, saveCountRes, saveRes, commentCountRes, shareCountRes] = await Promise.all([
       supabase
         .from("posts")
         .select("respect_count, save_count, comment_count")
         .eq("id", data.postId)
         .maybeSingle(),
+      supabase
+        .from("respects")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId),
       supabase
         .from("respects")
         .select("id")
@@ -31,26 +64,44 @@ export const getPostEngagement = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("saves")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId),
+      supabase
+        .from("saves")
         .select("id")
         .eq("user_id", userId)
         .eq("post_id", data.postId)
         .maybeSingle(),
+      supabase
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId)
+        .eq("status", "visible"),
+      supabase
+        .from("shares")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId),
     ]);
     if (postRes.error) throw new Error(postRes.error.message);
+    const realRespects = respectCountRes.count !== null && respectCountRes.count !== undefined ? respectCountRes.count : (postRes.data?.respect_count ?? 0);
+    const realSaves = saveCountRes.count !== null && saveCountRes.count !== undefined ? saveCountRes.count : (postRes.data?.save_count ?? 0);
+    const realComments = commentCountRes.count !== null && commentCountRes.count !== undefined ? commentCountRes.count : (postRes.data?.comment_count ?? 0);
+
     return {
       respect: !!respectRes.data,
       save: !!saveRes.data,
       counts: {
-        respect_count: postRes.data?.respect_count ?? 0,
-        save_count: postRes.data?.save_count ?? 0,
-        comment_count: postRes.data?.comment_count ?? 0,
+        respect_count: realRespects,
+        save_count: realSaves,
+        comment_count: realComments,
+        share_count: shareCountRes.count ?? 0,
       },
     };
   });
 
 export const toggleRespect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existing } = await supabase
@@ -59,21 +110,38 @@ export const toggleRespect = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("post_id", data.postId)
       .maybeSingle();
+    let isRespect = false;
     if (existing) {
       const { error } = await supabase.from("respects").delete().eq("id", existing.id);
       if (error) throw new Error(error.message);
-      return { respect: false };
+      isRespect = false;
+    } else {
+      const { error } = await supabase
+        .from("respects")
+        .insert({ user_id: userId, post_id: data.postId });
+      if (error) throw new Error(error.message);
+      isRespect = true;
     }
-    const { error } = await supabase
-      .from("respects")
-      .insert({ user_id: userId, post_id: data.postId });
-    if (error) throw new Error(error.message);
-    return { respect: true };
+
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { count } = await supabaseAdmin
+        .from("respects")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId);
+      if (count !== null) {
+        await supabaseAdmin.from("posts").update({ respect_count: count }).eq("id", data.postId);
+      }
+    } catch {
+      /* ignore background update err */
+    }
+
+    return { respect: isRespect };
   });
 
 export const toggleSave = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existing } = await supabase
@@ -82,24 +150,41 @@ export const toggleSave = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("post_id", data.postId)
       .maybeSingle();
+    let isSave = false;
     if (existing) {
       const { error } = await supabase.from("saves").delete().eq("id", existing.id);
       if (error) throw new Error(error.message);
-      return { save: false };
+      isSave = false;
+    } else {
+      const { error } = await supabase
+        .from("saves")
+        .insert({ user_id: userId, post_id: data.postId });
+      if (error) throw new Error(error.message);
+      isSave = true;
     }
-    const { error } = await supabase
-      .from("saves")
-      .insert({ user_id: userId, post_id: data.postId });
-    if (error) throw new Error(error.message);
-    return { save: true };
+
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { count } = await supabaseAdmin
+        .from("saves")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId);
+      if (count !== null) {
+        await supabaseAdmin.from("posts").update({ save_count: count }).eq("id", data.postId);
+      }
+    } catch {
+      /* ignore background update err */
+    }
+
+    return { save: isSave };
   });
 
 export const logShare = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
-        postId: z.string().uuid(),
+        postId: z.string().min(1),
         channel: z.string().trim().max(40).optional().nullable(),
       })
       .parse(input),
@@ -116,7 +201,7 @@ export const logShare = createServerFn({ method: "POST" })
   });
 
 export const logPostView = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Best-effort atomic increment via RPC; fallback to read-modify-write.
@@ -145,7 +230,7 @@ export type ViewerEngagementBatch = {
 
 export const getViewerEngagementBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ postIds: z.array(z.string().uuid()).max(200) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<ViewerEngagementBatch> => {
@@ -186,7 +271,7 @@ export type CommentNode = {
 
 export const listComments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<CommentNode[]> => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -231,7 +316,7 @@ export type CommentsPage = {
 
 export const listCommentsPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         postId: z.string().uuid(),
@@ -332,11 +417,11 @@ export const listCommentsPage = createServerFn({ method: "POST" })
 
 export const addComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
-        postId: z.string().uuid(),
-        parentId: z.string().uuid().nullable().optional(),
+        postId: z.string().min(1),
+        parentId: z.string().min(1).nullable().optional(),
         body: z.string().trim().min(1).max(2000),
       })
       .parse(input),
@@ -351,17 +436,56 @@ export const addComment = createServerFn({ method: "POST" })
         author_id: userId,
         body: data.body,
       })
-      .select("id")
+      .select("id, post_id, author_id, parent_id, body, status, created_at")
       .single();
     if (error) throw new Error(error.message);
-    return { id: row.id };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, display_name, avatar_url")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const node: CommentNode = {
+      id: row.id,
+      post_id: row.post_id,
+      author_id: row.author_id,
+      parent_id: row.parent_id,
+      body: row.body,
+      status: row.status as CommentNode["status"],
+      created_at: row.created_at,
+      author: {
+        username: profile?.username ?? null,
+        display_name: profile?.display_name ?? null,
+        avatar_url: profile?.avatar_url ?? null,
+      },
+    };
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { count } = await supabaseAdmin
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", data.postId)
+        .eq("status", "visible");
+      if (count !== null) {
+        await supabaseAdmin.from("posts").update({ comment_count: count }).eq("id", data.postId);
+      }
+    } catch {
+      /* ignore background update err */
+    }
+
+    return node;
   });
 
 export const deleteComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ commentId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ commentId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: target } = await supabase
+      .from("comments")
+      .select("post_id")
+      .eq("id", data.commentId)
+      .maybeSingle();
+
     // Author-only soft delete; RLS also enforces it.
     const { error } = await supabase
       .from("comments")
@@ -369,5 +493,22 @@ export const deleteComment = createServerFn({ method: "POST" })
       .eq("id", data.commentId)
       .eq("author_id", userId);
     if (error) throw new Error(error.message);
+
+    if (target?.post_id) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { count } = await supabaseAdmin
+          .from("comments")
+          .select("id", { count: "exact", head: true })
+          .eq("post_id", target.post_id)
+          .eq("status", "visible");
+        if (count !== null) {
+          await supabaseAdmin.from("posts").update({ comment_count: count }).eq("id", target.post_id);
+        }
+      } catch {
+        /* ignore background update err */
+      }
+    }
+
     return { ok: true };
   });

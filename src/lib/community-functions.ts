@@ -43,11 +43,17 @@ export type CommunityComment = {
 };
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase URL and Key must be provided in environment variables.");
+  }
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 async function hydrateAuthors(
@@ -79,7 +85,7 @@ async function hydrateAuthors(
 }
 
 export const listCommunityPosts = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         kind: z.enum(["question", "flex", "all"]).default("all"),
@@ -133,7 +139,7 @@ export const listCommunityPosts = createServerFn({ method: "POST" })
   });
 
 export const getCommunityPost = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data }): Promise<{
     post: CommunityPost;
     comments: CommunityComment[];
@@ -180,7 +186,7 @@ const createPostInput = z.object({
 
 export const createCommunityPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => createPostInput.parse(input))
+  .validator((input) => createPostInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -201,7 +207,7 @@ export const createCommunityPost = createServerFn({ method: "POST" })
 
 export const deleteCommunityPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await supabase
@@ -214,7 +220,7 @@ export const deleteCommunityPost = createServerFn({ method: "POST" })
 
 export const toggleCommunityRespect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ postId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existing } = await supabase
@@ -240,7 +246,7 @@ export const toggleCommunityRespect = createServerFn({ method: "POST" })
 
 export const addCommunityComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         postId: z.string().uuid(),
@@ -251,6 +257,43 @@ export const addCommunityComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // PRD: Only post owner can reply to a trainer's top-level comment
+    if (data.parentId) {
+      const { data: parentComment, error: pcErr } = await supabase
+        .from("community_comments")
+        .select("id, author_id, parent_id")
+        .eq("id", data.parentId)
+        .maybeSingle();
+      if (pcErr) throw new Error(pcErr.message);
+      if (!parentComment) throw new Error("Parent comment not found.");
+
+      // Check if parent is a top-level trainer comment
+      if (!parentComment.parent_id) {
+        const { data: authorRole } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", parentComment.author_id)
+          .eq("role", "trainer")
+          .maybeSingle();
+
+        if (authorRole) {
+          // Parent is a trainer's top-level comment — only post owner can reply
+          const { data: postRow, error: postErr } = await supabase
+            .from("community_posts")
+            .select("author_id")
+            .eq("id", data.postId)
+            .single();
+          if (postErr) throw new Error(postErr.message);
+          if (postRow.author_id !== userId) {
+            throw new Error(
+              "Only the post author can reply to a trainer's comment."
+            );
+          }
+        }
+      }
+    }
+
     const { data: row, error } = await supabase
       .from("community_comments")
       .insert({
@@ -267,7 +310,7 @@ export const addCommunityComment = createServerFn({ method: "POST" })
 
 export const getMyCommunityRespects = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ postIds: z.array(z.string().uuid()).max(60) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<string[]> => {

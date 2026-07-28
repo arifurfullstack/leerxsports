@@ -19,7 +19,7 @@ export function CTASection() {
                 Create free account
               </Button>
             </Link>
-            <Link to="/classes">
+            <Link to="/feed">
               <Button size="lg" variant="outline" className="border-navy-foreground/30 text-navy-foreground hover:bg-navy-foreground/10 hover:text-navy-foreground">
                 Browse classes
               </Button>

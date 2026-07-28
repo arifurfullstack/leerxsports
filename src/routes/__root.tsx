@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -16,6 +16,14 @@ import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { PerfOverlay } from "@/components/perf-overlay";
 import { supabase } from "@/integrations/supabase/client";
+import { SessionExpiryWatcher } from "@/components/session-expiry-watcher";
+import { AuthGateDialog } from "@/components/auth-gate-dialog";
+import { ProfileModeProvider } from "@/lib/profile-mode-context";
+import { BecomeCreatorDialog } from "@/components/become-creator-dialog";
+import {
+  getPublicSiteSettings,
+  SITE_SETTINGS_DEFAULTS,
+} from "@/lib/site-settings-functions";
 
 function NotFoundComponent() {
   return (
@@ -78,30 +86,52 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
+  loader: async ({ context }) => {
+    try {
+      const s = await context.queryClient.ensureQueryData({
+        queryKey: ["public", "site-settings"],
+        queryFn: () => getPublicSiteSettings(),
+        staleTime: 60_000,
+      });
+      return { siteSettings: s };
+    } catch {
+      return { siteSettings: SITE_SETTINGS_DEFAULTS };
+    }
+  },
+  head: ({ loaderData }) => {
+    const s = loaderData?.siteSettings ?? SITE_SETTINGS_DEFAULTS;
+    const ogTitle = s.og_title || s.meta_title;
+    const ogDesc = s.og_description || s.meta_description;
+    const meta: Array<Record<string, string>> = [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "LEER Sports — Elite Fitness Creators & Private Coaching" },
-      { name: "description", content: "LEER Sports is the premium global platform for verified fitness creators. Discover pro trainers, unlock elite workouts, and get one-on-one video coaching every month." },
-      { name: "author", content: "LEER Sports" },
-      { name: "theme-color", content: "#0a0a0a" },
-      { property: "og:title", content: "LEER Sports — Elite Fitness Creators & Private Coaching" },
-      { property: "og:description", content: "Discover verified pro trainers, unlock premium workouts, and get personalized video coaching every month." },
+      { title: s.meta_title },
+      { name: "description", content: s.meta_description },
+      { name: "author", content: s.site_name },
+      { name: "theme-color", content: s.theme_color },
+      { property: "og:site_name", content: s.site_name },
+      { property: "og:title", content: ogTitle },
+      { property: "og:description", content: ogDesc },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@leersports" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "canonical", href: "/" },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-    ],
-  }),
+    ];
+    if (s.meta_keywords) meta.push({ name: "keywords", content: s.meta_keywords });
+    if (s.twitter_handle) meta.push({ name: "twitter:site", content: s.twitter_handle });
+    if (s.og_image_url) {
+      meta.push({ property: "og:image", content: s.og_image_url });
+      meta.push({ name: "twitter:image", content: s.og_image_url });
+    }
+    const favicon = s.favicon_url || "/favicon.ico";
+    return {
+      meta,
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "canonical", href: "/" },
+        { rel: "icon", href: favicon },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -122,12 +152,42 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+function DynamicSiteFavicon() {
+  const { data } = useQuery({
+    queryKey: ["public", "site-settings"],
+    queryFn: () => getPublicSiteSettings(),
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (!data?.favicon_url) return;
+    let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.getElementsByTagName("head")[0].appendChild(link);
+    }
+    link.href = data.favicon_url;
+  }, [data?.favicon_url]);
+
+  return null;
+}
+
+function AppLayout() {
+  const router = useRouter();
+  const pathname = router.state.location.pathname;
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  if (isAdminRoute) {
+    return (
+      <main id="main-content" tabIndex={-1} className="min-h-dvh outline-none">
+        <Outlet />
+      </main>
+    );
+  }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthStateSync />
+    <>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
@@ -137,13 +197,29 @@ function RootComponent() {
       <div className="flex min-h-dvh flex-col">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </main>
         <Footer />
       </div>
-      <Toaster />
-      <PerfOverlay />
+    </>
+  );
+}
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ProfileModeProvider>
+        <AuthStateSync />
+        <SessionExpiryWatcher />
+        <DynamicSiteFavicon />
+        <AppLayout />
+        <Toaster />
+        <PerfOverlay />
+        <AuthGateDialog />
+        <BecomeCreatorDialog />
+      </ProfileModeProvider>
     </QueryClientProvider>
   );
 }

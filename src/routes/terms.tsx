@@ -33,7 +33,7 @@ function TermsPage() {
           <h2 className="mt-8 text-xl font-semibold text-foreground">Accounts</h2>
           <p>You are responsible for the security of your account and the accuracy of your details.</p>
           <h2 className="mt-8 text-xl font-semibold text-foreground">Bookings and payments</h2>
-          <p>Class bookings are subject to trainer availability and the cancellation policy shown at checkout.</p>
+          <p>Class bookings are subject to creator availability and the cancellation policy shown at checkout.</p>
           <h2 className="mt-8 text-xl font-semibold text-foreground">Acceptable use</h2>
           <p>No harassment, unlawful content, or attempts to disrupt the service.</p>
         </div>

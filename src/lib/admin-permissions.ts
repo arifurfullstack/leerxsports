@@ -32,6 +32,8 @@ export type AdminPermission =
   | "manage_policies"
   | "view_analytics"
   | "manage_payment_settings"
+  | "manage_payment_gateways"
+  | "manage_webhooks"
   | "manage_security";
 
 export const ADMIN_PERMISSIONS: AdminPermission[] = [
@@ -66,6 +68,8 @@ export const ADMIN_PERMISSIONS: AdminPermission[] = [
   "manage_policies",
   "view_analytics",
   "manage_payment_settings",
+  "manage_payment_gateways",
+  "manage_webhooks",
   "manage_security",
 ];
 
@@ -93,6 +97,7 @@ const PATH_PERMISSIONS: Record<string, AdminPermission> = {
   "/admin": "view_overview",
   "/admin/trainers": "manage_applications",
   "/admin/moderation": "moderation",
+  "/admin/reports": "moderation",
   "/admin/roles": "manage_roles",
   "/admin/classes": "manage_classes",
   "/admin/bookings": "manage_bookings",
@@ -100,6 +105,8 @@ const PATH_PERMISSIONS: Record<string, AdminPermission> = {
   "/admin/disputes": "manage_disputes",
   "/admin/payments": "manage_payments",
   "/admin/settings": "manage_settings",
+  "/admin/website": "manage_settings",
+  "/admin/website-preview": "manage_settings",
   "/admin/posts": "manage_posts",
   "/admin/comments": "manage_comments",
   "/admin/community": "manage_community",
@@ -121,6 +128,8 @@ const PATH_PERMISSIONS: Record<string, AdminPermission> = {
   "/admin/policies": "manage_policies",
   "/admin/analytics": "view_analytics",
   "/admin/payment-settings": "manage_payment_settings",
+  "/admin/payment-gateways": "manage_payment_gateways",
+  "/admin/webhooks": "manage_webhooks",
   "/admin/security": "manage_security",
 };
 
@@ -136,6 +145,7 @@ export const ADMIN_NAV_ORDER: {
   { path: "/admin/users", permission: "manage_users" },
   { path: "/admin/trainers", permission: "manage_applications" },
   { path: "/admin/moderation", permission: "moderation" },
+  { path: "/admin/reports", permission: "moderation" },
   { path: "/admin/disputes", permission: "manage_disputes" },
   { path: "/admin/roles", permission: "manage_roles" },
   { path: "/admin/posts", permission: "manage_posts" },
@@ -161,9 +171,13 @@ export const ADMIN_NAV_ORDER: {
   { path: "/admin/analytics", permission: "view_analytics" },
   { path: "/admin/audit-logs", permission: "view_audit_logs" },
   { path: "/admin/payment-settings", permission: "manage_payment_settings" },
+  { path: "/admin/payment-gateways", permission: "manage_payment_gateways" },
+  { path: "/admin/webhooks", permission: "manage_webhooks" },
   { path: "/admin/security", permission: "manage_security" },
   { path: "/admin/demo", permission: "manage_demo" },
   { path: "/admin/settings", permission: "manage_settings" },
+  { path: "/admin/website", permission: "manage_settings" },
+  { path: "/admin/website-preview", permission: "manage_settings" },
 ];
 
 /** First admin path the given permission set can access, or null. */

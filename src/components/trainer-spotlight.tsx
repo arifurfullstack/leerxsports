@@ -193,6 +193,7 @@ export function TrainerSpotlight() {
     queryFn: () => fetchSpotlight(),
     staleTime: 60_000,
   });
+  const showSkeleton = q.isLoading && !q.data;
   const TRAINERS: Trainer[] =
     q.data && q.data.length > 0 ? q.data.map(mapSpotlight) : FALLBACK_TRAINERS;
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -335,63 +336,76 @@ export function TrainerSpotlight() {
     track("trainer_drawer_open", { trainer_id: t.id, position: idx });
   };
 
+  if (showSkeleton) {
+    return <TrainerSpotlightSkeleton />;
+  }
+
   return (
     <div className="relative">
-      {/* Prev / Next — hidden on touch by default via responsive breakpoints. */}
-      <div className="pointer-events-none absolute -top-14 right-0 hidden gap-2 md:flex">
-        <div
-          role="radiogroup"
-          aria-label="Autoplay interval"
-          className="pointer-events-auto flex h-11 items-center gap-1 rounded-full border border-[#4a4a4a] bg-[#2d2d2d] p-1"
-        >
-          {AUTOPLAY_INTERVALS.map((ms) => {
-            const selected = ms === intervalMs;
-            return (
-              <button
-                key={ms}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                aria-label={`Autoplay every ${ms / 1000} seconds`}
-                onClick={() => changeInterval(ms)}
-                className={`min-h-9 rounded-full px-3 text-[11px] font-sans uppercase tracking-[0.18em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70 ${
-                  selected
-                    ? "bg-[#e85d3a] text-[#1a1a1a]"
-                    : "text-neutral-300 hover:text-[#e85d3a]"
-                }`}
-              >
-                {ms / 1000}s
-              </button>
-            );
-          })}
+      {/* Controls — inline, full-width row so they never overlap the section copy. */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
+        <div className="flex items-center gap-3 text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-muted-foreground">
+          <span className="tabular-nums text-foreground">
+            {String(active + 1).padStart(2, "0")}
+          </span>
+          <span className="h-px w-8 bg-border" aria-hidden />
+          <span className="tabular-nums">{String(TRAINERS.length).padStart(2, "0")}</span>
         </div>
-        <button
-          type="button"
-          aria-label={userPaused ? "Play trainer carousel autoplay" : "Pause trainer carousel autoplay"}
-          aria-pressed={userPaused}
-          onClick={togglePaused}
-          className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full border border-[#4a4a4a] bg-[#2d2d2d] text-white transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a]"
-        >
-          {userPaused ? <Play className="h-5 w-5" aria-hidden /> : <Pause className="h-5 w-5" aria-hidden />}
-        </button>
-        <button
-          type="button"
-          aria-label="Previous trainer"
-          onClick={() => scrollTo(Math.max(active - 1, 0))}
-          disabled={active === 0}
-          className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full border border-[#4a4a4a] bg-[#2d2d2d] text-white transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <ChevronLeft className="h-5 w-5" aria-hidden />
-        </button>
-        <button
-          type="button"
-          aria-label="Next trainer"
-          onClick={() => scrollTo(Math.min(active + 1, TRAINERS.length - 1))}
-          disabled={active === TRAINERS.length - 1}
-          className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full border border-[#4a4a4a] bg-[#2d2d2d] text-white transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <ChevronRight className="h-5 w-5" aria-hidden />
-        </button>
+        <div className="flex items-center gap-2">
+          <div
+            role="radiogroup"
+            aria-label="Autoplay interval"
+            className="flex h-10 items-center gap-0 border border-border"
+          >
+            {AUTOPLAY_INTERVALS.map((ms) => {
+              const selected = ms === intervalMs;
+              return (
+                <button
+                  key={ms}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={`Autoplay every ${ms / 1000} seconds`}
+                  onClick={() => changeInterval(ms)}
+                  className={`min-h-10 min-w-10 border-r border-border px-3 text-[10px] font-sans font-bold uppercase tracking-[0.24em] transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70 ${
+                    selected
+                      ? "bg-premium text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {ms / 1000}s
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            aria-label={userPaused ? "Play trainer carousel autoplay" : "Pause trainer carousel autoplay"}
+            aria-pressed={userPaused}
+            onClick={togglePaused}
+            className="grid h-10 w-10 place-items-center border border-border text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
+          >
+            {userPaused ? <Play className="h-4 w-4" aria-hidden /> : <Pause className="h-4 w-4" aria-hidden />}
+          </button>
+          <button
+            type="button"
+            aria-label="Previous trainer"
+            onClick={() => scrollTo(Math.max(active - 1, 0))}
+            disabled={active === 0}
+            className="grid h-10 w-10 place-items-center border border-border text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label="Next trainer"
+            onClick={() => scrollTo(Math.min(active + 1, TRAINERS.length - 1))}
+            disabled={active === TRAINERS.length - 1}
+            className="grid h-10 w-10 place-items-center border border-border text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div
@@ -423,7 +437,7 @@ export function TrainerSpotlight() {
             if (railRef.current) (railRef.current as any)._swiped = false;
           }, 500);
         }}
-        className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/60 sm:-mx-6 sm:gap-5 sm:px-6"
+        className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/60 sm:-mx-6 sm:gap-5 sm:px-6"
         style={{ scrollbarWidth: "none" }}
       >
         {TRAINERS.map((t, i) => (
@@ -434,10 +448,10 @@ export function TrainerSpotlight() {
             role="group"
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${TRAINERS.length}: ${t.name}, ${t.sport}`}
-            className="tile-anim group relative flex w-[86%] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] transition-colors hover:border-[#e85d3a]/50 sm:w-[62%] md:w-[42%] lg:w-[32%]"
+            className="tile-anim group relative flex w-[86%] shrink-0 snap-center flex-col overflow-hidden border border-border bg-card transition-colors hover:border-premium/60 sm:w-[62%] md:w-[42%] lg:w-[32%]"
             style={{ ["--tile-delay" as string]: `${i * 80}ms` }}
           >
-            <div className="relative aspect-[4/5] overflow-hidden bg-[#1a1a1a]">
+            <div className="relative aspect-[4/5] overflow-hidden bg-background">
               <ResponsiveImage
                 src={t.cover_url ?? null}
                 seed={`trainer-${t.id}`}
@@ -450,41 +464,48 @@ export function TrainerSpotlight() {
               />
               <div
                 aria-hidden
-                className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent"
+                className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"
               />
-              <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-[#e85d3a]/60 bg-[#1a1a1a]/85 px-3 py-1 text-[10px] font-sans uppercase tracking-[0.22em] text-[#e85d3a] backdrop-blur">
-                <ShieldCheck className="h-3 w-3" aria-hidden />
+              <div className="absolute left-4 top-4 inline-flex items-center gap-2 bg-premium px-2.5 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-background">
+                <ShieldCheck className="h-3 w-3" aria-hidden strokeWidth={3} />
                 Verified
               </div>
+              <div className="absolute right-4 top-4 inline-flex items-center gap-1 border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.22em] text-foreground backdrop-blur">
+                <Star className="h-3 w-3 fill-premium text-premium" aria-hidden />
+                {t.rating.toFixed(1)}
+              </div>
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-                <div className="text-[10px] font-sans uppercase tracking-[0.22em] text-neutral-400">
+                <div className="text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-premium">
                   {t.sport} · {t.location}
                 </div>
-                <h3 className="mt-2 type-tile-lg font-display uppercase leading-[1.05] text-white">
+                <h3 className="mt-2 font-display italic uppercase leading-[0.95] tracking-tighter text-foreground text-[clamp(1.75rem,3.2vw,2.75rem)]">
                   {t.name}
                 </h3>
-                <div className="mt-3 flex items-center gap-4 text-xs font-sans uppercase tracking-[0.14em] text-neutral-300">
-                  <span className="inline-flex items-center gap-1 text-white">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
-                    {t.rating.toFixed(1)}
-                  </span>
-                  <span>{t.programs} programs</span>
-                  <span>{t.members} members</span>
+                <div className="mt-3 flex items-center gap-3 text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-foreground/70">
+                  <span className="tabular-nums text-foreground">{t.programs}</span>
+                  <span>Programs</span>
+                  {t.members && t.members !== "0" ? (
+                    <>
+                      <span className="h-3 w-px bg-border" aria-hidden />
+                      <span className="tabular-nums text-foreground">{t.members}</span>
+                      <span>Members</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between gap-3 p-5 sm:p-6">
-              <p className="type-small line-clamp-2 flex-1 font-sans text-neutral-400">
+            <div className="flex items-center justify-between gap-3 border-t border-border p-5 sm:p-6">
+              <p className="line-clamp-2 flex-1 text-xs font-sans uppercase tracking-[0.18em] text-muted-foreground">
                 {t.tag} — {t.specialties[0]}, {t.specialties[1] ?? "coaching"}.
               </p>
               <button
                 type="button"
                 onClick={(e) => openTrainer(t, i, e.currentTarget)}
-                className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#4a4a4a] bg-[#1a1a1a] px-4 py-2 text-xs font-sans uppercase tracking-[0.18em] text-white transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                className="group/btn inline-flex min-h-11 shrink-0 items-center gap-2 border border-border bg-background px-4 py-2 text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-foreground transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                 aria-label={`Open details for ${t.name}`}
               >
                 View
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/btn:translate-x-0.5" aria-hidden />
               </button>
             </div>
           </article>
@@ -495,7 +516,7 @@ export function TrainerSpotlight() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         Slide {active + 1} of {TRAINERS.length}: {TRAINERS[active]?.name}
       </div>
-      <div className="mt-4 flex items-center justify-center gap-2">
+      <div className="mt-6 flex items-center justify-center gap-2">
         {TRAINERS.map((t, i) => (
           <button
             key={t.id}
@@ -503,10 +524,8 @@ export function TrainerSpotlight() {
             onClick={() => scrollTo(i)}
             aria-label={`Go to trainer ${i + 1}: ${t.name}`}
             aria-current={active === i}
-            className={`h-2.5 min-h-[11px] rounded-full transition-all ${
-              active === i
-                ? "w-6 bg-[#e85d3a]"
-                : "w-2.5 bg-[#4a4a4a] hover:bg-[#e85d3a]/50"
+            className={`h-[3px] min-h-[11px] transition-all ${
+              active === i ? "w-10 bg-premium" : "w-6 bg-border hover:bg-premium/50"
             }`}
           />
         ))}
@@ -514,7 +533,7 @@ export function TrainerSpotlight() {
 
       <Drawer open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
         <DrawerContent
-          className="border-[#4a4a4a] bg-[#1a1a1a] text-white"
+          className="border-border bg-background text-foreground"
           onCloseAutoFocus={(event) => {
             const invoker = invokerRef.current;
             if (invoker && document.contains(invoker)) {
@@ -537,58 +556,58 @@ export function TrainerSpotlight() {
                   loading="eager"
                   className="h-full w-full object-cover"
                 />
-                <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/60 to-transparent" />
+                <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 <DrawerClose
                   aria-label="Close trainer details"
-                  className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full border border-[#4a4a4a] bg-[#1a1a1a]/80 text-white backdrop-blur transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                  className="absolute right-4 top-4 grid h-11 w-11 place-items-center border border-border bg-background/80 text-foreground backdrop-blur transition-colors hover:border-foreground hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                 >
                   <X className="h-5 w-5" aria-hidden />
                 </DrawerClose>
               </div>
               <DrawerHeader className="max-w-2xl px-6 pt-6 text-left sm:mx-auto sm:px-8">
-                <div className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-[#e85d3a]">
+                <div className="inline-flex items-center gap-2 text-[10px] font-sans font-bold uppercase tracking-[0.28em] text-premium">
                   <ShieldCheck className="h-3 w-3" aria-hidden />
                   Verified pro · {open.location}
                 </div>
-                <DrawerTitle className="type-tile-lg font-display uppercase text-white">
+                <DrawerTitle className="font-display italic uppercase tracking-tighter text-foreground text-[clamp(2rem,5vw,3.25rem)]">
                   {open.name}
                 </DrawerTitle>
-                <DrawerDescription className="type-small font-sans text-neutral-400">
+                <DrawerDescription className="text-sm font-sans text-muted-foreground">
                   {open.sport} · {open.tag}
                 </DrawerDescription>
               </DrawerHeader>
               <div className="mx-auto max-h-[50vh] w-full max-w-2xl overflow-y-auto px-6 pb-8 sm:px-8">
-                <p className="type-small font-sans text-neutral-200">{open.bio}</p>
-                <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-[#4a4a4a]/60 py-5">
+                <p className="text-sm font-sans leading-relaxed text-foreground/80">{open.bio}</p>
+                <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-border py-5">
                   <div>
-                    <dt className="text-[10px] font-sans uppercase tracking-[0.2em] text-neutral-500">Rating</dt>
-                    <dd className="mt-1 inline-flex items-center gap-1 font-display text-lg text-white">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden />
+                    <dt className="text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-muted-foreground">Rating</dt>
+                    <dd className="mt-1 inline-flex items-center gap-1 font-display text-xl text-foreground">
+                      <Star className="h-4 w-4 fill-premium text-premium" aria-hidden />
                       {open.rating.toFixed(1)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[10px] font-sans uppercase tracking-[0.2em] text-neutral-500">Programs</dt>
-                    <dd className="mt-1 font-display text-lg text-white">{open.programs}</dd>
+                    <dt className="text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-muted-foreground">Programs</dt>
+                    <dd className="mt-1 font-display text-xl tabular-nums text-foreground">{open.programs}</dd>
                   </div>
                   <div>
-                    <dt className="text-[10px] font-sans uppercase tracking-[0.2em] text-neutral-500">Members</dt>
-                    <dd className="mt-1 font-display text-lg text-white">{open.members}</dd>
+                    <dt className="text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-muted-foreground">Members</dt>
+                    <dd className="mt-1 font-display text-xl tabular-nums text-foreground">{open.members || "0"}</dd>
                   </div>
                 </dl>
                 <div className="mt-5">
-                  <div className="text-[10px] font-sans uppercase tracking-[0.2em] text-neutral-500">Specialties</div>
+                  <div className="text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-muted-foreground">Specialties</div>
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {open.specialties.map((s) => (
-                      <li key={s} className="rounded-full border border-[#4a4a4a] bg-[#2d2d2d] px-3 py-1 text-xs font-sans text-neutral-200">
+                      <li key={s} className="border border-border bg-card px-3 py-1 text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-foreground/80">
                         {s}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="mt-4">
-                  <div className="text-[10px] font-sans uppercase tracking-[0.2em] text-neutral-500">Languages</div>
-                  <div className="mt-2 text-sm font-sans text-neutral-300">{open.languages.join(" · ")}</div>
+                  <div className="text-[10px] font-sans font-bold uppercase tracking-[0.24em] text-muted-foreground">Languages</div>
+                  <div className="mt-2 text-sm font-sans text-foreground/80">{open.languages.join(" · ")}</div>
                 </div>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   {open.username ? (
@@ -596,22 +615,22 @@ export function TrainerSpotlight() {
                       to="/trainers/$username"
                       params={{ username: open.username }}
                       onClick={() => track("trainer_drawer_cta", { trainer_id: open.id, target: "view_profile" })}
-                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#e85d3a] px-6 py-3 text-sm font-sans uppercase tracking-[0.18em] text-[#1a1a1a] transition-colors hover:bg-[#f06d4a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                      className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 bg-premium px-6 py-3 text-xs font-sans font-bold uppercase tracking-[0.28em] text-background transition-all hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                     >
                       View full profile
                       <ArrowRight className="h-4 w-4" aria-hidden />
                     </Link>
                   ) : (
                     <Link
-                      to="/browse"
+                      to="/feed"
                       onClick={() => track("trainer_drawer_cta", { trainer_id: open.id, target: "view_profile" })}
-                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#e85d3a] px-6 py-3 text-sm font-sans uppercase tracking-[0.18em] text-[#1a1a1a] transition-colors hover:bg-[#f06d4a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70"
+                      className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 bg-premium px-6 py-3 text-xs font-sans font-bold uppercase tracking-[0.28em] text-background transition-all hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70"
                     >
                     View full profile
                     <ArrowRight className="h-4 w-4" aria-hidden />
                   </Link>
                   )}
-                  <DrawerClose className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#4a4a4a] px-6 py-3 text-sm font-sans uppercase tracking-[0.18em] text-white transition-colors hover:border-[#e85d3a]/60 hover:text-[#e85d3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70">
+                  <DrawerClose className="inline-flex min-h-12 items-center justify-center border border-border px-6 py-3 text-xs font-sans font-bold uppercase tracking-[0.28em] text-foreground transition-all hover:border-foreground hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-premium/70">
                     Close
                   </DrawerClose>
                 </div>
@@ -620,6 +639,68 @@ export function TrainerSpotlight() {
           )}
         </DrawerContent>
       </Drawer>
+    </div>
+  );
+}
+
+function TrainerSpotlightSkeleton() {
+  const tiles = Array.from({ length: 6 });
+  return (
+    <div className="relative" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading featured trainers…</span>
+      {/* Controls skeleton */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-6 skeleton-tile bg-muted/40" />
+          <span className="h-px w-8 bg-border" aria-hidden />
+          <div className="h-3 w-6 skeleton-tile bg-muted/40" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 items-center border border-border">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-10 w-12 border-r border-border last:border-r-0 skeleton-tile bg-muted/30" />
+            ))}
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 w-10 border border-border skeleton-tile bg-muted/30" />
+          ))}
+        </div>
+      </div>
+      {/* Tiles skeleton */}
+      <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-hidden px-4 pb-4 sm:-mx-6 sm:gap-5 sm:px-6">
+        {tiles.map((_, i) => (
+          <div
+            key={i}
+            className="relative flex w-[86%] shrink-0 snap-center flex-col overflow-hidden border border-border bg-card sm:w-[62%] md:w-[42%] lg:w-[32%]"
+          >
+            <div className="relative aspect-[4/5] skeleton-tile bg-muted/30">
+              <div className="absolute left-4 top-4 h-5 w-20 skeleton-tile bg-muted/50" />
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"
+              />
+              <div className="absolute inset-x-4 bottom-4 space-y-2">
+                <div className="h-3 w-16 skeleton-tile bg-muted/50" />
+                <div className="h-6 w-3/4 skeleton-tile bg-muted/60" />
+                <div className="h-3 w-1/2 skeleton-tile bg-muted/40" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-12 skeleton-tile bg-muted/40" />
+                <div className="h-3 w-16 skeleton-tile bg-muted/40" />
+              </div>
+              <div className="h-3 w-full skeleton-tile bg-muted/30" />
+              <div className="h-3 w-5/6 skeleton-tile bg-muted/30" />
+              <div className="mt-2 flex gap-2">
+                <div className="h-6 w-16 skeleton-tile bg-muted/40" />
+                <div className="h-6 w-20 skeleton-tile bg-muted/40" />
+                <div className="h-6 w-14 skeleton-tile bg-muted/40" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

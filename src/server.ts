@@ -1,3 +1,20 @@
+// Polyfill WebSocket for Node.js < 22 SSR environments (Dokploy/Nitro/Docker)
+if (typeof window === "undefined" && typeof globalThis !== "undefined" && !globalThis.WebSocket) {
+  class NodeWebSocketPolyfill {
+    static CONNECTING = 0;
+    static OPEN = 1;
+    static CLOSING = 2;
+    static CLOSED = 3;
+    readyState = 3;
+    constructor() {}
+    addEventListener() {}
+    removeEventListener() {}
+    send() {}
+    close() {}
+  }
+  (globalThis as any).WebSocket = NodeWebSocketPolyfill;
+}
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";

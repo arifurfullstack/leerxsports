@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
-import { checkPassword, friendlyAuthError, PASSWORD_MIN_LENGTH } from "@/lib/password-strength";
+import { PasswordRuleHelper } from "@/components/auth/password-rule-helper";
+import { friendlyAuthError, PASSWORD_MIN_LENGTH } from "@/lib/password-strength";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -37,9 +37,8 @@ function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const strength = checkPassword(password);
-    if (!strength.ok) {
-      setError(strength.issues[0] ?? "Please choose a stronger password.");
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`Use at least ${PASSWORD_MIN_LENGTH} characters. Weak passwords are allowed after that.`);
       return;
     }
     if (password !== confirm) {
@@ -92,7 +91,7 @@ function ResetPasswordPage() {
                 disabled={!isRecovery}
                 autoComplete="new-password"
               />
-              <PasswordStrengthMeter password={password} />
+              <PasswordRuleHelper password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirm password</Label>

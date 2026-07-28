@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useMatches } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Search,
-  LayoutDashboard,
-  FileText,
-  Flag,
-  Shield,
-  Calendar,
-  BookOpen,
-} from "lucide-react";
+import { Search, LayoutDashboard, FileText, Flag, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,20 +14,14 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import {
-  adminListTrainerApplications,
-  adminGetBookings,
-} from "@/lib/admin-functions";
-import { getClasses } from "@/lib/class-functions";
+import { adminListTrainerApplications } from "@/lib/admin-functions";
 import type { AdminPermission } from "@/lib/admin-permissions";
 
 type AdminRoute =
   | "/admin"
   | "/admin/trainers"
   | "/admin/moderation"
-  | "/admin/roles"
-  | "/admin/classes"
-  | "/admin/bookings";
+  | "/admin/roles";
 
 const PAGES: {
   to: AdminRoute;
@@ -48,8 +34,6 @@ const PAGES: {
   { to: "/admin/trainers", label: "Applications", icon: FileText, permission: "manage_applications", keywords: "trainer applications review" },
   { to: "/admin/moderation", label: "Moderation", icon: Flag, permission: "moderation", keywords: "reports flags safety" },
   { to: "/admin/roles", label: "Roles", icon: Shield, permission: "manage_roles", keywords: "users admin permissions" },
-  { to: "/admin/classes", label: "Classes", icon: Calendar, permission: "manage_classes", keywords: "sports classes schedule" },
-  { to: "/admin/bookings", label: "Bookings", icon: BookOpen, permission: "manage_bookings", keywords: "reservations attendees" },
 ];
 
 export function AdminSearch() {
@@ -74,25 +58,11 @@ export function AdminSearch() {
   }, []);
 
   const listApplications = useServerFn(adminListTrainerApplications);
-  const listClasses = useServerFn(getClasses);
-  const listBookings = useServerFn(adminGetBookings);
 
   const applicationsQ = useQuery({
     queryKey: ["admin-search", "applications"],
     queryFn: () => listApplications(),
     enabled: open && can("manage_applications"),
-    staleTime: 30_000,
-  });
-  const classesQ = useQuery({
-    queryKey: ["admin-search", "classes"],
-    queryFn: () => listClasses(),
-    enabled: open && can("manage_classes"),
-    staleTime: 30_000,
-  });
-  const bookingsQ = useQuery({
-    queryKey: ["admin-search", "bookings"],
-    queryFn: () => listBookings(),
-    enabled: open && can("manage_bookings"),
     staleTime: 30_000,
   });
 
@@ -123,7 +93,7 @@ export function AdminSearch() {
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search pages, applications, classes, bookings…" />
+        <CommandInput placeholder="Search pages, applications…" />
         <CommandList>
           <CommandEmpty>No matches found.</CommandEmpty>
 
@@ -158,57 +128,6 @@ export function AdminSearch() {
                       <span className="truncate">{name}</span>
                       <span className="ml-auto text-xs uppercase tracking-wide text-muted-foreground">
                         {a.status}
-                      </span>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </>
-          )}
-
-          {can("manage_classes") && (classesQ.data?.length ?? 0) > 0 && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Classes">
-                {classesQ.data!.slice(0, 25).map((c) => (
-                  <CommandItem
-                    key={c.id}
-                    value={`class ${c.title} ${c.category ?? ""} ${c.instructor ?? ""}`}
-                    onSelect={() => go("/admin/classes", `class-${c.id}`)}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span className="truncate">{c.title}</span>
-                    {c.category && (
-                      <span className="ml-auto text-xs uppercase tracking-wide text-muted-foreground">
-                        {c.category}
-                      </span>
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </>
-          )}
-
-          {can("manage_bookings") && (bookingsQ.data?.length ?? 0) > 0 && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Bookings">
-                {bookingsQ.data!.slice(0, 25).map((b) => {
-                  const title = b.class?.title ?? "Class";
-                  const email = b.user?.email ?? "";
-                  return (
-                    <CommandItem
-                      key={b.id}
-                      value={`booking ${title} ${email} ${b.status}`}
-                      onSelect={() => go("/admin/bookings", `booking-${b.id}`)}
-                    >
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      <span className="truncate">
-                        {title}
-                        {email ? ` — ${email}` : ""}
-                      </span>
-                      <span className="ml-auto text-xs uppercase tracking-wide text-muted-foreground">
-                        {b.status}
                       </span>
                     </CommandItem>
                   );

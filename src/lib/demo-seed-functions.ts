@@ -415,83 +415,6 @@ const COMMUNITY_POSTS: CommunitySeed[] = [
 ];
 
 // -----------------------------------------------------------------------------
-// Sports classes (legacy table — surfaces on /admin/classes and public /classes)
-// -----------------------------------------------------------------------------
-type ClassSeed = {
-  title: string;
-  slug: string;
-  instructor: string;
-  description: string;
-  duration_minutes: number;
-  capacity: number;
-  level: string;
-  category: string;
-  price: number;
-  offset_days: number;
-};
-const CLASSES: ClassSeed[] = [
-  { title: "Freestyle Foundations", slug: "freestyle-foundations", instructor: "Coach Nova", description: "Rebuild your freestyle catch, pull, and breathing.", duration_minutes: 60, capacity: 8, level: "beginner", category: "swimming", price: 25, offset_days: 3 },
-  { title: "Strength 101", slug: "strength-101", instructor: "Coach Vega", description: "Squat, hinge, push, pull — done right.", duration_minutes: 75, capacity: 10, level: "beginner", category: "strength", price: 30, offset_days: 5 },
-  { title: "Endurance Ride", slug: "endurance-ride", instructor: "Coach Lyra", description: "Zone-2 group ride with technique focus.", duration_minutes: 90, capacity: 12, level: "intermediate", category: "cycling", price: 20, offset_days: 7 },
-  { title: "Boxing Fundamentals", slug: "boxing-fundamentals", instructor: "Coach Sable", description: "Footwork, jab, defense. Gloves supplied.", duration_minutes: 60, capacity: 12, level: "beginner", category: "boxing", price: 28, offset_days: 4 },
-  { title: "Marathon Prep Long Run", slug: "marathon-prep-long-run", instructor: "Coach Aris", description: "Coached 22km at target marathon pace.", duration_minutes: 150, capacity: 20, level: "intermediate", category: "running", price: 15, offset_days: 9 },
-  { title: "Mobility Reset", slug: "mobility-reset", instructor: "Coach Mara", description: "Hips, spine, shoulders — 60 minutes of unwind.", duration_minutes: 60, capacity: 15, level: "beginner", category: "mobility", price: 12, offset_days: 2 },
-  { title: "Powerlifting Technique", slug: "powerlifting-technique", instructor: "Coach Kova", description: "Squat/bench/DL technique clinic, one athlete at a time.", duration_minutes: 90, capacity: 6, level: "intermediate", category: "strength", price: 45, offset_days: 6 },
-  { title: "Sport Climbing Skills", slug: "climbing-skills", instructor: "Coach Rhea", description: "Footwork, redpoint tactics, hangboard.", duration_minutes: 90, capacity: 8, level: "intermediate", category: "climbing", price: 25, offset_days: 8 },
-  { title: "CrossFit WOD", slug: "crossfit-wod", instructor: "Coach Nyx", description: "Group WOD with scaling for every level.", duration_minutes: 60, capacity: 14, level: "beginner", category: "crossfit", price: 22, offset_days: 1 },
-  { title: "Pilates Reformer", slug: "pilates-reformer", instructor: "Coach Sol", description: "Reformer intro, core-first.", duration_minutes: 55, capacity: 6, level: "beginner", category: "pilates", price: 32, offset_days: 10 },
-];
-
-// -----------------------------------------------------------------------------
-// Coaching request seeds — 8 across statuses, some with messages/disputes.
-// -----------------------------------------------------------------------------
-type CoachingSeed = {
-  traineeIdx: number;
-  trainerIdx: number;
-  title: string;
-  description: string;
-  category: string;
-  status: "draft" | "pending" | "coached" | "follow_up_submitted" | "final_response_submitted" | "coaching_completed" | "cancelled";
-  messages?: { role: "trainee" | "trainer"; kind: "primary_question" | "primary_response" | "follow_up" | "final_response"; text: string; days_ago: number }[];
-  dispute?: { reason: string; opener: "trainee" | "trainer" };
-};
-const COACHING_SEEDS: CoachingSeed[] = [
-  { traineeIdx: 1, trainerIdx: 6, title: "Deadlift form check — 140kg working set", description: "Attached a side view. Feels okay but back looks rounded on the second rep.", category: "strength", status: "pending",
-    messages: [ { role: "trainee", kind: "primary_question", text: "Video attached. Working set at 140kg × 3. Feels good but I want a second pair of eyes before I go for 150.", days_ago: 1 } ]},
-  { traineeIdx: 5, trainerIdx: 0, title: "100m freestyle — pull mechanics", description: "Trying to break 1:00. Coach said my catch is late.", category: "swimming", status: "coached",
-    messages: [
-      { role: "trainee", kind: "primary_question", text: "Video from side and underwater cam. Where is my catch dropping?", days_ago: 5 },
-      { role: "trainer", kind: "primary_response", text: "Right catch drops below the elbow at 0:07. Focus on high elbow — try catch-up drill 3×200 next session and re-film.", days_ago: 4 },
-    ]},
-  { traineeIdx: 3, trainerIdx: 4, title: "First marathon pacing plan", description: "Berlin in 14 weeks. Target 3:45.", category: "running", status: "coaching_completed",
-    messages: [
-      { role: "trainee", kind: "primary_question", text: "Never gone longer than 25k. Target 3:45. Realistic?", days_ago: 30 },
-      { role: "trainer", kind: "primary_response", text: "Realistic if you can hit 5:15/km for a 30k run at week 10. Plan attached. Any injuries I should know?", days_ago: 29 },
-      { role: "trainee", kind: "follow_up", text: "Old ITB flare. Nothing acute right now.", days_ago: 28 },
-      { role: "trainer", kind: "final_response", text: "Noted. Two mobility sessions/week added. You've got this.", days_ago: 27 },
-    ]},
-  { traineeIdx: 9, trainerIdx: 8, title: "Finger pain after 7a attempt", description: "Ring finger tender after last week. Should I keep climbing?", category: "climbing", status: "final_response_submitted",
-    messages: [
-      { role: "trainee", kind: "primary_question", text: "Ring finger sore after crimping. No visible swelling.", days_ago: 3 },
-      { role: "trainer", kind: "primary_response", text: "Sounds A2 irritation, not rupture. 2 weeks off crimps. Open-handed only. Re-assess.", days_ago: 2 },
-    ]},
-  { traineeIdx: 8, trainerIdx: 7, title: "Sparring first round — nerves", description: "Freeze in round one. Any drills?", category: "boxing", status: "coached",
-    messages: [
-      { role: "trainee", kind: "primary_question", text: "First round I freeze, second I'm fine. Any mental cues?", days_ago: 6 },
-      { role: "trainer", kind: "primary_response", text: "Set two rules for round 1: circle, jab. Nothing else. Repeat until it's automatic.", days_ago: 5 },
-    ]},
-  { traineeIdx: 12, trainerIdx: 11, title: "Postpartum core reintro", description: "8 weeks postpartum, cleared by OB.", category: "pilates", status: "pending" },
-  { traineeIdx: 15, trainerIdx: 6, title: "Cancelled — booked with wrong coach", description: "Meant to book with Aris.", category: "running", status: "cancelled" },
-  { traineeIdx: 18, trainerIdx: 2, title: "Peak week — bikini prep", description: "10 weeks out. Peak week protocol?", category: "hypertrophy", status: "follow_up_submitted",
-    messages: [
-      { role: "trainee", kind: "primary_question", text: "Peak week: water manipulation vs steady?", days_ago: 4 },
-      { role: "trainer", kind: "primary_response", text: "Steady. Water manipulation is a myth for most. Focus on sodium/carb + posing.", days_ago: 3 },
-      { role: "trainee", kind: "follow_up", text: "Understood. Any sodium range?", days_ago: 1 },
-    ],
-    dispute: { reason: "Delay in follow-up response.", opener: "trainee" }},
-];
-
-// -----------------------------------------------------------------------------
 // Step-based seed / clear
 // -----------------------------------------------------------------------------
 export type SeedStep = { key: string; label: string };
@@ -501,9 +424,7 @@ export const SEED_STEPS: SeedStep[] = [
   ...TRAINERS.map((t, i) => ({ key: `trainer:${i}`, label: `Trainer · ${t.displayName}` })),
   ...TRAINEES.map((t, i) => ({ key: `trainee:${i}`, label: `Trainee · ${t.displayName}` })),
   { key: "community", label: "Community threads & comments" },
-  { key: "classes", label: "Sports classes" },
   { key: "engagement", label: "Follows, respects, comments, subscriptions" },
-  { key: "coaching", label: "Coaching requests & messages" },
   { key: "commerce", label: "Tips, transactions, balances, payouts" },
   { key: "moderation", label: "Reports, strikes, audit logs" },
   { key: "notifications", label: "Notifications" },
@@ -525,7 +446,6 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
 // demo user IDs), then existing content tables, then profiles, then auth users.
 export const CLEAR_STEPS: SeedStep[] = [
   { key: "engagement:child", label: "Follows, respects, comments, saves, subscriptions" },
-  { key: "coaching:child", label: "Coaching messages, disputes, requests" },
   { key: "commerce:child", label: "Tips, transactions, balances, payouts" },
   { key: "moderation:child", label: "Reports, strikes, moderation & audit logs" },
   { key: "notifications:child", label: "Notifications" },
@@ -534,7 +454,6 @@ export const CLEAR_STEPS: SeedStep[] = [
   { key: "table:community_posts", label: "Community posts" },
   { key: "table:transformation_posts", label: "Transformations" },
   { key: "table:trainer_profiles", label: "Trainer profiles" },
-  { key: "table:sports_classes", label: "Sports classes" },
   { key: "table:profiles", label: "Profiles" },
   { key: "auth_users", label: "Auth users" },
 ];
@@ -576,7 +495,7 @@ async function loadDemoUserMap(supabaseAdmin: any) {
 
 export const adminSeedDemoStep = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { step: string }) => {
+  .validator((d: { step: string }) => {
     if (!d || typeof d.step !== "string") throw new Error("step required");
     return d;
   })
@@ -705,82 +624,6 @@ export const adminSeedDemoStep = createServerFn({ method: "POST" })
       return { step, label: "Community", counts };
     }
 
-    if (step === "classes") {
-      const now = new Date();
-      let n = 0;
-      const classIds: string[] = [];
-      for (const c of CLASSES) {
-        const schedule = new Date(now.getTime() + c.offset_days * 24 * 3600_000).toISOString();
-        const { data: up } = await supabaseAdmin.from("sports_classes").upsert({
-          title: c.title, slug: c.slug, description: c.description, instructor: c.instructor,
-          duration_minutes: c.duration_minutes, capacity: c.capacity, schedule,
-          level: c.level, category: c.category, price: c.price,
-          is_active: true, is_demo: true,
-        }, { onConflict: "slug" }).select("id").maybeSingle();
-        if (up?.id) classIds.push(up.id);
-        n++;
-      }
-
-      // Syllabus / materials / assignments per class (idempotent: clear then insert demo rows)
-      let materials = 0;
-      let assignments = 0;
-      for (const cid of classIds) {
-        await supabaseAdmin.from("class_materials").delete().eq("class_id", cid).eq("is_demo", true);
-        await supabaseAdmin.from("class_assignments").delete().eq("class_id", cid).eq("is_demo", true);
-
-        const cls = CLASSES.find(() => true); // placeholder to avoid ts unused; we look up by id below
-        void cls;
-        const { data: crow } = await supabaseAdmin
-          .from("sports_classes").select("title, category, instructor").eq("id", cid).maybeSingle();
-        const title = crow?.title ?? "Class";
-        const category = crow?.category ?? "training";
-        const instructor = crow?.instructor ?? "Coach";
-
-        const mats = [
-          { kind: "syllabus", title: `${title} — Syllabus`,
-            description: "Week-by-week outline covering warm-up, technical drills, main set, and cooldown.",
-            content: "Week 1 — Foundations & assessment\nWeek 2 — Technique focus\nWeek 3 — Volume progression\nWeek 4 — Peak & test\nEach session: 10 min warm-up · 35 min main work · 10 min cooldown",
-            url: null, sort_order: 0 },
-          { kind: "reading", title: "Pre-class primer",
-            description: "Read before your first session to get the most out of it.",
-            url: "https://www.acefitness.org/resources/pros/expert-articles/", content: null, sort_order: 1 },
-          { kind: "video", title: "Warm-up demo",
-            description: `Follow along with the standard warm-up ${instructor} uses.`,
-            url: "https://www.youtube.com/watch?v=ml6cT4AZdqI", content: null, sort_order: 2 },
-          { kind: "resource", title: "Gear checklist",
-            description: `What to bring to every ${category} session.`,
-            content: "• Water bottle\n• Towel\n• Appropriate footwear\n• Notebook for cues\n• Positive attitude",
-            url: null, sort_order: 3 },
-          { kind: "link", title: "Community thread",
-            description: "Ask questions and share progress with classmates.",
-            url: "/community", content: null, sort_order: 4 },
-        ];
-        for (const m of mats) {
-          await supabaseAdmin.from("class_materials").insert({ class_id: cid, is_demo: true, ...m });
-          materials++;
-        }
-
-        const asg = [
-          { title: "Baseline check-in",
-            instructions: "Record a short video or notes on where you are today: mobility, effort, and one goal for the block.",
-            due_at: new Date(Date.now() + 3 * 86400_000).toISOString(), points: 10, sort_order: 0 },
-          { title: "Technique drill",
-            instructions: "Complete 3 rounds of the drill covered in class and log RPE for each round.",
-            due_at: new Date(Date.now() + 7 * 86400_000).toISOString(), points: 15, sort_order: 1 },
-          { title: "Progress review",
-            instructions: "Compare week 1 numbers to week 4 and share one win + one thing to improve.",
-            due_at: new Date(Date.now() + 21 * 86400_000).toISOString(), points: 25, sort_order: 2 },
-        ];
-        for (const a of asg) {
-          await supabaseAdmin.from("class_assignments").insert({ class_id: cid, is_demo: true, ...a });
-          assignments++;
-        }
-      }
-      counts.classes = n;
-      counts.class_materials = materials;
-      counts.class_assignments = assignments;
-      return { step, label: "Classes", counts };
-    }
 
     if (step === "engagement") {
       const map = await loadDemoUserMap(supabaseAdmin);
@@ -851,100 +694,6 @@ export const adminSeedDemoStep = createServerFn({ method: "POST" })
       return { step, label: "Engagement", counts };
     }
 
-    if (step === "coaching") {
-      const map = await loadDemoUserMap(supabaseAdmin);
-      let requests = 0, messages = 0, disputes = 0;
-      for (const cs of COACHING_SEEDS) {
-        const traineeId = map.get(TRAINEES[cs.traineeIdx]!.username);
-        const trainerId = map.get(TRAINERS[cs.trainerIdx]!.username);
-        if (!traineeId || !trainerId) continue;
-        const { data: req } = await supabaseAdmin.from("coaching_requests").insert({
-          subscriber_id: traineeId, trainer_id: trainerId,
-          title: cs.title, description: cs.description, category: cs.category,
-          status: cs.status,
-        }).select("id").single();
-        requests++;
-        const rid = (req as { id: string } | null)?.id;
-        if (!rid) continue;
-        for (const m of cs.messages ?? []) {
-          const senderId = m.role === "trainee" ? traineeId : trainerId;
-          await supabaseAdmin.from("coaching_messages").insert({
-            thread_id: rid, sender_id: senderId, role: m.role, kind: m.kind, text: m.text,
-            created_at: new Date(Date.now() - m.days_ago * 24 * 3600_000).toISOString(),
-          });
-          messages++;
-        }
-        if (cs.dispute) {
-          const openerId = cs.dispute.opener === "trainee" ? traineeId : trainerId;
-          await supabaseAdmin.from("coaching_disputes").insert({
-            thread_id: rid, opener_id: openerId, reason: cs.dispute.reason, status: "open",
-          });
-          disputes++;
-        }
-      }
-      counts.coaching_requests = requests; counts.coaching_messages = messages; counts.disputes = disputes;
-
-      // Booking-driven check-ins: one coaching thread per confirmed enrollment,
-      // linking the trainee to the trainer teaching that class, with a session note.
-      const { data: bookingRows } = await supabaseAdmin
-        .from("bookings")
-        .select("user_id, class_id, status, sports_classes!inner(title, category, instructor, schedule, is_demo)")
-        .eq("status", "confirmed");
-      const instructorToTrainer = new Map<string, string>();
-      const { data: trainerProfiles } = await supabaseAdmin
-        .from("profiles").select("user_id, display_name").eq("is_demo", true);
-      for (const p of ((trainerProfiles as any[]) ?? [])) {
-        if (p.display_name) instructorToTrainer.set(p.display_name, p.user_id);
-      }
-      let checkinThreads = 0, checkinMessages = 0;
-      for (const row of ((bookingRows as any[]) ?? [])) {
-        const cls = row.sports_classes;
-        if (!cls || !cls.is_demo) continue;
-        const trainerId = instructorToTrainer.get(cls.instructor);
-        if (!trainerId) continue;
-        const title = `Check-in: ${cls.title}`;
-        const { data: existing } = await supabaseAdmin
-          .from("coaching_requests").select("id")
-          .eq("subscriber_id", row.user_id).eq("trainer_id", trainerId).eq("title", title).maybeSingle();
-        if (existing) continue;
-        const schedule = new Date(cls.schedule);
-        const createdAt = new Date(schedule.getTime() - 24 * 3600_000).toISOString();
-        const completedAt = new Date(schedule.getTime() + 2 * 3600_000).toISOString();
-        const category = cls.category ?? "training";
-        const { data: req } = await supabaseAdmin.from("coaching_requests").insert({
-          subscriber_id: row.user_id, trainer_id: trainerId,
-          title, category,
-          description: `Pre-session check-in for ${cls.title}. Sleep 7h, RPE target 6-7, no active injuries. Looking for focused cues on technique and next-week progression.`,
-          goal: "Build durable technique and progress load safely.",
-          status: "coaching_completed",
-          created_at: createdAt, completed_at: completedAt, updated_at: completedAt,
-        }).select("id").single();
-        const rid = (req as { id: string } | null)?.id;
-        if (!rid) continue;
-        checkinThreads++;
-        await supabaseAdmin.from("coaching_messages").insert({
-          thread_id: rid, sender_id: row.user_id, role: "trainee", kind: "primary_question",
-          text: `Coach, quick check-in before the session: warmed up, feeling ~7/10. Main question — where should I focus first on ${category}?`,
-          created_at: new Date(schedule.getTime() - 23 * 3600_000).toISOString(),
-        });
-        await supabaseAdmin.from("coaching_messages").insert({
-          thread_id: rid, sender_id: trainerId, role: "trainer", kind: "primary_response",
-          text: [
-            `Session notes — ${category}:`,
-            `• Warm-up: 8 min mobility + activation, RPE 3.`,
-            `• Main block: 4 working sets, cue "brace-breathe-move", RPE 7 cap.`,
-            `• Watch-outs: keep hips stacked, drive through mid-foot, no early arm pull.`,
-            `• Homework: 2× technique drills (10 min) on off-days.`,
-            `• Next session focus: add tempo on the eccentric and retest baseline.`,
-          ].join("\n"),
-          created_at: completedAt,
-        });
-        checkinMessages += 2;
-      }
-      counts.coaching_checkins = checkinThreads;
-      counts.coaching_checkin_messages = checkinMessages;
-      return { step, label: "Coaching", counts };
-    }
 
     if (step === "commerce") {
       const map = await loadDemoUserMap(supabaseAdmin);
@@ -1114,15 +863,6 @@ export const adminSeedDemoStep = createServerFn({ method: "POST" })
           n++;
         }
       }
-      // Some for trainees (subscription confirmation, coaching reply)
-      for (const traineeId of traineeIds.slice(0, 8)) {
-        await supabaseAdmin.from("notifications").insert({
-          user_id: traineeId, type: "coaching_message",
-          title: "Coach replied", body: "Your coaching request has a new response.",
-          metadata: { demo: true },
-        });
-        n++;
-      }
       counts.notifications = n;
       return { step, label: "Notifications", counts };
     }
@@ -1132,7 +872,7 @@ export const adminSeedDemoStep = createServerFn({ method: "POST" })
 
 export const adminClearDemoStep = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { step: string }) => {
+  .validator((d: { step: string }) => {
     if (!d || typeof d.step !== "string") throw new Error("step required");
     return d;
   })
@@ -1159,22 +899,6 @@ export const adminClearDemoStep = createServerFn({ method: "POST" })
       return { step, label: "Engagement", removed: n };
     }
 
-    if (step === "coaching:child") {
-      const ids = await demoUserIds();
-      if (ids.length === 0) return { step, label: "Coaching", removed: 0 };
-      // Delete messages/disputes via threads, then threads
-      const { data: threads } = await supabaseAdmin
-        .from("coaching_requests").select("id").in("subscriber_id", ids);
-      const tids = ((threads as { id: string }[] | null) ?? []).map((t) => t.id);
-      let n = 0;
-      if (tids.length) {
-        const { count: c1 } = await supabaseAdmin.from("coaching_messages").delete({ count: "exact" }).in("thread_id", tids);
-        const { count: c2 } = await supabaseAdmin.from("coaching_disputes").delete({ count: "exact" }).in("thread_id", tids);
-        const { count: c3 } = await supabaseAdmin.from("coaching_requests").delete({ count: "exact" }).in("id", tids);
-        n = (c1 ?? 0) + (c2 ?? 0) + (c3 ?? 0);
-      }
-      return { step, label: "Coaching", removed: n };
-    }
 
     if (step === "commerce:child") {
       const ids = await demoUserIds();
@@ -1212,7 +936,7 @@ export const adminClearDemoStep = createServerFn({ method: "POST" })
       const table = step.slice("table:".length);
       const allowed = new Set([
         "posts", "community_posts", "community_comments",
-        "transformation_posts", "trainer_profiles", "sports_classes", "profiles",
+        "transformation_posts", "trainer_profiles", "profiles",
       ]);
       if (!allowed.has(table)) throw new Error(`Unknown clear table: ${table}`);
       const dyn = supabaseAdmin as any;
@@ -1266,26 +990,24 @@ export const adminGetDemoStats = createServerFn({ method: "GET" })
     }
 
     const [
-      profiles, trainerProfiles, posts, community, transformations, classes,
-      follows, subscriptions, tips, coachingRequests, reports, notifications,
+      profiles, trainerProfiles, posts, community, transformations,
+      follows, subscriptions, tips, reports, notifications,
     ] = await Promise.all([
       n("profiles", ["is_demo", true]),
       n("trainer_profiles", ["is_demo", true]),
       n("posts", ["is_demo", true]),
       n("community_posts", ["is_demo", true]),
       n("transformation_posts", ["is_demo", true]),
-      n("sports_classes", ["is_demo", true]),
       scoped("follows", "follower_id"),
       scoped("subscriptions", "subscriber_id"),
       scoped("tips", "trainer_id"),
-      scoped("coaching_requests", "subscriber_id"),
       scoped("reports", "reporter_id"),
       scoped("notifications", "user_id"),
     ]);
 
     return {
-      profiles, trainerProfiles, posts, community, transformations, classes,
-      follows, subscriptions, tips, coachingRequests, reports, notifications,
+      profiles, trainerProfiles, posts, community, transformations,
+      follows, subscriptions, tips, reports, notifications,
     };
   });
 

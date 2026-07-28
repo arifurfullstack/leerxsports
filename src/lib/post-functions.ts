@@ -11,9 +11,15 @@ const createPostSchema = z.object({
   duration_seconds: z.number().int().positive().optional().nullable(),
 });
 
+const updatePostSchema = z.object({
+  id: z.string().uuid(),
+  caption: z.string().max(2000).nullable().optional(),
+  is_premium: z.boolean().optional(),
+});
+
 export const createPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => createPostSchema.parse(input))
+  .validator((input) => createPostSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -44,7 +50,7 @@ export const createPost = createServerFn({ method: "POST" })
 
 export const deletePost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error: fetchErr } = await supabase
@@ -64,6 +70,33 @@ export const deletePost = createServerFn({ method: "POST" })
     }
     const { error: delErr } = await supabase.from("posts").delete().eq("id", data.id);
     if (delErr) throw new Error(delErr.message);
+    return { ok: true };
+  });
+
+export const updatePost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => updatePostSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error: fetchErr } = await supabase
+      .from("posts")
+      .select("id, trainer_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fetchErr) throw new Error(fetchErr.message);
+    if (!row) throw new Error("Post not found.");
+    if (row.trainer_id !== userId) throw new Error("Not your post.");
+
+    const patch: { caption?: string | null; is_premium?: boolean } = {};
+    if (data.caption !== undefined) patch.caption = data.caption;
+    if (data.is_premium !== undefined) patch.is_premium = data.is_premium;
+    if (Object.keys(patch).length === 0) return { ok: true };
+
+    const { error: updErr } = await supabase
+      .from("posts")
+      .update(patch)
+      .eq("id", data.id);
+    if (updErr) throw new Error(updErr.message);
     return { ok: true };
   });
 

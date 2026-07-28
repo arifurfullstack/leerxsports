@@ -7,7 +7,7 @@
  *   Rejects protocol-relative (`//host`), external URLs, and empty input.
  * - resolvePostAuthTarget({ intent, redirect }): where the auth form should
  *   navigate after a successful sign-in. An explicit sanitized redirect wins;
- *   otherwise a known intent maps to its landing; otherwise `/onboarding`.
+ *   otherwise a known intent maps to its landing; otherwise `/home`.
  */
 export function resolveAuthIntent(pathname: string): "admin" | "" {
   return pathname.startsWith("/admin") ? "admin" : "";
@@ -34,5 +34,5 @@ export function resolvePostAuthTarget(input: PostAuthTargetInput | string = {}):
   const safe = sanitizeRedirect(redirect);
   if (safe) return safe;
   if (intent === "admin") return "/admin";
-  return "/onboarding";
+  return "/home";
 }

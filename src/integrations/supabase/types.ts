@@ -14,50 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      assignment_submissions: {
-        Row: {
-          assignment_id: string
-          created_at: string
-          id: string
-          note: string | null
-          score: number | null
-          status: string
-          submitted_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          assignment_id: string
-          created_at?: string
-          id?: string
-          note?: string | null
-          score?: number | null
-          status?: string
-          submitted_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          assignment_id?: string
-          created_at?: string
-          id?: string
-          note?: string | null
-          score?: number | null
-          status?: string
-          submitted_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_submissions_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "class_assignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       audit_logs: {
         Row: {
           action: string
@@ -105,294 +61,6 @@ export type Database = {
           created_at?: string
         }
         Relationships: []
-      }
-      bookings: {
-        Row: {
-          booked_at: string
-          class_id: string
-          id: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          booked_at?: string
-          class_id: string
-          id?: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          booked_at?: string
-          class_id?: string
-          id?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bookings_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "sports_classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_assignments: {
-        Row: {
-          class_id: string
-          created_at: string
-          due_at: string | null
-          id: string
-          instructions: string | null
-          is_demo: boolean
-          points: number
-          sort_order: number
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          class_id: string
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          instructions?: string | null
-          is_demo?: boolean
-          points?: number
-          sort_order?: number
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          class_id?: string
-          created_at?: string
-          due_at?: string | null
-          id?: string
-          instructions?: string | null
-          is_demo?: boolean
-          points?: number
-          sort_order?: number
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_assignments_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "sports_classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      class_materials: {
-        Row: {
-          class_id: string
-          content: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_demo: boolean
-          kind: string
-          sort_order: number
-          title: string
-          updated_at: string
-          url: string | null
-        }
-        Insert: {
-          class_id: string
-          content?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_demo?: boolean
-          kind: string
-          sort_order?: number
-          title: string
-          updated_at?: string
-          url?: string | null
-        }
-        Update: {
-          class_id?: string
-          content?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_demo?: boolean
-          kind?: string
-          sort_order?: number
-          title?: string
-          updated_at?: string
-          url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "class_materials_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "sports_classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      coaching_disputes: {
-        Row: {
-          created_at: string
-          evidence: string[]
-          id: string
-          opener_id: string
-          reason: string
-          resolved_at: string | null
-          resolved_by: string | null
-          status: Database["public"]["Enums"]["dispute_status"]
-          thread_id: string
-          updated_at: string
-          verdict: string | null
-        }
-        Insert: {
-          created_at?: string
-          evidence?: string[]
-          id?: string
-          opener_id: string
-          reason: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["dispute_status"]
-          thread_id: string
-          updated_at?: string
-          verdict?: string | null
-        }
-        Update: {
-          created_at?: string
-          evidence?: string[]
-          id?: string
-          opener_id?: string
-          reason?: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["dispute_status"]
-          thread_id?: string
-          updated_at?: string
-          verdict?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coaching_disputes_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "coaching_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      coaching_messages: {
-        Row: {
-          created_at: string
-          id: string
-          kind: Database["public"]["Enums"]["coaching_message_kind"]
-          media: string[]
-          role: Database["public"]["Enums"]["coaching_participant_role"]
-          sender_id: string
-          text: string | null
-          thread_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind: Database["public"]["Enums"]["coaching_message_kind"]
-          media?: string[]
-          role: Database["public"]["Enums"]["coaching_participant_role"]
-          sender_id: string
-          text?: string | null
-          thread_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: Database["public"]["Enums"]["coaching_message_kind"]
-          media?: string[]
-          role?: Database["public"]["Enums"]["coaching_participant_role"]
-          sender_id?: string
-          text?: string | null
-          thread_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coaching_messages_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "coaching_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      coaching_requests: {
-        Row: {
-          category: string | null
-          completed_at: string | null
-          created_at: string
-          credit_id: string | null
-          deadline_at: string | null
-          description: string
-          exercise: string | null
-          goal: string | null
-          id: string
-          injury_info: string | null
-          media: string[]
-          requested_area: string | null
-          status: Database["public"]["Enums"]["coaching_status"]
-          subscriber_id: string
-          title: string
-          trainer_id: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          completed_at?: string | null
-          created_at?: string
-          credit_id?: string | null
-          deadline_at?: string | null
-          description: string
-          exercise?: string | null
-          goal?: string | null
-          id?: string
-          injury_info?: string | null
-          media?: string[]
-          requested_area?: string | null
-          status?: Database["public"]["Enums"]["coaching_status"]
-          subscriber_id: string
-          title: string
-          trainer_id: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          completed_at?: string | null
-          created_at?: string
-          credit_id?: string | null
-          deadline_at?: string | null
-          description?: string
-          exercise?: string | null
-          goal?: string | null
-          id?: string
-          injury_info?: string | null
-          media?: string[]
-          requested_area?: string | null
-          status?: Database["public"]["Enums"]["coaching_status"]
-          subscriber_id?: string
-          title?: string
-          trainer_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coaching_requests_credit_id_fkey"
-            columns: ["credit_id"]
-            isOneToOne: false
-            referencedRelation: "feedback_credits"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       comments: {
         Row: {
@@ -706,42 +374,6 @@ export type Database = {
           },
         ]
       }
-      fitness_categories: {
-        Row: {
-          created_at: string
-          description: string | null
-          icon: string | null
-          id: string
-          is_enabled: boolean
-          name: string
-          slug: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_enabled?: boolean
-          name: string
-          slug: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_enabled?: boolean
-          name?: string
-          slug?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       follows: {
         Row: {
           created_at: string
@@ -898,6 +530,96 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_gateways: {
+        Row: {
+          config: Json
+          display_name: string
+          enabled: boolean
+          mode: string
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          display_name: string
+          enabled?: boolean
+          mode?: string
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          display_name?: string
+          enabled?: boolean
+          mode?: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      payment_webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json
+          payout_id: string | null
+          processed_at: string | null
+          processing_error: string | null
+          provider: string
+          received_at: string
+          status: string
+          transaction_id: string | null
+          verified: boolean
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          id?: string
+          payload?: Json
+          payout_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider: string
+          received_at?: string
+          status?: string
+          transaction_id?: string | null
+          verified?: boolean
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          payout_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider?: string
+          received_at?: string
+          status?: string
+          transaction_id?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_webhook_events_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_webhook_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payouts: {
         Row: {
           admin_note: string | null
@@ -1021,6 +743,57 @@ export type Database = {
         }
         Relationships: []
       }
+      post_unlocks: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          post_id: string
+          price: number
+          provider: string
+          trainer_id: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          post_id: string
+          price: number
+          provider?: string
+          trainer_id: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          post_id?: string
+          price?: number
+          provider?: string
+          trainer_id?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_unlocks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_unlocks_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           caption: string | null
@@ -1038,6 +811,7 @@ export type Database = {
           save_count: number
           thumbnail_url: string | null
           trainer_id: string
+          unlock_price: number | null
           updated_at: string
           view_count: number
         }
@@ -1057,6 +831,7 @@ export type Database = {
           save_count?: number
           thumbnail_url?: string | null
           trainer_id: string
+          unlock_price?: number | null
           updated_at?: string
           view_count?: number
         }
@@ -1076,6 +851,7 @@ export type Database = {
           save_count?: number
           thumbnail_url?: string | null
           trainer_id?: string
+          unlock_price?: number | null
           updated_at?: string
           view_count?: number
         }
@@ -1086,6 +862,7 @@ export type Database = {
           additional_languages: string[]
           agreement_accepted_at: string | null
           avatar_url: string | null
+          avatar_urls: Json | null
           bio: string | null
           body_fat_percent: number | null
           country: string | null
@@ -1100,23 +877,28 @@ export type Database = {
           id: string
           injuries: string | null
           is_demo: boolean
+          is_verified: boolean
           native_language: string | null
           onboarding_completed: boolean
           personal_records: string | null
           preferred_language: string | null
           profile_visibility: string
+          sidebar_collapsed: boolean
           skeletal_muscle_kg: number | null
           social_links: string[]
           transformation_visibility: string
           updated_at: string
           user_id: string
           username: string | null
+          verified_at: string | null
+          verified_by: string | null
           weight_kg: number | null
         }
         Insert: {
           additional_languages?: string[]
           agreement_accepted_at?: string | null
           avatar_url?: string | null
+          avatar_urls?: Json | null
           bio?: string | null
           body_fat_percent?: number | null
           country?: string | null
@@ -1131,23 +913,28 @@ export type Database = {
           id?: string
           injuries?: string | null
           is_demo?: boolean
+          is_verified?: boolean
           native_language?: string | null
           onboarding_completed?: boolean
           personal_records?: string | null
           preferred_language?: string | null
           profile_visibility?: string
+          sidebar_collapsed?: boolean
           skeletal_muscle_kg?: number | null
           social_links?: string[]
           transformation_visibility?: string
           updated_at?: string
           user_id: string
           username?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           weight_kg?: number | null
         }
         Update: {
           additional_languages?: string[]
           agreement_accepted_at?: string | null
           avatar_url?: string | null
+          avatar_urls?: Json | null
           bio?: string | null
           body_fat_percent?: number | null
           country?: string | null
@@ -1162,18 +949,67 @@ export type Database = {
           id?: string
           injuries?: string | null
           is_demo?: boolean
+          is_verified?: boolean
           native_language?: string | null
           onboarding_completed?: boolean
           personal_records?: string | null
           preferred_language?: string | null
           profile_visibility?: string
+          sidebar_collapsed?: boolean
           skeletal_muscle_kg?: number | null
           social_links?: string[]
           transformation_visibility?: string
           updated_at?: string
           user_id?: string
           username?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      qa_dispatches: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          created_at: string
+          creator_id: string
+          expires_at: string
+          fan_id: string
+          id: string
+          price: number
+          question: string
+          status: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          created_at?: string
+          creator_id: string
+          expires_at?: string
+          fan_id: string
+          id?: string
+          price?: number
+          question: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          created_at?: string
+          creator_id?: string
+          expires_at?: string
+          fan_id?: string
+          id?: string
+          price?: number
+          question?: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1312,65 +1148,192 @@ export type Database = {
           },
         ]
       }
-      sports_classes: {
+      site_settings: {
         Row: {
-          capacity: number
-          category: string | null
-          created_at: string
-          description: string | null
-          duration_minutes: number
-          id: string
-          image_url: string | null
-          instructor: string
-          is_active: boolean
-          is_demo: boolean
-          level: string
-          location: string | null
-          price: number
-          schedule: string
-          slug: string
-          title: string
+          custom_head_html: string | null
+          favicon_url: string | null
+          footer_text: string | null
+          id: boolean
+          logo_dark_url: string | null
+          logo_url: string | null
+          meta_description: string
+          meta_keywords: string | null
+          meta_title: string
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          site_name: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_tiktok: string | null
+          social_twitter: string | null
+          social_youtube: string | null
+          support_email: string | null
+          tagline: string
+          theme_color: string
+          twitter_handle: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
-          capacity: number
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_minutes: number
-          id?: string
-          image_url?: string | null
-          instructor: string
-          is_active?: boolean
-          is_demo?: boolean
-          level?: string
-          location?: string | null
-          price?: number
-          schedule: string
-          slug: string
-          title: string
+          custom_head_html?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          id?: boolean
+          logo_dark_url?: string | null
+          logo_url?: string | null
+          meta_description?: string
+          meta_keywords?: string | null
+          meta_title?: string
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          site_name?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
+          support_email?: string | null
+          tagline?: string
+          theme_color?: string
+          twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
-          capacity?: number
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_minutes?: number
-          id?: string
-          image_url?: string | null
-          instructor?: string
-          is_active?: boolean
-          is_demo?: boolean
-          level?: string
-          location?: string | null
-          price?: number
-          schedule?: string
-          slug?: string
-          title?: string
+          custom_head_html?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          id?: boolean
+          logo_dark_url?: string | null
+          logo_url?: string | null
+          meta_description?: string
+          meta_keywords?: string | null
+          meta_title?: string
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          site_name?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
+          support_email?: string | null
+          tagline?: string
+          theme_color?: string
+          twitter_handle?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          duration_ms: number
+          expires_at: string
+          id: string
+          is_hidden: boolean
+          like_count: number
+          media_kind: string
+          media_url: string
+          thumbnail_url: string | null
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          duration_ms?: number
+          expires_at?: string
+          id?: string
+          is_hidden?: boolean
+          like_count?: number
+          media_kind: string
+          media_url: string
+          thumbnail_url?: string | null
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          duration_ms?: number
+          expires_at?: string
+          id?: string
+          is_hidden?: boolean
+          like_count?: number
+          media_kind?: string
+          media_url?: string
+          thumbnail_url?: string | null
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
+      story_likes: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_likes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_views: {
+        Row: {
+          id: string
+          story_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          story_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          story_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_events: {
         Row: {
@@ -1520,13 +1483,6 @@ export type Database = {
           transaction_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "tips_coaching_thread_id_fkey"
-            columns: ["coaching_thread_id"]
-            isOneToOne: false
-            referencedRelation: "coaching_requests"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "tips_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -1728,13 +1684,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "trainer_strikes_dispute_id_fkey"
-            columns: ["dispute_id"]
-            isOneToOne: false
-            referencedRelation: "coaching_disputes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "trainer_strikes_moderation_action_id_fkey"
             columns: ["moderation_action_id"]
             isOneToOne: false
@@ -1901,6 +1850,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_upload_stats: {
+        Row: {
+          total_bytes: number
+          updated_at: string
+          uploads_day: string
+          uploads_today: number
+          user_id: string
+        }
+        Insert: {
+          total_bytes?: number
+          updated_at?: string
+          uploads_day?: string
+          uploads_today?: number
+          user_id: string
+        }
+        Update: {
+          total_bytes?: number
+          updated_at?: string
+          uploads_day?: string
+          uploads_today?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1920,6 +1893,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_upload_quota: { Args: never; Returns: Json }
       has_active_subscription: {
         Args: { _subscriber_id: string; _trainer_id: string }
         Returns: boolean
@@ -1932,6 +1906,7 @@ export type Database = {
         Returns: boolean
       }
       increment_post_view: { Args: { p_post_id: string }; Returns: undefined }
+      try_record_upload: { Args: { _bytes: number }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "trainee" | "trainer"

@@ -1,7 +1,9 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+// Project-specific bearer attacher (proactively refreshes near-expiry tokens).
+// Intentionally replaces the generated `@/integrations/supabase/auth-attacher`.
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {

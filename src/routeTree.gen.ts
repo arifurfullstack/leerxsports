@@ -9,40 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ShortsRouteImport } from './routes/shorts'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CommunityRouteImport } from './routes/community'
-import { Route as ClassesRouteImport } from './routes/classes'
-import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrainersIndexRouteImport } from './routes/trainers.index'
-import { Route as ClassesIndexRouteImport } from './routes/classes.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as TrainersUsernameRouteImport } from './routes/trainers.$username'
 import { Route as PostsPostIdRouteImport } from './routes/posts.$postId'
-import { Route as ClassesClassIdRouteImport } from './routes/classes.$classId'
+import { Route as DevHeaderPreviewRouteImport } from './routes/dev.header-preview'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedQaRouteImport } from './routes/_authenticated/qa'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
+import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
-import { Route as AuthenticatedCoachingIndexRouteImport } from './routes/_authenticated/coaching.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTrainerProfileRouteImport } from './routes/_authenticated/trainer.profile'
-import { Route as AuthenticatedCoachingThreadIdRouteImport } from './routes/_authenticated/coaching.$threadId'
+import { Route as AuthenticatedCreatorDashboardRouteImport } from './routes/_authenticated/creator.dashboard'
+import { Route as AuthenticatedAdminWebsitePreviewRouteImport } from './routes/_authenticated/admin/website-preview'
+import { Route as AuthenticatedAdminWebsiteRouteImport } from './routes/_authenticated/admin/website'
+import { Route as AuthenticatedAdminWebhooksRouteImport } from './routes/_authenticated/admin/webhooks'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminTransformationsRouteImport } from './routes/_authenticated/admin/transformations'
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin/transactions'
@@ -53,33 +56,28 @@ import { Route as AuthenticatedAdminStrikesRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSecurityRouteImport } from './routes/_authenticated/admin/security'
 import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin/roles'
+import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
 import { Route as AuthenticatedAdminRefundsRouteImport } from './routes/_authenticated/admin/refunds'
 import { Route as AuthenticatedAdminPostsRouteImport } from './routes/_authenticated/admin/posts'
 import { Route as AuthenticatedAdminPoliciesRouteImport } from './routes/_authenticated/admin/policies'
 import { Route as AuthenticatedAdminPayoutsRouteImport } from './routes/_authenticated/admin/payouts'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin/payments'
 import { Route as AuthenticatedAdminPaymentSettingsRouteImport } from './routes/_authenticated/admin/payment-settings'
+import { Route as AuthenticatedAdminPaymentGatewaysRouteImport } from './routes/_authenticated/admin/payment-gateways'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin/moderation'
 import { Route as AuthenticatedAdminLanguagesRouteImport } from './routes/_authenticated/admin/languages'
 import { Route as AuthenticatedAdminEarningsRouteImport } from './routes/_authenticated/admin/earnings'
-import { Route as AuthenticatedAdminDisputesRouteImport } from './routes/_authenticated/admin/disputes'
 import { Route as AuthenticatedAdminDemoRouteImport } from './routes/_authenticated/admin/demo'
 import { Route as AuthenticatedAdminCountriesRouteImport } from './routes/_authenticated/admin/countries'
 import { Route as AuthenticatedAdminCommunityRouteImport } from './routes/_authenticated/admin/community'
 import { Route as AuthenticatedAdminCommentsRouteImport } from './routes/_authenticated/admin/comments'
-import { Route as AuthenticatedAdminCoachingRouteImport } from './routes/_authenticated/admin/coaching'
-import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authenticated/admin/classes'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
-import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin/bookings'
 import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authenticated/admin/audit-logs'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
+import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
+import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -110,6 +108,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedRoute = FeedRouteImport.update({
   id: '/feed',
   path: '/feed',
@@ -133,16 +136,6 @@ const ContactRoute = ContactRouteImport.update({
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClassesRoute = ClassesRouteImport.update({
-  id: '/classes',
-  path: '/classes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrowseRoute = BrowseRouteImport.update({
-  id: '/browse',
-  path: '/browse',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -169,11 +162,6 @@ const TrainersIndexRoute = TrainersIndexRouteImport.update({
   path: '/trainers/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClassesIndexRoute = ClassesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ClassesRoute,
-} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -189,14 +177,24 @@ const PostsPostIdRoute = PostsPostIdRouteImport.update({
   path: '/posts/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClassesClassIdRoute = ClassesClassIdRouteImport.update({
-  id: '/$classId',
-  path: '/$classId',
-  getParentRoute: () => ClassesRoute,
+const DevHeaderPreviewRoute = DevHeaderPreviewRouteImport.update({
+  id: '/dev/header-preview',
+  path: '/dev/header-preview',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQaRoute = AuthenticatedQaRouteImport.update({
+  id: '/qa',
+  path: '/qa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -215,6 +213,16 @@ const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
   path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -225,12 +233,6 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCoachingIndexRoute =
-  AuthenticatedCoachingIndexRouteImport.update({
-    id: '/coaching/',
-    path: '/coaching/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -242,11 +244,29 @@ const AuthenticatedTrainerProfileRoute =
     path: '/trainer/profile',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCoachingThreadIdRoute =
-  AuthenticatedCoachingThreadIdRouteImport.update({
-    id: '/coaching/$threadId',
-    path: '/coaching/$threadId',
+const AuthenticatedCreatorDashboardRoute =
+  AuthenticatedCreatorDashboardRouteImport.update({
+    id: '/creator/dashboard',
+    path: '/creator/dashboard',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminWebsitePreviewRoute =
+  AuthenticatedAdminWebsitePreviewRouteImport.update({
+    id: '/website-preview',
+    path: '/website-preview',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminWebsiteRoute =
+  AuthenticatedAdminWebsiteRouteImport.update({
+    id: '/website',
+    path: '/website',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminWebhooksRoute =
+  AuthenticatedAdminWebhooksRouteImport.update({
+    id: '/webhooks',
+    path: '/webhooks',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
@@ -305,6 +325,12 @@ const AuthenticatedAdminRolesRoute = AuthenticatedAdminRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminReportsRoute =
+  AuthenticatedAdminReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminRefundsRoute =
   AuthenticatedAdminRefundsRouteImport.update({
     id: '/refunds',
@@ -340,6 +366,12 @@ const AuthenticatedAdminPaymentSettingsRoute =
     path: '/payment-settings',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminPaymentGatewaysRoute =
+  AuthenticatedAdminPaymentGatewaysRouteImport.update({
+    id: '/payment-gateways',
+    path: '/payment-gateways',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminNotificationsRoute =
   AuthenticatedAdminNotificationsRouteImport.update({
     id: '/notifications',
@@ -362,12 +394,6 @@ const AuthenticatedAdminEarningsRoute =
   AuthenticatedAdminEarningsRouteImport.update({
     id: '/earnings',
     path: '/earnings',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminDisputesRoute =
-  AuthenticatedAdminDisputesRouteImport.update({
-    id: '/disputes',
-    path: '/disputes',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminDemoRoute = AuthenticatedAdminDemoRouteImport.update({
@@ -393,28 +419,10 @@ const AuthenticatedAdminCommentsRoute =
     path: '/comments',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminCoachingRoute =
-  AuthenticatedAdminCoachingRouteImport.update({
-    id: '/coaching',
-    path: '/coaching',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminClassesRoute =
-  AuthenticatedAdminClassesRouteImport.update({
-    id: '/classes',
-    path: '/classes',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminCategoriesRoute =
   AuthenticatedAdminCategoriesRouteImport.update({
     id: '/categories',
     path: '/categories',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminBookingsRoute =
-  AuthenticatedAdminBookingsRouteImport.update({
-    id: '/bookings',
-    path: '/bookings',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminAuditLogsRoute =
@@ -429,58 +437,67 @@ const AuthenticatedAdminAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiPublicWebhooksStripeRoute = ApiPublicWebhooksStripeRouteImport.update({
+  id: '/api/public/webhooks/stripe',
+  path: '/api/public/webhooks/stripe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWebhooksPaypalRoute = ApiPublicWebhooksPaypalRouteImport.update({
+  id: '/api/public/webhooks/paypal',
+  path: '/api/public/webhooks/paypal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/browse': typeof BrowseRoute
-  '/classes': typeof ClassesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/classes/$classId': typeof ClassesClassIdRoute
+  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
   '/u/$username': typeof UUsernameRoute
-  '/classes/': typeof ClassesIndexRoute
   '/trainers/': typeof TrainersIndexRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
-  '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/admin/classes': typeof AuthenticatedAdminClassesRoute
-  '/admin/coaching': typeof AuthenticatedAdminCoachingRoute
   '/admin/comments': typeof AuthenticatedAdminCommentsRoute
   '/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/admin/demo': typeof AuthenticatedAdminDemoRoute
-  '/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRoute
   '/admin/payment-settings': typeof AuthenticatedAdminPaymentSettingsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/admin/policies': typeof AuthenticatedAdminPoliciesRoute
   '/admin/posts': typeof AuthenticatedAdminPostsRoute
   '/admin/refunds': typeof AuthenticatedAdminRefundsRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/admin/security': typeof AuthenticatedAdminSecurityRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -491,60 +508,64 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/transformations': typeof AuthenticatedAdminTransformationsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/coaching/$threadId': typeof AuthenticatedCoachingThreadIdRoute
+  '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
+  '/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/admin/website-preview': typeof AuthenticatedAdminWebsitePreviewRoute
+  '/creator/dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/trainer/profile': typeof AuthenticatedTrainerProfileRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
-  '/coaching/': typeof AuthenticatedCoachingIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/browse': typeof BrowseRoute
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/library': typeof AuthenticatedLibraryRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/classes/$classId': typeof ClassesClassIdRoute
+  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
   '/u/$username': typeof UUsernameRoute
-  '/classes': typeof ClassesIndexRoute
   '/trainers': typeof TrainersIndexRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
-  '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/admin/classes': typeof AuthenticatedAdminClassesRoute
-  '/admin/coaching': typeof AuthenticatedAdminCoachingRoute
   '/admin/comments': typeof AuthenticatedAdminCommentsRoute
   '/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/admin/demo': typeof AuthenticatedAdminDemoRoute
-  '/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRoute
   '/admin/payment-settings': typeof AuthenticatedAdminPaymentSettingsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/admin/policies': typeof AuthenticatedAdminPoliciesRoute
   '/admin/posts': typeof AuthenticatedAdminPostsRoute
   '/admin/refunds': typeof AuthenticatedAdminRefundsRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/admin/security': typeof AuthenticatedAdminSecurityRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -555,10 +576,14 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/transformations': typeof AuthenticatedAdminTransformationsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/coaching/$threadId': typeof AuthenticatedCoachingThreadIdRoute
+  '/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
+  '/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/admin/website-preview': typeof AuthenticatedAdminWebsitePreviewRoute
+  '/creator/dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/trainer/profile': typeof AuthenticatedTrainerProfileRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
-  '/coaching': typeof AuthenticatedCoachingIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -566,53 +591,52 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/browse': typeof BrowseRoute
-  '/classes': typeof ClassesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/qa': typeof AuthenticatedQaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/classes/$classId': typeof ClassesClassIdRoute
+  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
   '/u/$username': typeof UUsernameRoute
-  '/classes/': typeof ClassesIndexRoute
   '/trainers/': typeof TrainersIndexRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
-  '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/_authenticated/admin/classes': typeof AuthenticatedAdminClassesRoute
-  '/_authenticated/admin/coaching': typeof AuthenticatedAdminCoachingRoute
   '/_authenticated/admin/comments': typeof AuthenticatedAdminCommentsRoute
   '/_authenticated/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/_authenticated/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/_authenticated/admin/demo': typeof AuthenticatedAdminDemoRoute
-  '/_authenticated/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/_authenticated/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/_authenticated/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/_authenticated/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRoute
   '/_authenticated/admin/payment-settings': typeof AuthenticatedAdminPaymentSettingsRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/payouts': typeof AuthenticatedAdminPayoutsRoute
   '/_authenticated/admin/policies': typeof AuthenticatedAdminPoliciesRoute
   '/_authenticated/admin/posts': typeof AuthenticatedAdminPostsRoute
   '/_authenticated/admin/refunds': typeof AuthenticatedAdminRefundsRoute
+  '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/_authenticated/admin/security': typeof AuthenticatedAdminSecurityRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -623,10 +647,14 @@ export interface FileRoutesById {
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/_authenticated/admin/transformations': typeof AuthenticatedAdminTransformationsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/_authenticated/coaching/$threadId': typeof AuthenticatedCoachingThreadIdRoute
+  '/_authenticated/admin/webhooks': typeof AuthenticatedAdminWebhooksRoute
+  '/_authenticated/admin/website': typeof AuthenticatedAdminWebsiteRoute
+  '/_authenticated/admin/website-preview': typeof AuthenticatedAdminWebsitePreviewRoute
+  '/_authenticated/creator/dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/_authenticated/trainer/profile': typeof AuthenticatedTrainerProfileRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
-  '/_authenticated/coaching/': typeof AuthenticatedCoachingIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -634,53 +662,52 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
-    | '/browse'
-    | '/classes'
     | '/community'
     | '/contact'
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
     | '/sitemap.xml'
     | '/terms'
-    | '/verify-email'
     | '/admin'
     | '/dashboard'
+    | '/home'
+    | '/library'
     | '/messages'
     | '/notifications'
     | '/onboarding'
+    | '/profile'
+    | '/qa'
     | '/settings'
-    | '/classes/$classId'
+    | '/dev/header-preview'
     | '/posts/$postId'
     | '/trainers/$username'
     | '/u/$username'
-    | '/classes/'
     | '/trainers/'
     | '/admin/analytics'
     | '/admin/audit-logs'
-    | '/admin/bookings'
     | '/admin/categories'
-    | '/admin/classes'
-    | '/admin/coaching'
     | '/admin/comments'
     | '/admin/community'
     | '/admin/countries'
     | '/admin/demo'
-    | '/admin/disputes'
     | '/admin/earnings'
     | '/admin/languages'
     | '/admin/moderation'
     | '/admin/notifications'
+    | '/admin/payment-gateways'
     | '/admin/payment-settings'
     | '/admin/payments'
     | '/admin/payouts'
     | '/admin/policies'
     | '/admin/posts'
     | '/admin/refunds'
+    | '/admin/reports'
     | '/admin/roles'
     | '/admin/security'
     | '/admin/settings'
@@ -691,60 +718,64 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/transformations'
     | '/admin/users'
-    | '/coaching/$threadId'
+    | '/admin/webhooks'
+    | '/admin/website'
+    | '/admin/website-preview'
+    | '/creator/dashboard'
     | '/trainer/profile'
     | '/admin/'
-    | '/coaching/'
+    | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/auth'
-    | '/browse'
     | '/community'
     | '/contact'
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
     | '/sitemap.xml'
     | '/terms'
-    | '/verify-email'
     | '/dashboard'
+    | '/home'
+    | '/library'
     | '/messages'
     | '/notifications'
     | '/onboarding'
+    | '/profile'
+    | '/qa'
     | '/settings'
-    | '/classes/$classId'
+    | '/dev/header-preview'
     | '/posts/$postId'
     | '/trainers/$username'
     | '/u/$username'
-    | '/classes'
     | '/trainers'
     | '/admin/analytics'
     | '/admin/audit-logs'
-    | '/admin/bookings'
     | '/admin/categories'
-    | '/admin/classes'
-    | '/admin/coaching'
     | '/admin/comments'
     | '/admin/community'
     | '/admin/countries'
     | '/admin/demo'
-    | '/admin/disputes'
     | '/admin/earnings'
     | '/admin/languages'
     | '/admin/moderation'
     | '/admin/notifications'
+    | '/admin/payment-gateways'
     | '/admin/payment-settings'
     | '/admin/payments'
     | '/admin/payouts'
     | '/admin/policies'
     | '/admin/posts'
     | '/admin/refunds'
+    | '/admin/reports'
     | '/admin/roles'
     | '/admin/security'
     | '/admin/settings'
@@ -755,63 +786,66 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/transformations'
     | '/admin/users'
-    | '/coaching/$threadId'
+    | '/admin/webhooks'
+    | '/admin/website'
+    | '/admin/website-preview'
+    | '/creator/dashboard'
     | '/trainer/profile'
     | '/admin'
-    | '/coaching'
+    | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/stripe'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/about'
     | '/auth'
-    | '/browse'
-    | '/classes'
     | '/community'
     | '/contact'
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
     | '/sitemap.xml'
     | '/terms'
-    | '/verify-email'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/home'
+    | '/_authenticated/library'
     | '/_authenticated/messages'
     | '/_authenticated/notifications'
     | '/_authenticated/onboarding'
+    | '/_authenticated/profile'
+    | '/_authenticated/qa'
     | '/_authenticated/settings'
-    | '/classes/$classId'
+    | '/dev/header-preview'
     | '/posts/$postId'
     | '/trainers/$username'
     | '/u/$username'
-    | '/classes/'
     | '/trainers/'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/audit-logs'
-    | '/_authenticated/admin/bookings'
     | '/_authenticated/admin/categories'
-    | '/_authenticated/admin/classes'
-    | '/_authenticated/admin/coaching'
     | '/_authenticated/admin/comments'
     | '/_authenticated/admin/community'
     | '/_authenticated/admin/countries'
     | '/_authenticated/admin/demo'
-    | '/_authenticated/admin/disputes'
     | '/_authenticated/admin/earnings'
     | '/_authenticated/admin/languages'
     | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/notifications'
+    | '/_authenticated/admin/payment-gateways'
     | '/_authenticated/admin/payment-settings'
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/payouts'
     | '/_authenticated/admin/policies'
     | '/_authenticated/admin/posts'
     | '/_authenticated/admin/refunds'
+    | '/_authenticated/admin/reports'
     | '/_authenticated/admin/roles'
     | '/_authenticated/admin/security'
     | '/_authenticated/admin/settings'
@@ -822,10 +856,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/transactions'
     | '/_authenticated/admin/transformations'
     | '/_authenticated/admin/users'
-    | '/_authenticated/coaching/$threadId'
+    | '/_authenticated/admin/webhooks'
+    | '/_authenticated/admin/website'
+    | '/_authenticated/admin/website-preview'
+    | '/_authenticated/creator/dashboard'
     | '/_authenticated/trainer/profile'
     | '/_authenticated/admin/'
-    | '/_authenticated/coaching/'
+    | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/stripe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -833,35 +871,29 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
-  BrowseRoute: typeof BrowseRoute
-  ClassesRoute: typeof ClassesRouteWithChildren
   CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
   CookiesRoute: typeof CookiesRoute
   ExploreRoute: typeof ExploreRoute
   FeedRoute: typeof FeedRoute
+  PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   ShortsRoute: typeof ShortsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
+  DevHeaderPreviewRoute: typeof DevHeaderPreviewRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
   TrainersUsernameRoute: typeof TrainersUsernameRoute
   UUsernameRoute: typeof UUsernameRoute
   TrainersIndexRoute: typeof TrainersIndexRoute
+  ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
+  ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -904,6 +936,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feed': {
       id: '/feed'
       path: '/feed'
@@ -937,20 +976,6 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/community'
       preLoaderRoute: typeof CommunityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/classes': {
-      id: '/classes'
-      path: '/classes'
-      fullPath: '/classes'
-      preLoaderRoute: typeof ClassesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/browse': {
-      id: '/browse'
-      path: '/browse'
-      fullPath: '/browse'
-      preLoaderRoute: typeof BrowseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -988,13 +1013,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/classes/': {
-      id: '/classes/'
-      path: '/'
-      fullPath: '/classes/'
-      preLoaderRoute: typeof ClassesIndexRouteImport
-      parentRoute: typeof ClassesRoute
-    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -1016,18 +1034,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostsPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/classes/$classId': {
-      id: '/classes/$classId'
-      path: '/$classId'
-      fullPath: '/classes/$classId'
-      preLoaderRoute: typeof ClassesClassIdRouteImport
-      parentRoute: typeof ClassesRoute
+    '/dev/header-preview': {
+      id: '/dev/header-preview'
+      path: '/dev/header-preview'
+      fullPath: '/dev/header-preview'
+      preLoaderRoute: typeof DevHeaderPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/qa': {
+      id: '/_authenticated/qa'
+      path: '/qa'
+      fullPath: '/qa'
+      preLoaderRoute: typeof AuthenticatedQaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/onboarding': {
@@ -1051,6 +1083,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/library': {
+      id: '/_authenticated/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthenticatedLibraryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -1063,13 +1109,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/coaching/': {
-      id: '/_authenticated/coaching/'
-      path: '/coaching'
-      fullPath: '/coaching/'
-      preLoaderRoute: typeof AuthenticatedCoachingIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/': {
@@ -1086,12 +1125,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/coaching/$threadId': {
-      id: '/_authenticated/coaching/$threadId'
-      path: '/coaching/$threadId'
-      fullPath: '/coaching/$threadId'
-      preLoaderRoute: typeof AuthenticatedCoachingThreadIdRouteImport
+    '/_authenticated/creator/dashboard': {
+      id: '/_authenticated/creator/dashboard'
+      path: '/creator/dashboard'
+      fullPath: '/creator/dashboard'
+      preLoaderRoute: typeof AuthenticatedCreatorDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/website-preview': {
+      id: '/_authenticated/admin/website-preview'
+      path: '/website-preview'
+      fullPath: '/admin/website-preview'
+      preLoaderRoute: typeof AuthenticatedAdminWebsitePreviewRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/website': {
+      id: '/_authenticated/admin/website'
+      path: '/website'
+      fullPath: '/admin/website'
+      preLoaderRoute: typeof AuthenticatedAdminWebsiteRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/webhooks': {
+      id: '/_authenticated/admin/webhooks'
+      path: '/webhooks'
+      fullPath: '/admin/webhooks'
+      preLoaderRoute: typeof AuthenticatedAdminWebhooksRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
@@ -1163,6 +1223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRolesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/reports': {
+      id: '/_authenticated/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/refunds': {
       id: '/_authenticated/admin/refunds'
       path: '/refunds'
@@ -1205,6 +1272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPaymentSettingsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/payment-gateways': {
+      id: '/_authenticated/admin/payment-gateways'
+      path: '/payment-gateways'
+      fullPath: '/admin/payment-gateways'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/notifications': {
       id: '/_authenticated/admin/notifications'
       path: '/notifications'
@@ -1231,13 +1305,6 @@ declare module '@tanstack/react-router' {
       path: '/earnings'
       fullPath: '/admin/earnings'
       preLoaderRoute: typeof AuthenticatedAdminEarningsRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/disputes': {
-      id: '/_authenticated/admin/disputes'
-      path: '/disputes'
-      fullPath: '/admin/disputes'
-      preLoaderRoute: typeof AuthenticatedAdminDisputesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/demo': {
@@ -1268,32 +1335,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCommentsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/coaching': {
-      id: '/_authenticated/admin/coaching'
-      path: '/coaching'
-      fullPath: '/admin/coaching'
-      preLoaderRoute: typeof AuthenticatedAdminCoachingRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/classes': {
-      id: '/_authenticated/admin/classes'
-      path: '/classes'
-      fullPath: '/admin/classes'
-      preLoaderRoute: typeof AuthenticatedAdminClassesRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/categories': {
       id: '/_authenticated/admin/categories'
       path: '/categories'
       fullPath: '/admin/categories'
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/bookings': {
-      id: '/_authenticated/admin/bookings'
-      path: '/bookings'
-      fullPath: '/admin/bookings'
-      preLoaderRoute: typeof AuthenticatedAdminBookingsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/audit-logs': {
@@ -1310,31 +1356,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/webhooks/stripe': {
+      id: '/api/public/webhooks/stripe'
+      path: '/api/public/webhooks/stripe'
+      fullPath: '/api/public/webhooks/stripe'
+      preLoaderRoute: typeof ApiPublicWebhooksStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/paypal': {
+      id: '/api/public/webhooks/paypal'
+      path: '/api/public/webhooks/paypal'
+      fullPath: '/api/public/webhooks/paypal'
+      preLoaderRoute: typeof ApiPublicWebhooksPaypalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminAuditLogsRoute: typeof AuthenticatedAdminAuditLogsRoute
-  AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
-  AuthenticatedAdminClassesRoute: typeof AuthenticatedAdminClassesRoute
-  AuthenticatedAdminCoachingRoute: typeof AuthenticatedAdminCoachingRoute
   AuthenticatedAdminCommentsRoute: typeof AuthenticatedAdminCommentsRoute
   AuthenticatedAdminCommunityRoute: typeof AuthenticatedAdminCommunityRoute
   AuthenticatedAdminCountriesRoute: typeof AuthenticatedAdminCountriesRoute
   AuthenticatedAdminDemoRoute: typeof AuthenticatedAdminDemoRoute
-  AuthenticatedAdminDisputesRoute: typeof AuthenticatedAdminDisputesRoute
   AuthenticatedAdminEarningsRoute: typeof AuthenticatedAdminEarningsRoute
   AuthenticatedAdminLanguagesRoute: typeof AuthenticatedAdminLanguagesRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
+  AuthenticatedAdminPaymentGatewaysRoute: typeof AuthenticatedAdminPaymentGatewaysRoute
   AuthenticatedAdminPaymentSettingsRoute: typeof AuthenticatedAdminPaymentSettingsRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminPayoutsRoute: typeof AuthenticatedAdminPayoutsRoute
   AuthenticatedAdminPoliciesRoute: typeof AuthenticatedAdminPoliciesRoute
   AuthenticatedAdminPostsRoute: typeof AuthenticatedAdminPostsRoute
   AuthenticatedAdminRefundsRoute: typeof AuthenticatedAdminRefundsRoute
+  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
   AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
   AuthenticatedAdminSecurityRoute: typeof AuthenticatedAdminSecurityRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
@@ -1345,6 +1403,9 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
   AuthenticatedAdminTransformationsRoute: typeof AuthenticatedAdminTransformationsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminWebhooksRoute: typeof AuthenticatedAdminWebhooksRoute
+  AuthenticatedAdminWebsiteRoute: typeof AuthenticatedAdminWebsiteRoute
+  AuthenticatedAdminWebsitePreviewRoute: typeof AuthenticatedAdminWebsitePreviewRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1352,19 +1413,17 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
   {
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminAuditLogsRoute: AuthenticatedAdminAuditLogsRoute,
-    AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
-    AuthenticatedAdminClassesRoute: AuthenticatedAdminClassesRoute,
-    AuthenticatedAdminCoachingRoute: AuthenticatedAdminCoachingRoute,
     AuthenticatedAdminCommentsRoute: AuthenticatedAdminCommentsRoute,
     AuthenticatedAdminCommunityRoute: AuthenticatedAdminCommunityRoute,
     AuthenticatedAdminCountriesRoute: AuthenticatedAdminCountriesRoute,
     AuthenticatedAdminDemoRoute: AuthenticatedAdminDemoRoute,
-    AuthenticatedAdminDisputesRoute: AuthenticatedAdminDisputesRoute,
     AuthenticatedAdminEarningsRoute: AuthenticatedAdminEarningsRoute,
     AuthenticatedAdminLanguagesRoute: AuthenticatedAdminLanguagesRoute,
     AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
+    AuthenticatedAdminPaymentGatewaysRoute:
+      AuthenticatedAdminPaymentGatewaysRoute,
     AuthenticatedAdminPaymentSettingsRoute:
       AuthenticatedAdminPaymentSettingsRoute,
     AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
@@ -1372,6 +1431,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminPoliciesRoute: AuthenticatedAdminPoliciesRoute,
     AuthenticatedAdminPostsRoute: AuthenticatedAdminPostsRoute,
     AuthenticatedAdminRefundsRoute: AuthenticatedAdminRefundsRoute,
+    AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
     AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
     AuthenticatedAdminSecurityRoute: AuthenticatedAdminSecurityRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
@@ -1383,6 +1443,10 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminTransformationsRoute:
       AuthenticatedAdminTransformationsRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+    AuthenticatedAdminWebhooksRoute: AuthenticatedAdminWebhooksRoute,
+    AuthenticatedAdminWebsiteRoute: AuthenticatedAdminWebsiteRoute,
+    AuthenticatedAdminWebsitePreviewRoute:
+      AuthenticatedAdminWebsitePreviewRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
 
@@ -1394,66 +1458,60 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedQaRoute: typeof AuthenticatedQaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedCoachingThreadIdRoute: typeof AuthenticatedCoachingThreadIdRoute
+  AuthenticatedCreatorDashboardRoute: typeof AuthenticatedCreatorDashboardRoute
   AuthenticatedTrainerProfileRoute: typeof AuthenticatedTrainerProfileRoute
-  AuthenticatedCoachingIndexRoute: typeof AuthenticatedCoachingIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedQaRoute: AuthenticatedQaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedCoachingThreadIdRoute: AuthenticatedCoachingThreadIdRoute,
+  AuthenticatedCreatorDashboardRoute: AuthenticatedCreatorDashboardRoute,
   AuthenticatedTrainerProfileRoute: AuthenticatedTrainerProfileRoute,
-  AuthenticatedCoachingIndexRoute: AuthenticatedCoachingIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
-interface ClassesRouteChildren {
-  ClassesClassIdRoute: typeof ClassesClassIdRoute
-  ClassesIndexRoute: typeof ClassesIndexRoute
-}
-
-const ClassesRouteChildren: ClassesRouteChildren = {
-  ClassesClassIdRoute: ClassesClassIdRoute,
-  ClassesIndexRoute: ClassesIndexRoute,
-}
-
-const ClassesRouteWithChildren =
-  ClassesRoute._addFileChildren(ClassesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
-  BrowseRoute: BrowseRoute,
-  ClassesRoute: ClassesRouteWithChildren,
   CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
   CookiesRoute: CookiesRoute,
   ExploreRoute: ExploreRoute,
   FeedRoute: FeedRoute,
+  PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   ShortsRoute: ShortsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
+  DevHeaderPreviewRoute: DevHeaderPreviewRoute,
   PostsPostIdRoute: PostsPostIdRoute,
   TrainersUsernameRoute: TrainersUsernameRoute,
   UUsernameRoute: UUsernameRoute,
   TrainersIndexRoute: TrainersIndexRoute,
+  ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
+  ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

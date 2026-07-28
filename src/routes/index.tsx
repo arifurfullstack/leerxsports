@@ -1,18 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { Flame, Globe2, ShieldCheck, Sparkles, ArrowRight, Play, Star, Zap, Dumbbell, LineChart, Clapperboard } from "lucide-react";
+import { Flame, Globe2, ShieldCheck, ArrowRight, Play, Star, Zap, Dumbbell, LineChart, Clapperboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLowPowerMode, useInView, useHasBeenInView } from "@/hooks/use-hero-perf";
 import { HomeSections } from "@/components/home-sections";
 import { track, useScrollDepth } from "@/lib/analytics";
+import { RedirectIfAuthed } from "@/components/redirect-if-authed";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "LEER Sports — Fitness Is The Only Law" },
-      { name: "description", content: "Restricted area for elite creators and premium members. Discover verified pro trainers, unlock premium workouts, and get personalized video coaching every month." },
+      { name: "description", content: "Restricted area for elite creators and premium fans. Discover verified pro creators, unlock premium workouts, and get personalized video coaching every month." },
       { property: "og:title", content: "LEER Sports — Fitness Is The Only Law" },
-      { property: "og:description", content: "Restricted area for elite creators and premium members." },
+      { property: "og:description", content: "Restricted area for elite creators and premium fans." },
       { property: "og:type", content: "website" },
     ],
   }),
@@ -29,55 +30,34 @@ function Index() {
   // Pause blob/pulse animations when hero is offscreen or on constrained devices.
   const animateBg = heroInView && !lowPower;
   return (
-    <div ref={heroRef} className="relative isolate overflow-hidden bg-background text-foreground">
-      {/* Ambient background: layered gradients + grid + blobs */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+    <div ref={heroRef} className="relative isolate overflow-hidden bg-[#000000] text-foreground">
+      <RedirectIfAuthed />
+      {/* Client PDF Spec: 100% Solid Deep Black (#000000) with subtle Neon Red centerpiece glow */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[#000000]">
         <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(55% 45% at 20% 20%, color-mix(in oklch, var(--primary) 28%, transparent) 0%, transparent 65%), radial-gradient(45% 40% at 85% 15%, color-mix(in oklch, #f472b6 22%, transparent) 0%, transparent 70%), radial-gradient(50% 45% at 70% 90%, color-mix(in oklch, #38bdf8 20%, transparent) 0%, transparent 70%)",
-          }}
+          className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-premium/15 blur-[120px]"
         />
-        {!lowPower && (
-          <div
-            className="absolute inset-0 opacity-[0.15] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_75%)]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px)",
-              backgroundSize: "48px 48px",
-            }}
-          />
-        )}
-        <div
-          className={`absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary/20 ${lowPower ? "blur-2xl" : "blur-3xl"} ${animateBg ? "motion-safe:animate-pulse" : ""}`}
-        />
-        {!lowPower && (
-          <div
-            className={`absolute top-40 -right-20 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-3xl ${animateBg ? "motion-safe:animate-pulse [animation-delay:1s]" : ""}`}
-          />
-        )}
       </div>
 
       <section
         data-hero
         aria-label="Hero"
-        className="hero-scope relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-20 pt-14 text-center sm:px-6 sm:pt-20 lg:pt-24"
+        className="hero-scope relative mx-auto flex max-w-6xl flex-col items-center px-4 text-center sm:px-6 lg:px-8 pt-[clamp(3.5rem,5.5vw+1rem,6.5rem)] pb-[clamp(4rem,6vw+1rem,7rem)]"
       >
         {/* Announcement pill */}
-        <div className="mb-8 overflow-hidden">
+        <div className="mb-[clamp(1.5rem,2.5vw+0.5rem,2.5rem)] overflow-hidden">
           <Link
-            to="/browse"
-            className="group hero-reveal type-eyebrow inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1.5 font-semibold italic text-muted-foreground backdrop-blur outline-none transition-[color,border-color,box-shadow,transform] duration-200 hover:border-primary/60 hover:text-foreground focus-visible:border-primary/70 focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98]"
+            to="/feed"
+            className="group hero-reveal type-eyebrow inline-flex items-center gap-2.5 rounded-full border border-hairline-strong bg-card/70 px-3.5 py-1.5 font-semibold text-muted-foreground backdrop-blur outline-none transition-[color,border-color,transform] duration-200 hover:border-premium/60 hover:text-foreground focus-visible:border-premium/70 focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-premium/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-px"
             style={{ animationDelay: "80ms" }}
           >
             <span className="relative flex h-2 w-2">
               {animateBg && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 motion-reduce:hidden" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-premium/70 motion-reduce:hidden" />
               )}
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-premium" />
             </span>
-            New · Verified Trainers Are Live
+            <span>New Drop · Verified Creators Live</span>
             <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
           </Link>
         </div>
@@ -85,7 +65,7 @@ function Index() {
         {/* Headline */}
         <h1
           aria-label="Fitness Is The Only Law"
-          className="type-display font-display uppercase italic text-foreground mx-auto max-w-[14ch] sm:max-w-[16ch] md:max-w-[18ch] lg:max-w-[20ch]"
+          className="group/headline type-display font-display uppercase italic text-foreground mx-auto max-w-[9ch] leading-[0.92] sm:max-w-[12ch] sm:leading-[0.9] md:max-w-[14ch] md:leading-[0.88] lg:max-w-[16ch] lg:leading-[0.86]"
         >
           <span aria-hidden="true" className="block overflow-hidden pb-[0.08em]">
             <span
@@ -97,53 +77,57 @@ function Index() {
           </span>
           <span aria-hidden="true" className="relative block overflow-hidden pb-[0.08em]">
             <span
-              className="hero-reveal type-display-tight block whitespace-nowrap"
+              className="hero-reveal type-display-tight block"
               style={{ animationDelay: "420ms" }}
             >
-              <span className="hero-sweep inline-block">{"The\u00A0Only\u00A0Law"}</span>
+              <span className="text-foreground">The&nbsp;Only </span>
+              <span className="inline-block text-premium transition-transform duration-500 ease-out motion-safe:group-hover/headline:-translate-y-0.5 motion-safe:group-hover/headline:scale-[1.03]">
+                Law.
+              </span>
             </span>
-            <Sparkles
-              aria-hidden
-              className={`pointer-events-none absolute right-2 top-1 h-5 w-5 text-fuchsia-400 sm:right-6 sm:top-2 sm:h-7 sm:w-7 ${animateBg ? "motion-safe:animate-pulse" : ""}`}
-            />
           </span>
         </h1>
 
-        {/* Sub-copy */}
+        {/* Sub-copy per Client PDF Spec */}
         <p
-          className="hero-reveal type-lead mt-6 max-w-2xl text-balance font-medium text-muted-foreground sm:mt-8"
+          className="hero-reveal type-lead mt-[clamp(1rem,1.5vw+0.5rem,2rem)] max-w-[34ch] text-balance font-medium leading-[1.5] text-muted-foreground sm:max-w-xl"
           style={{ animationDelay: "620ms" }}
         >
-          An exclusive space for elite creators and premium members. Discover verified pro
-          trainers, unlock elite content, and get{" "}
-          <span className="text-foreground">personalized video coaching</span> every month.
+          <span className="font-bold tracking-widest text-premium uppercase">RESTRICTED AREA.</span> Exclusive space for elite creators and premium members.
         </p>
 
         {/* CTAs */}
         <div
-          className="hero-reveal mt-8 flex w-full max-w-md flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
+          className="hero-reveal mx-auto mt-[clamp(1.75rem,2.5vw+0.75rem,2.75rem)] grid w-full max-w-md grid-cols-1 gap-3 sm:max-w-xl sm:grid-cols-2 md:flex md:w-auto md:max-w-none md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-4"
           style={{ animationDelay: "780ms" }}
         >
           <Link
             to="/auth"
-            className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-full bg-primary px-6 font-display text-sm uppercase tracking-[0.32em]! [word-spacing:0.15em]! text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-[box-shadow,transform] duration-200 hover:shadow-xl hover:shadow-primary/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] sm:shrink-0 sm:px-8"
+            className="group relative inline-flex h-12 w-full items-center justify-center overflow-hidden rounded-none bg-primary px-7 font-display text-sm uppercase tracking-[0.28em]! text-primary-foreground outline-none transition-transform duration-200 hover:bg-premium hover:text-premium-foreground focus-visible:ring-2 focus-visible:ring-premium focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 md:h-14 md:w-auto md:shrink-0 md:px-9"
           >
-            <span className="absolute inset-0 -z-10 bg-gradient-to-r from-primary via-fuchsia-500 to-orange-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <span className="whitespace-nowrap">Enter The Platform</span>
-            <ArrowRight className="ml-2 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition-[transform,opacity] duration-700 ease-out motion-safe:group-hover:translate-x-[420%] motion-safe:group-hover:opacity-100 motion-reduce:hidden"
+            />
+            <span className="relative whitespace-nowrap">Shop The Platform</span>
+            <ArrowRight className="relative ml-2 h-4 w-4 shrink-0 transition-transform duration-300 ease-out group-hover:translate-x-1" aria-hidden="true" />
           </Link>
           <Link
             to="/trainers"
-            className="group inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 font-display text-sm uppercase tracking-[0.32em]! [word-spacing:0.15em]! text-foreground backdrop-blur outline-none transition-[color,border-color,box-shadow,transform] duration-200 hover:border-primary/60 hover:text-primary focus-visible:border-primary/70 focus-visible:text-primary focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] sm:shrink-0 sm:px-8"
+            className="group relative inline-flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-none border border-foreground/70 bg-transparent px-7 font-display text-sm uppercase tracking-[0.28em]! text-foreground outline-none transition-[color,border-color,transform] duration-300 hover:border-foreground hover:text-background focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:hover:-translate-y-0.5 md:h-14 md:w-auto md:shrink-0 md:px-9"
           >
-            <Play className="h-4 w-4 shrink-0 fill-current transition-transform duration-200 motion-safe:group-hover:scale-110" aria-hidden="true" />
-            <span className="whitespace-nowrap">Explore Trainers</span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 origin-left scale-x-0 bg-foreground transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:group-hover:scale-x-100 motion-reduce:group-hover:scale-x-100"
+            />
+            <Play className="relative h-4 w-4 shrink-0 fill-current transition-transform duration-300 ease-out motion-safe:group-hover:scale-110 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+            <span className="relative whitespace-nowrap">Explore Creators</span>
           </Link>
         </div>
 
         {/* Trust row */}
         <div
-          className="hero-reveal mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs text-muted-foreground sm:mt-12"
+          className="hero-reveal mt-[clamp(2rem,3vw+0.75rem,3rem)] flex flex-wrap items-center justify-center gap-x-6 gap-y-3 leading-[1.4] text-xs text-muted-foreground"
           style={{ animationDelay: "920ms" }}
         >
           <div className="group/trust flex items-center gap-2">
@@ -186,7 +170,7 @@ function Index() {
 
 /**
  * Kinetic bento — unified stats + features composition (below hero).
- * Locked palette: Charcoal & Ember (#1a1a1a / #2d2d2d / #4a4a4a / #e85d3a).
+  * Uses semantic dark tokens: card / background / border / premium (neon-red).
  * Lazy-mounts once in view to skip below-fold work on initial render.
  */
 function KineticBento() {
@@ -220,38 +204,38 @@ function KineticBento() {
         >
           {/* HERO STAT — 12K+ Elite Sessions */}
           <article
-            className="tile-anim group relative col-span-4 flex min-h-[200px] flex-col justify-center overflow-hidden rounded-3xl bg-[#e85d3a] p-7 sm:p-8 md:col-span-4 lg:col-span-4 lg:min-h-0"
+            className="tile-anim group relative col-span-4 flex min-h-[200px] flex-col justify-center overflow-hidden rounded-3xl bg-premium p-7 sm:p-8 md:col-span-4 lg:col-span-4 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "0ms" }}
           >
             <Zap
               aria-hidden
-              className="pointer-events-none absolute -right-4 -bottom-4 h-32 w-32 text-white/20 transition-transform duration-500 motion-safe:group-hover:scale-110"
+              className="pointer-events-none absolute -right-4 -bottom-4 h-32 w-32 text-premium-foreground/25 transition-transform duration-500 motion-safe:group-hover:scale-110"
               strokeWidth={1.5}
             />
-            <span className="type-eyebrow mb-2 font-sans font-semibold text-white/80">
+            <span className="type-eyebrow mb-2 font-sans font-semibold text-premium-foreground/85">
               Total Impact
             </span>
-            <div className="type-metric font-display uppercase text-white">
+            <div className="type-metric font-display uppercase text-premium-foreground">
               12K+
             </div>
-            <p className="type-tile mt-2 font-display uppercase text-white/90">
+            <p className="type-tile mt-2 font-display uppercase text-foreground/90">
               Elite Sessions
             </p>
           </article>
 
           {/* HERO FEATURE — Elite Content (tall) */}
           <article
-            className="tile-anim group relative col-span-4 flex min-h-[340px] flex-col justify-between overflow-hidden rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] p-7 hover:border-[#e85d3a]/50 sm:p-8 md:col-span-4 md:row-span-2 md:min-h-[360px] lg:col-span-4 lg:row-span-2 lg:min-h-0"
+            className="tile-anim group relative col-span-4 flex min-h-[340px] flex-col justify-between overflow-hidden rounded-3xl border border-border bg-card p-7 hover:border-premium/50 sm:p-8 md:col-span-4 md:row-span-2 md:min-h-[360px] lg:col-span-4 lg:row-span-2 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "80ms" }}
           >
             <div className="relative z-10">
-              <div className="mb-6 grid h-12 w-12 place-items-center rounded-xl bg-[#4a4a4a] transition-colors duration-300 group-hover:bg-[#e85d3a]">
-                <Flame className="h-6 w-6 text-[#e85d3a] transition-colors duration-300 group-hover:text-white" />
+              <div className="mb-6 grid h-12 w-12 place-items-center rounded-xl bg-muted transition-colors duration-300 group-hover:bg-premium">
+                <Flame className="h-6 w-6 text-premium transition-colors duration-300 group-hover:text-premium-foreground" />
               </div>
-              <h3 className="type-tile-lg font-display uppercase text-white">
+              <h3 className="type-tile-lg font-display uppercase text-foreground">
                 Elite Content
               </h3>
-              <p className="type-small mt-3 font-sans text-neutral-400">
+              <p className="type-small mt-3 font-sans text-muted-foreground">
                 Instagram-style feed of premium workouts, transformations, and technique breakdowns from the world's best.
               </p>
             </div>
@@ -265,11 +249,11 @@ function KineticBento() {
                 key={label}
                 type="button"
                 aria-label={label}
-                className="group/mini relative flex aspect-square min-w-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-[#4a4a4a] bg-[#1a1a1a]/70 p-1.5 transition-all duration-200 outline-none hover:-translate-y-1 hover:border-[#e85d3a]/70 hover:bg-[#1a1a1a] hover:shadow-lg hover:shadow-[#e85d3a]/10 focus-visible:ring-2 focus-visible:ring-[#e85d3a]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d] active:translate-y-0 active:scale-[0.97] sm:gap-1.5 sm:rounded-xl sm:p-2"
+                className="group/mini relative flex aspect-square min-w-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-border bg-background/70 p-1.5 transition-all duration-200 outline-none hover:-translate-y-1 hover:border-premium/70 hover:bg-background hover:shadow-lg hover:shadow-premium/10 focus-visible:ring-2 focus-visible:ring-premium/70 focus-visible:ring-offset-2 focus-visible:ring-offset-card active:translate-y-0 active:scale-[0.97] sm:gap-1.5 sm:rounded-xl sm:p-2"
               >
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#e85d3a]/10 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover/mini:opacity-100 group-focus-visible/mini:opacity-100" />
-                <Icon className="h-5 w-5 text-[#e85d3a] transition-transform duration-200 group-hover/mini:scale-110 group-focus-visible/mini:scale-110 sm:h-7 sm:w-7" strokeWidth={1.75} />
-                <span className="truncate max-w-full text-[8px] font-sans font-semibold uppercase tracking-[0.14em] text-neutral-400 transition-colors duration-200 group-hover/mini:text-white/90 group-focus-visible/mini:text-white/90 sm:text-[10px] sm:tracking-[0.18em]">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-premium/10 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover/mini:opacity-100 group-focus-visible/mini:opacity-100" />
+                <Icon className="h-5 w-5 text-premium transition-transform duration-200 group-hover/mini:scale-110 group-focus-visible/mini:scale-110 sm:h-7 sm:w-7" strokeWidth={1.75} />
+                <span className="truncate max-w-full text-[8px] font-sans font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors duration-200 group-hover/mini:text-foreground/90 group-focus-visible/mini:text-foreground/90 sm:text-[10px] sm:tracking-[0.18em]">
                   {label}
                 </span>
               </button>
@@ -279,17 +263,17 @@ function KineticBento() {
 
           {/* FEATURE — Verified Pros (wide) */}
           <article
-            className="tile-anim group col-span-4 flex min-h-[140px] items-center gap-5 rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] p-6 hover:border-[#e85d3a]/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
+            className="tile-anim group col-span-4 flex min-h-[140px] items-center gap-5 rounded-3xl border border-border bg-card p-6 hover:border-premium/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "160ms" }}
           >
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-[#4a4a4a] bg-[#1a1a1a] sm:h-16 sm:w-16">
-              <ShieldCheck className="h-7 w-7 text-[#e85d3a] sm:h-8 sm:w-8" />
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-border bg-background sm:h-16 sm:w-16">
+              <ShieldCheck className="h-7 w-7 text-premium sm:h-8 sm:w-8" />
             </div>
             <div className="min-w-0">
-              <h3 className="type-tile font-display uppercase text-white">
+              <h3 className="type-tile font-display uppercase text-foreground">
                 Verified Pros
               </h3>
-              <p className="type-eyebrow mt-1.5 font-sans text-neutral-400" style={{ letterSpacing: "0.16em" }}>
+              <p className="type-eyebrow mt-1.5 font-sans text-muted-foreground" style={{ letterSpacing: "0.16em" }}>
                 Certificates &amp; identity checks on 100% of trainers.
               </p>
             </div>
@@ -297,65 +281,65 @@ function KineticBento() {
 
           {/* STAT — 500+ Trainers */}
           <article
-            className="tile-anim col-span-2 flex min-h-[160px] flex-col items-center justify-center rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] p-5 text-center hover:border-[#e85d3a]/50 sm:p-6 md:col-span-2 lg:col-span-2 lg:min-h-0"
+            className="tile-anim col-span-2 flex min-h-[160px] flex-col items-center justify-center rounded-3xl border border-border bg-card p-5 text-center hover:border-premium/50 sm:p-6 md:col-span-2 lg:col-span-2 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "220ms" }}
           >
-            <div className="type-metric-sm font-display uppercase text-[#e85d3a]">
+            <div className="type-metric-sm font-display uppercase text-premium">
               500+
             </div>
-            <p className="type-eyebrow mt-2 font-display text-neutral-400">
+            <p className="type-eyebrow mt-2 font-display text-muted-foreground">
               Trainers
             </p>
           </article>
 
           {/* STAT — 40+ Countries */}
           <article
-            className="tile-anim col-span-2 flex min-h-[160px] flex-col items-center justify-center rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] p-5 text-center hover:border-[#e85d3a]/50 sm:p-6 md:col-span-2 lg:col-span-2 lg:min-h-0"
+            className="tile-anim col-span-2 flex min-h-[160px] flex-col items-center justify-center rounded-3xl border border-border bg-card p-5 text-center hover:border-premium/50 sm:p-6 md:col-span-2 lg:col-span-2 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "280ms" }}
           >
-            <div className="type-metric-sm font-display uppercase text-white">
+            <div className="type-metric-sm font-display uppercase text-foreground">
               40+
             </div>
-            <p className="type-eyebrow mt-2 font-display text-neutral-400">
+            <p className="type-eyebrow mt-2 font-display text-muted-foreground">
               Countries
             </p>
           </article>
 
           {/* FEATURE — Global · Multilingual */}
           <article
-            className="tile-anim group col-span-4 flex min-h-[180px] flex-col justify-between gap-4 rounded-3xl border border-[#4a4a4a] bg-[#2d2d2d] p-6 hover:border-[#e85d3a]/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
+            className="tile-anim group col-span-4 flex min-h-[180px] flex-col justify-between gap-4 rounded-3xl border border-border bg-card p-6 hover:border-premium/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "340ms" }}
           >
             <div className="flex items-start justify-between gap-3">
-              <h3 className="type-tile-lg font-display uppercase text-white">
+              <h3 className="type-tile-lg font-display uppercase text-foreground">
                 Global · Multilingual
               </h3>
               <Globe2
                 aria-hidden
-                className="h-6 w-6 shrink-0 text-[#4a4a4a] transition-colors group-hover:text-[#e85d3a]"
+                className="h-6 w-6 shrink-0 text-muted-foreground transition-colors group-hover:text-premium"
               />
             </div>
-            <p className="type-small font-sans text-neutral-400">
+            <p className="type-small font-sans text-muted-foreground">
               Discover by specialty with built-in text translation for every session.
             </p>
           </article>
 
           {/* FEATURE — Video Coaching */}
           <article
-            className="tile-anim col-span-4 flex min-h-[160px] items-start gap-4 rounded-3xl border border-[#4a4a4a] bg-gradient-to-br from-[#2d2d2d] to-[#1a1a1a] p-6 hover:border-[#e85d3a]/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
+            className="tile-anim col-span-4 flex min-h-[160px] items-start gap-4 rounded-3xl border border-border bg-gradient-to-br from-card to-background p-6 hover:border-premium/50 sm:p-7 md:col-span-4 lg:col-span-4 lg:min-h-0"
             style={{ ["--tile-delay" as string]: "400ms" }}
           >
             <div className="relative mt-1.5 flex h-3 w-3 shrink-0">
               {animate && (
-                <span aria-hidden className="absolute inline-flex h-full w-full rounded-full bg-[#e85d3a]/60 motion-safe:animate-ping motion-reduce:hidden" />
+                <span aria-hidden className="absolute inline-flex h-full w-full rounded-full bg-premium/60 motion-safe:animate-ping motion-reduce:hidden" />
               )}
-              <span aria-hidden className="relative inline-flex h-3 w-3 rounded-full bg-[#e85d3a]" />
+              <span aria-hidden className="relative inline-flex h-3 w-3 rounded-full bg-premium" />
             </div>
             <div className="min-w-0">
-              <h3 className="type-tile font-display uppercase text-white">
+              <h3 className="type-tile font-display uppercase text-foreground">
                 Video Coaching
               </h3>
-              <p className="type-small mt-1.5 font-sans text-neutral-400">
+              <p className="type-small mt-1.5 font-sans text-muted-foreground">
                 One private video-feedback session per month included in every subscription.
               </p>
             </div>
@@ -380,7 +364,7 @@ function KineticBento() {
             <div
               key={i}
               aria-hidden
-              className={`skeleton-tile ${s.c} ${s.h} rounded-3xl border border-[#4a4a4a]/40 bg-[#2d2d2d]/30`}
+              className={`skeleton-tile ${s.c} ${s.h} rounded-3xl border border-border/60 bg-card/40`}
             />
           ))}
         </div>

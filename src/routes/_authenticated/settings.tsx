@@ -21,6 +21,7 @@ import { listBlocks, unblockUser, setDmsEnabled } from "@/lib/dm-functions";
 import { toast } from "sonner";
 import { ConnectedProviders } from "@/components/settings/connected-providers";
 import { MfaSetup } from "@/components/settings/mfa-setup";
+import { NotificationPreferencesCard } from "@/components/settings/notification-preferences";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — LEER Sports" }] }),
@@ -118,6 +119,8 @@ function SettingsPage() {
   const deleteMut = useMutation({
     mutationFn: async () => delFn({ data: { confirmation: "DELETE" } }),
     onSuccess: async () => {
+      const { markManualSignOut } = await import("@/lib/session-lifecycle");
+      markManualSignOut();
       await supabase.auth.signOut();
       window.location.href = "/";
     },
@@ -220,11 +223,7 @@ function SettingsPage() {
             </Card>
           )}
 
-          <Card className="p-5">
-            <div className="mb-2 font-medium">Notifications</div>
-            <p className="mb-3 text-xs text-muted-foreground">Manage per-event delivery preferences.</p>
-            <Link to="/notifications"><Button variant="outline">Open notification preferences</Button></Link>
-          </Card>
+          <NotificationPreferencesCard />
         </TabsContent>
 
         <TabsContent value="account" className="space-y-4">

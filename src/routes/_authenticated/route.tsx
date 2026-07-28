@@ -5,20 +5,47 @@ import { resolveAuthIntent } from "@/lib/auth-intent";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      // Let /admin render its own public landing before redirecting.
-      if (location.pathname === "/admin") return { user: null };
-      const intent = resolveAuthIntent(location.pathname);
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      if (location.pathname.startsWith("/admin")) {
+        throw redirect({
+          to: "/auth",
+          search: { intent: "admin", redirect: location.pathname + location.search },
+        });
+      }
       throw redirect({
-        to: "/auth",
-        search: {
-          intent,
-          redirect: location.pathname + (location.searchStr ?? ""),
-        },
+        to: "/",
       });
     }
-    return { user: data.user };
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      if (location.pathname.startsWith("/admin")) {
+        throw redirect({
+          to: "/auth",
+          search: { intent: "admin", redirect: location.pathname + location.search },
+        });
+      }
+      throw redirect({
+        to: "/",
+      });
+    }
+
+    // Check user roles
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+    const roles = (roleRows ?? []).map((r) => r.role as string);
+    const isAdmin = roles.includes("admin") || roles.includes("moderator");
+
+    // Admin users can only access the backend /admin panel pages!
+    if (isAdmin && !location.pathname.startsWith("/admin")) {
+      throw redirect({
+        to: "/admin",
+      });
+    }
+
+    return { user: data.user, isAdmin };
   },
   component: () => <Outlet />,
 });

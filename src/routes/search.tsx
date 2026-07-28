@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search as SearchIcon, BadgeCheck, MapPin, Loader2 } from "lucide-react";
@@ -16,17 +16,24 @@ import {
 } from "@/lib/search-functions";
 
 export const Route = createFileRoute("/search")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Search — LEER Sports" },
-      { name: "description", content: "Find trainers, posts, and community threads on LEER Sports." },
+      { name: "description", content: "Find creators, posts, and community threads on LEER Sports." },
     ],
   }),
   component: SearchPage,
 });
 
 function SearchPage() {
-  const [q, setQ] = useState("");
+  const { q: initialQ } = Route.useSearch();
+  const [q, setQ] = useState(initialQ ?? "");
+  useEffect(() => {
+    setQ(initialQ ?? "");
+  }, [initialQ]);
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -67,10 +74,18 @@ function SearchPage() {
     }
   };
 
+  // Auto-run when arriving with ?q= from the header shortcut.
+  useEffect(() => {
+    if ((initialQ ?? "").trim().length > 0) {
+      runAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQ]);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="font-display text-2xl">Search</h1>
-      <p className="text-sm text-muted-foreground">Trainers, posts, and community threads.</p>
+      <p className="text-sm text-muted-foreground">Creators, posts, and community threads.</p>
 
       <form
         className="mt-6 space-y-3"
@@ -114,14 +129,14 @@ function SearchPage() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="mt-8">
         <TabsList>
-          <TabsTrigger value="trainers">Trainers</TabsTrigger>
+          <TabsTrigger value="trainers">Creators</TabsTrigger>
           <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="community">Community</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trainers" className="mt-6">
           {trainerMut.isPending && <Spinner />}
-          {trainerMut.data && trainerMut.data.length === 0 && <Empty label="No trainers match." />}
+          {trainerMut.data && trainerMut.data.length === 0 && <Empty label="No creators match." />}
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {(trainerMut.data ?? []).map((t) => (
               <li key={t.user_id} className="rounded-lg border border-border bg-card p-4">

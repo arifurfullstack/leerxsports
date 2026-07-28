@@ -5,11 +5,17 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
 function getPublicSupabase() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase URL and Key must be provided in environment variables.");
+  }
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export type TransformationPost = {
@@ -48,6 +54,7 @@ export type TraineeProfile = {
   social_links: string[];
   profile_visibility: "public" | "subscribers" | "private";
   transformation_visibility: "public" | "subscribers" | "private";
+  is_verified: boolean;
   transformations: TransformationPost[];
 };
 
@@ -74,14 +81,14 @@ async function signMediaPaths<T extends { media_url: string; thumbnail_url: stri
 
 // -------- Public trainee profile fetch (only public data) --------
 export const getTraineeProfile = createServerFn({ method: "GET" })
-  .inputValidator((input) => z.object({ username: z.string().min(1) }).parse(input))
+  .validator((input) => z.object({ username: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     const supabase = getPublicSupabase();
 
     const { data: profile, error } = await supabase
       .from("profiles")
       .select(
-        "user_id, username, display_name, avatar_url, cover_url, bio, country, native_language, additional_languages, goal, experience_level, height_cm, weight_kg, body_fat_percent, skeletal_muscle_kg, gender, personal_records, social_links, profile_visibility, transformation_visibility",
+        "user_id, username, display_name, avatar_url, cover_url, bio, country, native_language, additional_languages, goal, experience_level, height_cm, weight_kg, body_fat_percent, skeletal_muscle_kg, gender, personal_records, social_links, profile_visibility, transformation_visibility, is_verified",
       )
       .ilike("username", data.username)
       .maybeSingle();
@@ -112,6 +119,64 @@ export const getTraineeProfile = createServerFn({ method: "GET" })
       ...(profile as Omit<TraineeProfile, "transformations">),
       transformations,
     } as TraineeProfile;
+  });
+
+export type TraineeFeedPost = {
+  id: string;
+  trainer_id: string;
+  kind: "feed" | "short";
+  is_premium: boolean;
+  caption: string | null;
+  media_url: string;
+  thumbnail_url: string | null;
+  respect_count: number;
+  comment_count: number;
+  created_at: string;
+};
+
+export const getTraineePosts = createServerFn({ method: "GET" })
+  .validator((input) => z.object({ userId: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    const supabase = getPublicSupabase();
+    const { data: rows, error } = await supabase
+      .from("posts")
+      .select(
+        "id, trainer_id, kind, is_premium, caption, media_url, thumbnail_url, respect_count, comment_count, created_at",
+      )
+      .eq("trainer_id", data.userId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    const raw = (rows ?? []) as TraineeFeedPost[];
+    if (raw.length === 0) return [];
+
+    const postIds = raw.map((p) => p.id);
+    const { data: commentRows } = await supabase
+      .from("comments")
+      .select("post_id")
+      .in("post_id", postIds)
+      .eq("status", "visible");
+
+    const commentCountMap = new Map<string, number>();
+    if (commentRows) {
+      for (const r of commentRows) {
+        commentCountMap.set(r.post_id, (commentCountMap.get(r.post_id) ?? 0) + 1);
+      }
+    }
+
+    const signed = await signMediaPaths(
+      supabase,
+      raw.map((p) => ({
+        ...p,
+        media_url: p.media_url || "",
+        thumbnail_url: p.thumbnail_url,
+      })),
+    );
+    return raw.map((p, i) => ({
+      ...p,
+      comment_count: commentCountMap.has(p.id) ? commentCountMap.get(p.id)! : p.comment_count,
+      media_url: signed[i]?.media_url || p.media_url,
+      thumbnail_url: signed[i]?.thumbnail_url || p.thumbnail_url,
+    }));
   });
 
 // -------- Owner: list all own transformations (any visibility) --------
@@ -148,7 +213,7 @@ const createSchema = z.object({
 
 export const createTransformation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => createSchema.parse(input))
+  .validator((input) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -173,7 +238,7 @@ export const createTransformation = createServerFn({ method: "POST" })
 
 export const deleteTransformation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error: fErr } = await supabase
@@ -215,7 +280,7 @@ const updateProfileSchema = z.object({
 
 export const updateTraineeProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => updateProfileSchema.parse(input))
+  .validator((input) => updateProfileSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase.from("profiles").update(data).eq("user_id", userId);

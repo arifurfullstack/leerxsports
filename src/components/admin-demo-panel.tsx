@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Trash2, Loader2, Check, X, ShieldPlus, Copy } from "lucide-react";
+import { Wand2, Trash2, Loader2, Check, X, ShieldPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   adminSeedDemoStep,
@@ -54,8 +54,7 @@ export function AdminDemoPanel() {
     (stats?.profiles ?? 0) +
     (stats?.posts ?? 0) +
     (stats?.community ?? 0) +
-    (stats?.transformations ?? 0) +
-    (stats?.classes ?? 0);
+    (stats?.transformations ?? 0);
 
   async function runSteps(
     kind: "seed" | "clear",
@@ -185,19 +184,18 @@ export function AdminDemoPanel() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="flex items-center gap-2 font-display text-sm uppercase tracking-widest">
-            <Sparkles className="h-4 w-4 text-primary" /> Demo content
+            <Wand2 className="h-4 w-4 text-primary" /> Demo content
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Seed sample trainers, trainees, posts, community threads, transformations and
-            classes for demos. Everything is tagged and removable in one click.
+            Seed sample creators, fans, posts, community threads, and transformations
+            for demos. Everything is tagged and removable in one click.
           </p>
           {stats && (
             <p className="mt-2 text-xs text-muted-foreground">
               Currently seeded: <strong className="text-foreground">{stats.profiles}</strong> profiles ·{" "}
               <strong className="text-foreground">{stats.posts}</strong> posts ·{" "}
               <strong className="text-foreground">{stats.community}</strong> community ·{" "}
-              <strong className="text-foreground">{stats.transformations}</strong> transformations ·{" "}
-              <strong className="text-foreground">{stats.classes}</strong> classes
+              <strong className="text-foreground">{stats.transformations}</strong> transformations
             </p>
           )}
         </div>
@@ -218,7 +216,7 @@ export function AdminDemoPanel() {
             {seeding ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Wand2 className="mr-2 h-4 w-4" />
             )}
             {total > 0 ? "Re-seed demo" : "Seed demo content"}
           </Button>

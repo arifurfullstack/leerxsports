@@ -4,17 +4,21 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
 function getPublicSupabase() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    {
-      auth: {
-        storage: undefined,
-        persistSession: false,
-        autoRefreshToken: false,
-      },
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase URL and Key must be provided in environment variables.");
+  }
+  return createClient<Database>(url, key, {
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
     },
-  );
+  });
 }
 
 export type TrainerSummary = {
@@ -46,27 +50,24 @@ export type Post = {
   created_at: string;
 };
 
+export function resolveDiscoveryCount(
+  counts: ReadonlyMap<string, number>,
+  postId: string,
+  storedCount: number,
+  _queryError: unknown,
+): number {
+  // Anonymous RLS reads may resolve to an empty result without surfacing an
+  // error. Only replace the denormalized counter when the recount actually
+  // contains this post.
+  return counts.has(postId) ? counts.get(postId)! : storedCount;
+}
+
 export type TrainerDetail = TrainerSummary & {
   value_proposition: string;
   monetization_enabled: boolean;
   dms_enabled: boolean;
   posts: Post[];
-  classes: TrainerClass[];
   community_posts: TrainerCommunityPost[];
-};
-
-export type TrainerClass = {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  category: string | null;
-  level: string | null;
-  duration_minutes: number | null;
-  schedule: string;
-  location: string | null;
-  price: number;
-  image_url: string | null;
 };
 
 export type TrainerCommunityPost = {
@@ -156,85 +157,143 @@ async function fetchDiscovery(
   kind: "feed" | "short" | "all",
   filters: ExploreFilters = {},
 ): Promise<DiscoveryPost[]> {
-  const supabase = getPublicSupabase();
-  let query = supabase
-    .from("posts")
-    .select(
-      "id, trainer_id, kind, is_premium, caption, media_url, thumbnail_url, duration_seconds, respect_count, save_count, view_count, comment_count, created_at, is_demo",
-    )
-    .eq("is_published", true).eq("is_hidden", false)
-    .order("created_at", { ascending: false })
-    .limit(120);
-  if (kind !== "all") query = query.eq("kind", kind);
-  if (filters.excludeDemo) query = query.eq("is_demo", false);
-  const { data: rows, error } = await query;
-  if (error) throw new Error(error.message);
-  const posts = rows ?? [];
-  if (posts.length === 0) return [];
-
-  const trainerIds = Array.from(new Set(posts.map((p) => p.trainer_id)));
-  const [profilesRes, tpRes] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("user_id, username, display_name, avatar_url, country")
-      .in("user_id", trainerIds),
-    supabase
-      .from("trainer_profiles")
-      .select("user_id, is_verified, specialties")
-      .in("user_id", trainerIds),
-  ]);
-  if (profilesRes.error) throw new Error(profilesRes.error.message);
-  if (tpRes.error) throw new Error(tpRes.error.message);
-  const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.user_id, p]));
-  const tpMap = new Map((tpRes.data ?? []).map((t) => [t.user_id, t]));
-
-  // Apply trainer-level filters
-  let filtered = posts.filter((p) => {
-    const pr = profileMap.get(p.trainer_id);
-    const tp = tpMap.get(p.trainer_id);
-    // Require an author profile, but not a trainer profile — the feed shows
-    // posts from every user (athletes and trainers alike).
-    if (!pr) return false;
-    if (filters.verifiedOnly && !tp?.is_verified) return false;
-    if (filters.country && pr.country?.toLowerCase() !== filters.country.toLowerCase())
-      return false;
-    if (
-      filters.specialty &&
-      !(tp?.specialties ?? []).some(
-        (s: string) => s.toLowerCase() === filters.specialty!.toLowerCase(),
+  try {
+    const supabase = getPublicSupabase();
+    let query = supabase
+      .from("posts")
+      .select(
+        "id, trainer_id, kind, is_premium, caption, media_url, thumbnail_url, duration_seconds, respect_count, save_count, view_count, comment_count, created_at, is_demo",
       )
-    )
-      return false;
-    return true;
-  });
+      .eq("is_published", true).eq("is_hidden", false)
+      .order("created_at", { ascending: false })
+      .limit(120);
+    if (kind !== "all") query = query.eq("kind", kind);
+    if (filters.excludeDemo) query = query.eq("is_demo", false);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    const posts = rows ?? [];
+    if (posts.length === 0) return [];
 
-  const sort = filters.sort ?? "top";
-  if (sort === "recent") {
-    // already sorted by created_at desc
-  } else if (sort === "random") {
-    filtered = filtered
-      .map((v) => ({ v, r: Math.random() }))
-      .sort((a, b) => a.r - b.r)
-      .map(({ v }) => v);
-  } else {
-    filtered = [...filtered].sort((a, b) => scorePost(b) - scorePost(a));
+    const trainerIds = Array.from(new Set(posts.map((p) => p.trainer_id)));
+    const [profilesRes, tpRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("user_id, username, display_name, avatar_url, country")
+        .in("user_id", trainerIds),
+      supabase
+        .from("trainer_profiles")
+        .select("user_id, is_verified, specialties")
+        .in("user_id", trainerIds),
+    ]);
+    if (profilesRes.error) throw new Error(profilesRes.error.message);
+    if (tpRes.error) throw new Error(tpRes.error.message);
+    const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.user_id, p]));
+    const tpMap = new Map((tpRes.data ?? []).map((t) => [t.user_id, t]));
+
+    // Apply trainer-level filters
+    let filtered = posts.filter((p) => {
+      const pr = profileMap.get(p.trainer_id);
+      const tp = tpMap.get(p.trainer_id);
+      if (!pr) return false;
+      if (filters.verifiedOnly && !tp?.is_verified) return false;
+      if (filters.country && pr.country?.toLowerCase() !== filters.country.toLowerCase())
+        return false;
+      if (
+        filters.specialty &&
+        !(tp?.specialties ?? []).some(
+          (s: string) => s.toLowerCase() === filters.specialty!.toLowerCase(),
+        )
+      )
+        return false;
+      return true;
+    });
+
+    const sort = filters.sort ?? "top";
+    if (sort === "recent") {
+      // already sorted by created_at desc
+    } else if (sort === "random") {
+      filtered = filtered
+        .map((v) => ({ v, r: Math.random() }))
+        .sort((a, b) => a.r - b.r)
+        .map(({ v }) => v);
+    } else {
+      filtered = [...filtered].sort((a, b) => scorePost(b) - scorePost(a));
+    }
+
+    filtered = filtered.slice(0, 60);
+    const postIds = filtered.map((p) => p.id);
+    const [commentRes, respectRes, saveRes] = await Promise.all([
+      supabase
+        .from("comments")
+        .select("post_id")
+        .in("post_id", postIds)
+        .eq("status", "visible"),
+      supabase
+        .from("respects")
+        .select("post_id")
+        .in("post_id", postIds),
+      supabase
+        .from("saves")
+        .select("post_id")
+        .in("post_id", postIds),
+    ]);
+
+    const commentCountMap = new Map<string, number>();
+    const respectCountMap = new Map<string, number>();
+    const saveCountMap = new Map<string, number>();
+
+    if (commentRes.data) {
+      for (const r of commentRes.data) {
+        commentCountMap.set(r.post_id, (commentCountMap.get(r.post_id) ?? 0) + 1);
+      }
+    }
+    if (respectRes.data) {
+      for (const r of respectRes.data) {
+        respectCountMap.set(r.post_id, (respectCountMap.get(r.post_id) ?? 0) + 1);
+      }
+    }
+    if (saveRes.data) {
+      for (const r of saveRes.data) {
+        saveCountMap.set(r.post_id, (saveCountMap.get(r.post_id) ?? 0) + 1);
+      }
+    }
+
+    const signed = await decoratePosts(supabase, filtered);
+    return signed.map((p) => {
+      const pr = profileMap.get(p.trainer_id);
+      return {
+        ...(p as Post),
+        comment_count: resolveDiscoveryCount(
+          commentCountMap,
+          p.id,
+          p.comment_count,
+          commentRes.error,
+        ),
+        respect_count: resolveDiscoveryCount(
+          respectCountMap,
+          p.id,
+          p.respect_count,
+          respectRes.error,
+        ),
+        save_count: resolveDiscoveryCount(
+          saveCountMap,
+          p.id,
+          p.save_count,
+          saveRes.error,
+        ),
+        trainer: {
+          user_id: p.trainer_id,
+          username: pr?.username ?? null,
+          display_name: pr?.display_name ?? null,
+          avatar_url: pr?.avatar_url ?? null,
+          is_verified: tpMap.get(p.trainer_id)?.is_verified ?? false,
+        },
+      };
+    });
+  } catch (err) {
+    console.error("fetchDiscovery error:", err);
+    return [];
   }
-
-  filtered = filtered.slice(0, 60);
-  const signed = await decoratePosts(supabase, filtered);
-  return signed.map((p) => {
-    const pr = profileMap.get(p.trainer_id);
-    return {
-      ...(p as Post),
-      trainer: {
-        user_id: p.trainer_id,
-        username: pr?.username ?? null,
-        display_name: pr?.display_name ?? null,
-        avatar_url: pr?.avatar_url ?? null,
-        is_verified: tpMap.get(p.trainer_id)?.is_verified ?? false,
-      },
-    };
-  });
 }
 
 export const getDiscoveryFeed = createServerFn({ method: "GET" }).handler(
@@ -262,24 +321,28 @@ export const getExplorePosts = createServerFn({ method: "POST" })
 
 export const getExploreFacets = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ countries: string[]; specialties: string[] }> => {
-    const supabase = getPublicSupabase();
-    const [profRes, tpRes] = await Promise.all([
-      supabase.from("profiles").select("country"),
-      supabase.from("trainer_profiles").select("specialties"),
-    ]);
-    const countries = Array.from(
-      new Set(
-        (profRes.data ?? [])
-          .map((r) => r.country)
-          .filter((c): c is string => !!c && c.length > 0),
-      ),
-    ).sort();
-    const specialties = Array.from(
-      new Set(
-        (tpRes.data ?? []).flatMap((r) => r.specialties ?? []) as string[],
-      ),
-    ).sort();
-    return { countries, specialties };
+    try {
+      const supabase = getPublicSupabase();
+      const [profRes, tpRes] = await Promise.all([
+        supabase.from("profiles").select("country"),
+        supabase.from("trainer_profiles").select("specialties"),
+      ]);
+      const countries = Array.from(
+        new Set(
+          (profRes.data ?? [])
+            .map((r) => r.country)
+            .filter((c): c is string => !!c && c.length > 0),
+        ),
+      ).sort();
+      const specialties = Array.from(
+        new Set(
+          (tpRes.data ?? []).flatMap((r) => r.specialties ?? []) as string[],
+        ),
+      ).sort();
+      return { countries, specialties };
+    } catch {
+      return { countries: [], specialties: [] };
+    }
   },
 );
 
@@ -348,6 +411,85 @@ export const listTrainers = createServerFn({ method: "GET" }).handler(
     });
   },
 );
+
+export type FollowListEntry = {
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_verified: boolean;
+};
+
+async function hydrateProfiles(
+  supabase: ReturnType<typeof getPublicSupabase>,
+  ids: string[],
+): Promise<FollowListEntry[]> {
+  if (ids.length === 0) return [];
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("user_id, username, display_name, avatar_url, is_verified")
+    .in("user_id", ids);
+  if (error) throw new Error(error.message);
+  const map = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+  return ids
+    .map((id) => {
+      const p = map.get(id);
+      if (!p) return null;
+      return {
+        user_id: p.user_id,
+        username: p.username ?? null,
+        display_name: p.display_name ?? null,
+        avatar_url: p.avatar_url ?? null,
+        is_verified: (p as { is_verified?: boolean }).is_verified ?? false,
+      };
+    })
+    .filter((x): x is FollowListEntry => x !== null);
+}
+
+export const listFollowConnections = createServerFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        kind: z.enum(["followers", "following", "subscribers"]),
+        limit: z.number().int().min(1).max(200).default(100),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<FollowListEntry[]> => {
+    const supabase = getPublicSupabase();
+    let ids: string[] = [];
+    if (data.kind === "followers") {
+      const { data: rows, error } = await supabase
+        .from("follows")
+        .select("follower_id, created_at")
+        .eq("trainer_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(data.limit);
+      if (error) throw new Error(error.message);
+      ids = (rows ?? []).map((r) => r.follower_id);
+    } else if (data.kind === "following") {
+      const { data: rows, error } = await supabase
+        .from("follows")
+        .select("trainer_id, created_at")
+        .eq("follower_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(data.limit);
+      if (error) throw new Error(error.message);
+      ids = (rows ?? []).map((r) => r.trainer_id);
+    } else {
+      const { data: rows, error } = await supabase
+        .from("subscriptions")
+        .select("subscriber_id, created_at")
+        .eq("trainer_id", data.userId)
+        .in("status", ["active", "trial", "grace"])
+        .order("created_at", { ascending: false })
+        .limit(data.limit);
+      if (error) throw new Error(error.message);
+      ids = (rows ?? []).map((r) => (r as { subscriber_id: string }).subscriber_id);
+    }
+    return hydrateProfiles(supabase, ids);
+  });
 
 export type SpotlightTrainer = {
   user_id: string;
@@ -528,38 +670,6 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       };
     });
 
-    // Sports classes: linked by instructor text — match display_name or username.
-    const instructorNames = [profile.display_name, profile.username].filter(
-      (v): v is string => !!v,
-    );
-    let classes: TrainerClass[] = [];
-    if (instructorNames.length > 0) {
-      const { data: cls, error: cErr } = await supabase
-        .from("sports_classes")
-        .select(
-          "id, title, slug, description, category, level, duration_minutes, schedule, location, price, image_url",
-        )
-        .eq("is_active", true)
-        .in("instructor", instructorNames)
-        .gte("schedule", new Date().toISOString())
-        .order("schedule", { ascending: true })
-        .limit(24);
-      if (cErr) throw new Error(cErr.message);
-      classes = (cls ?? []).map((c) => ({
-        id: c.id,
-        title: c.title,
-        slug: c.slug,
-        description: c.description,
-        category: c.category,
-        level: c.level,
-        duration_minutes: c.duration_minutes,
-        schedule: c.schedule,
-        location: c.location,
-        price: Number(c.price ?? 0),
-        image_url: c.image_url,
-      }));
-    }
-
     // Community threads authored by this trainer.
     const { data: comm, error: cmErr } = await supabase
       .from("community_posts")
@@ -598,82 +708,9 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       monetization_enabled: tp.monetization_enabled ?? false,
       dms_enabled: (tp as { dms_enabled?: boolean }).dms_enabled ?? true,
       posts: signedPosts as Post[],
-      classes,
       community_posts,
     };
   });
-
-export const listTrainerClasses = createServerFn({ method: "GET" })
-  .validator((input) =>
-    z
-      .object({
-        username: z.string(),
-        offset: z.number().int().min(0).default(0),
-        limit: z.number().int().min(1).max(50).default(12),
-        sort: z
-          .enum(["date-asc", "date-desc", "price-asc", "price-desc"])
-          .default("date-asc"),
-        category: z.string().nullable().optional(),
-        level: z.string().nullable().optional(),
-      })
-      .parse(input),
-  )
-  .handler(
-    async ({
-      data,
-    }): Promise<{ items: TrainerClass[]; nextOffset: number | null }> => {
-      const supabase = getPublicSupabase();
-      const { data: profile, error: pErr } = await supabase
-        .from("profiles")
-        .select("display_name, username")
-        .eq("username", data.username)
-        .maybeSingle();
-      if (pErr) throw new Error(pErr.message);
-      if (!profile) return { items: [], nextOffset: null };
-      const instructorNames = [profile.display_name, profile.username].filter(
-        (v): v is string => !!v,
-      );
-      if (instructorNames.length === 0) return { items: [], nextOffset: null };
-      const from = data.offset;
-      const to = data.offset + data.limit - 1;
-      const orderMap = {
-        "date-asc": { col: "schedule", ascending: true },
-        "date-desc": { col: "schedule", ascending: false },
-        "price-asc": { col: "price", ascending: true },
-        "price-desc": { col: "price", ascending: false },
-      } as const;
-      const ord = orderMap[data.sort];
-      let q = supabase
-        .from("sports_classes")
-        .select(
-          "id, title, slug, description, category, level, duration_minutes, schedule, location, price, image_url",
-        )
-        .eq("is_active", true)
-        .in("instructor", instructorNames)
-        .gte("schedule", new Date().toISOString());
-      if (data.category) q = q.eq("category", data.category);
-      if (data.level) q = q.eq("level", data.level);
-      const { data: cls, error: cErr } = await q
-        .order(ord.col, { ascending: ord.ascending })
-        .range(from, to);
-      if (cErr) throw new Error(cErr.message);
-      const items: TrainerClass[] = (cls ?? []).map((c) => ({
-        id: c.id,
-        title: c.title,
-        slug: c.slug,
-        description: c.description,
-        category: c.category,
-        level: c.level,
-        duration_minutes: c.duration_minutes,
-        schedule: c.schedule,
-        location: c.location,
-        price: Number(c.price ?? 0),
-        image_url: c.image_url,
-      }));
-      const nextOffset = items.length < data.limit ? null : data.offset + items.length;
-      return { items, nextOffset };
-    },
-  );
 
 export type PostDetail = DiscoveryPost & {
   is_hidden: boolean;

@@ -4,10 +4,6 @@ ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'trainee';
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'trainer';
 
 -- (New enum values must be committed before use in same tx? In PG14+ this works if not used in same statement.
---  We'll do the UPDATE and default change in a follow-up migration if needed, but attempt now.)
-COMMIT;
-BEGIN;
-
 -- Migrate legacy 'user' rows to 'trainee'
 UPDATE public.user_roles SET role = 'trainee'::public.app_role WHERE role = 'user'::public.app_role;
 

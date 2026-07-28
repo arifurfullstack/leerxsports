@@ -12,13 +12,13 @@ import { Loader2, ShieldAlert, Flag, Ban, RotateCcw, Trash2 } from "lucide-react
 import {
   adminHideTarget,
   adminIssueStrike,
-  adminListDisputes,
+
   adminListReports,
   adminListStrikes,
-  adminResolveDispute,
+
   adminResolveReport,
   adminRevokeStrike,
-  type AdminDisputeRow,
+
   type ReportRow,
 } from "@/lib/moderation-functions";
 import { Button } from "@/components/ui/button";
@@ -30,10 +30,6 @@ const reportsQ = queryOptions({
   queryKey: ["admin-reports"],
   queryFn: () => adminListReports(),
 });
-const disputesQ = queryOptions({
-  queryKey: ["admin-disputes"],
-  queryFn: () => adminListDisputes(),
-});
 const strikesQ = queryOptions({
   queryKey: ["admin-strikes"],
   queryFn: () => adminListStrikes(),
@@ -43,14 +39,13 @@ export const Route = createFileRoute("/_authenticated/admin/moderation")({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(reportsQ),
-      context.queryClient.ensureQueryData(disputesQ),
       context.queryClient.ensureQueryData(strikesQ),
     ]);
   },
   head: () => ({
     meta: [
       { title: "Admin — Moderation — LEER Sports" },
-      { name: "description", content: "Reports, disputes, and strikes." },
+      { name: "description", content: "Reports and strikes." },
     ],
   }),
   component: ModerationPage,
@@ -71,7 +66,7 @@ function ModerationPage() {
           <ShieldAlert className="h-6 w-6" /> Moderation
         </h1>
         <p className="text-sm text-muted-foreground">
-          Reports, coaching disputes, and trainer strikes.
+          Reports and trainer strikes.
         </p>
         <AdminNav />
       </header>
@@ -79,14 +74,10 @@ function ModerationPage() {
       <Tabs defaultValue="reports">
         <TabsList>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="disputes">Disputes</TabsTrigger>
           <TabsTrigger value="strikes">Strikes</TabsTrigger>
         </TabsList>
         <TabsContent value="reports">
           <ReportsList />
-        </TabsContent>
-        <TabsContent value="disputes">
-          <DisputesList />
         </TabsContent>
         <TabsContent value="strikes">
           <StrikesList />
@@ -209,97 +200,6 @@ function ReportsList() {
   );
 }
 
-function DisputesList() {
-  const { data } = useSuspenseQuery(disputesQ);
-  const qc = useQueryClient();
-  const resolve = useServerFn(adminResolveDispute);
-  const [note, setNote] = useState<Record<string, string>>({});
-
-  const mut = useMutation({
-    mutationFn: (v: {
-      disputeId: string;
-      outcome: "resolved_trainer" | "resolved_trainee";
-      verdict: string;
-      issueStrike?: boolean;
-      refund?: boolean;
-    }) => resolve({ data: v }),
-    onSuccess: () => {
-      toast.success("Dispute resolved");
-      qc.invalidateQueries({ queryKey: ["admin-disputes"] });
-      qc.invalidateQueries({ queryKey: ["admin-strikes"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  if (!data.length) {
-    return (
-      <p className="mt-6 text-sm text-muted-foreground">No disputes filed.</p>
-    );
-  }
-
-  return (
-    <ul className="mt-4 space-y-3">
-      {data.map((d: AdminDisputeRow) => (
-        <li key={d.id} className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            {d.status} · thread #{d.thread_id.slice(0, 8)} ·{" "}
-            {new Date(d.created_at).toLocaleString()}
-          </p>
-          <p className="mt-2 whitespace-pre-wrap text-sm">{d.reason}</p>
-          {d.status === "open" || d.status === "under_review" ? (
-            <div className="mt-3 space-y-2">
-              <Textarea
-                placeholder="Verdict / notes"
-                value={note[d.id] ?? ""}
-                onChange={(e) =>
-                  setNote((s) => ({ ...s, [d.id]: e.target.value }))
-                }
-                rows={2}
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    mut.mutate({
-                      disputeId: d.id,
-                      outcome: "resolved_trainer",
-                      verdict: note[d.id] ?? "",
-                    })
-                  }
-                  disabled={mut.isPending}
-                >
-                  Trainer wins
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() =>
-                    mut.mutate({
-                      disputeId: d.id,
-                      outcome: "resolved_trainee",
-                      verdict: note[d.id] ?? "",
-                      refund: true,
-                      issueStrike: true,
-                    })
-                  }
-                  disabled={mut.isPending}
-                >
-                  User wins · refund + strike
-                </Button>
-              </div>
-            </div>
-          ) : (
-            d.verdict && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Verdict: {d.verdict}
-              </p>
-            )
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function StrikesList() {
   const { data } = useSuspenseQuery(strikesQ);

@@ -1,9 +1,8 @@
 /**
  * Pure password strength + policy helpers. No dependencies.
  *
- * Client-side validation must match backend policy — Supabase Auth is
- * configured with HIBP breach checking, so leaked passwords are rejected
- * server-side even when they pass the client score.
+ * Weak passwords are allowed by product choice. This helper only enforces
+ * the backend's 6-character minimum and uses the rest as guidance.
  */
 
 export interface PasswordCheck {
@@ -13,7 +12,7 @@ export interface PasswordCheck {
   issues: string[];
 }
 
-export const PASSWORD_MIN_LENGTH = 10;
+export const PASSWORD_MIN_LENGTH = 6;
 
 const COMMON = new Set([
   "password",
@@ -40,9 +39,6 @@ export function checkPassword(pw: string): PasswordCheck {
   if (length < PASSWORD_MIN_LENGTH) {
     issues.push(`Use at least ${PASSWORD_MIN_LENGTH} characters`);
   }
-  if (!(hasLower || hasUpper)) issues.push("Add at least one letter");
-  if (!hasNumber) issues.push("Add at least one number");
-  if (isCommon) issues.push("This password is too common");
 
   let raw = 0;
   if (length >= PASSWORD_MIN_LENGTH) raw += 1;
@@ -78,8 +74,8 @@ export function friendlyAuthError(message: string): string {
   if (m.includes("pwned") || m.includes("compromised") || m.includes("leaked")) {
     return "This password has appeared in a public data breach. Please choose a different one.";
   }
-  if (m.includes("weak") || m.includes("password should")) {
-    return `Password is too weak. Use at least ${PASSWORD_MIN_LENGTH} characters with letters and numbers.`;
+  if (m.includes("weak") || m.includes("password should") || m.includes("at least 6")) {
+    return `Use at least ${PASSWORD_MIN_LENGTH} characters. Weak passwords are allowed after that.`;
   }
   if (m.includes("invalid login") || m.includes("invalid credentials")) {
     return "Email or password is incorrect.";
@@ -94,4 +90,115 @@ export function friendlyAuthError(message: string): string {
     return "An account with this email already exists. Try signing in instead.";
   }
   return message;
+}
+
+export type AuthErrorCategory =
+  | "password_breached"
+  | "password_too_short"
+  | "password_weak_rejected"
+  | "invalid_credentials"
+  | "email_unconfirmed"
+  | "rate_limited"
+  | "already_registered"
+  | "invalid_email"
+  | "network"
+  | "clipboard"
+  | "unknown";
+
+export interface AuthErrorInfo {
+  category: AuthErrorCategory;
+  title: string;
+  description: string;
+  retry: string;
+}
+
+export function classifyAuthError(message: string): AuthErrorInfo {
+  const m = (message || "").toLowerCase();
+
+  if (m.includes("pwned") || m.includes("compromised") || m.includes("leaked")) {
+    return {
+      category: "password_breached",
+      title: "Password found in a breach",
+      description: "This password has appeared in a public data breach.",
+      retry: "Choose a different password and try again.",
+    };
+  }
+  if (m.includes("at least 6") || m.includes("password should") || m.includes("too short")) {
+    return {
+      category: "password_too_short",
+      title: "Password too short",
+      description: `Passwords must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+      retry: `Add ${PASSWORD_MIN_LENGTH}+ characters and submit again.`,
+    };
+  }
+  if (m.includes("weak")) {
+    return {
+      category: "password_weak_rejected",
+      title: "Password rejected",
+      description: "The server rejected this password as too weak.",
+      retry: "Try a longer password or mix in a number or symbol.",
+    };
+  }
+  if (m.includes("invalid login") || m.includes("invalid credentials")) {
+    return {
+      category: "invalid_credentials",
+      title: "Email or password is incorrect",
+      description: "We couldn't sign you in with those details.",
+      retry: "Double-check your email and password, or reset your password.",
+    };
+  }
+  if (m.includes("email not confirmed")) {
+    return {
+      category: "email_unconfirmed",
+      title: "Confirm your email first",
+      description: "Your account exists but hasn't been verified yet.",
+      retry: "Open the verification email we sent, or resend it below.",
+    };
+  }
+  if (m.includes("rate limit") || m.includes("too many")) {
+    return {
+      category: "rate_limited",
+      title: "Too many attempts",
+      description: "You've tried this a lot in a short window.",
+      retry: "Wait about a minute, then try again.",
+    };
+  }
+  if (m.includes("user already registered") || m.includes("already been registered") || m.includes("already exists")) {
+    return {
+      category: "already_registered",
+      title: "Account already exists",
+      description: "An account with this email is already registered.",
+      retry: "Switch to Sign in, or reset the password if you've forgotten it.",
+    };
+  }
+  if (m.includes("invalid") && m.includes("email")) {
+    return {
+      category: "invalid_email",
+      title: "Email looks invalid",
+      description: "The email address wasn't accepted.",
+      retry: "Check for typos (missing @ or domain) and try again.",
+    };
+  }
+  if (m.includes("fetch") || m.includes("network") || m.includes("failed to")) {
+    return {
+      category: "network",
+      title: "Network error",
+      description: "We couldn't reach the server.",
+      retry: "Check your connection and try again.",
+    };
+  }
+  if (m.includes("clipboard")) {
+    return {
+      category: "clipboard",
+      title: "Clipboard blocked",
+      description: "Your browser blocked clipboard access.",
+      retry: "Copy the text manually, or allow clipboard permissions and retry.",
+    };
+  }
+  return {
+    category: "unknown",
+    title: "Something went wrong",
+    description: message || "An unexpected error occurred.",
+    retry: "Please try again in a moment.",
+  };
 }

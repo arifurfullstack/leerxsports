@@ -1,0 +1,193 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export const QA_PRICE = 300;
+
+export type QADispatch = {
+  id: string;
+  fan_id: string;
+  creator_id: string;
+  question: string;
+  answer: string | null;
+  price: number;
+  status: "pending" | "answered" | "expired" | "refunded";
+  answered_at: string | null;
+  expires_at: string;
+  created_at: string;
+  fan?: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+  creator?: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+};
+
+/** Send a paid question ($300 placeholder charge) to a creator. */
+export const sendQADispatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) =>
+    z
+      .object({
+        creatorId: z.string().uuid(),
+        question: z.string().min(10).max(2000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    if (data.creatorId === userId) throw new Error("You can't message yourself.");
+
+    const { data: tp, error: tpErr } = await supabase
+      .from("trainer_profiles")
+      .select("user_id, monetization_enabled")
+      .eq("user_id", data.creatorId)
+      .maybeSingle();
+    if (tpErr) throw new Error(tpErr.message);
+    if (!tp) throw new Error("Creator not found.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settings } = await supabaseAdmin
+      .from("platform_settings")
+      .select("commission_bps, base_currency")
+      .eq("id", true)
+      .maybeSingle();
+    const bps = settings?.commission_bps ?? 2000;
+    const currency = settings?.base_currency ?? "USD";
+    const gross = QA_PRICE;
+    const platformFee = Math.round(gross * bps) / 10000;
+    const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
+
+    const { data: tx, error: txErr } = await supabaseAdmin
+      .from("transactions")
+      .insert({
+        kind: "qa",
+        status: "held",
+        payer_id: userId,
+        trainer_id: data.creatorId,
+        gross,
+        platform_fee: platformFee,
+        trainer_amount: trainerAmount,
+        currency,
+        metadata: { source: "placeholder", type: "qa_dispatch" },
+      })
+      .select("id")
+      .maybeSingle();
+    if (txErr) throw new Error(txErr.message);
+
+    const { data: dispatch, error: dErr } = await supabase
+      .from("qa_dispatches")
+      .insert({
+        fan_id: userId,
+        creator_id: data.creatorId,
+        question: data.question,
+        price: gross,
+        transaction_id: tx?.id ?? null,
+      })
+      .select("id")
+      .single();
+    if (dErr) throw new Error(dErr.message);
+
+    return { ok: true, id: dispatch.id };
+  });
+
+/** Creator answers a pending dispatch. Releases held funds to their balance. */
+export const answerQADispatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) =>
+    z
+      .object({
+        dispatchId: z.string().uuid(),
+        answer: z.string().min(10).max(5000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error } = await supabase
+      .from("qa_dispatches")
+      .select("id, creator_id, status, transaction_id, price")
+      .eq("id", data.dispatchId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Question not found.");
+    if (row.creator_id !== userId) throw new Error("Not authorized.");
+    if (row.status !== "pending") throw new Error("This question is no longer pending.");
+
+    const { error: updErr } = await supabase
+      .from("qa_dispatches")
+      .update({ answer: data.answer, status: "answered", answered_at: new Date().toISOString() })
+      .eq("id", data.dispatchId);
+    if (updErr) throw new Error(updErr.message);
+
+    // Release held funds to creator balance.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (row.transaction_id) {
+      await supabaseAdmin
+        .from("transactions")
+        .update({ status: "succeeded" })
+        .eq("id", row.transaction_id);
+    }
+    const { data: settings } = await supabaseAdmin
+      .from("platform_settings")
+      .select("commission_bps, base_currency")
+      .eq("id", true)
+      .maybeSingle();
+    const bps = settings?.commission_bps ?? 2000;
+    const currency = settings?.base_currency ?? "USD";
+    const gross = Number(row.price ?? QA_PRICE);
+    const platformFee = Math.round(gross * bps) / 10000;
+    const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
+
+    const { data: bal } = await supabaseAdmin
+      .from("trainer_balances")
+      .select("available_amount")
+      .eq("trainer_id", userId)
+      .maybeSingle();
+    if (bal) {
+      await supabaseAdmin
+        .from("trainer_balances")
+        .update({ available_amount: Number(bal.available_amount ?? 0) + trainerAmount })
+        .eq("trainer_id", userId);
+    } else {
+      await supabaseAdmin
+        .from("trainer_balances")
+        .insert({ trainer_id: userId, available_amount: trainerAmount, currency });
+    }
+
+    return { ok: true };
+  });
+
+/** List dispatches where the caller is fan or creator. */
+export const listMyQADispatches = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) =>
+    z.object({ role: z.enum(["fan", "creator", "all"]).default("all") }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<QADispatch[]> => {
+    const { supabase, userId } = context;
+    let q = supabase
+      .from("qa_dispatches")
+      .select("id, fan_id, creator_id, question, answer, price, status, answered_at, expires_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (data.role === "fan") q = q.eq("fan_id", userId);
+    else if (data.role === "creator") q = q.eq("creator_id", userId);
+    else q = q.or(`fan_id.eq.${userId},creator_id.eq.${userId}`);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const ids = Array.from(
+      new Set((rows ?? []).flatMap((r) => [r.fan_id, r.creator_id])),
+    );
+    const { data: profiles } = ids.length
+      ? await supabase
+          .from("profiles")
+          .select("user_id, username, display_name, avatar_url")
+          .in("user_id", ids)
+      : { data: [] as Array<{ user_id: string; username: string | null; display_name: string | null; avatar_url: string | null }> };
+    const pmap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+    return (rows ?? []).map((r) => ({
+      ...r,
+      price: Number(r.price),
+      status: r.status as QADispatch["status"],
+      fan: pmap.get(r.fan_id) ?? null,
+      creator: pmap.get(r.creator_id) ?? null,
+    }));
+  });

@@ -1,0 +1,16 @@
+[variables]
+NIXPACKS_NODE_VERSION = "20"
+NITRO_PRESET = "node-server"
+PORT = "3000"
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node .output/server/index.mjs"

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, MapPin } from "lucide-react";
 import { listTrainers } from "@/lib/trainer-functions";
 import { ResponsiveImage } from "@/components/responsive-image";
+import { Button } from "@/components/ui/button";
 
 const trainersQuery = queryOptions({
   queryKey: ["trainers"],
@@ -10,36 +11,59 @@ const trainersQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/trainers/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(trainersQuery),
+  loader: async ({ context }) => {
+    try {
+      await context.queryClient.ensureQueryData(trainersQuery);
+    } catch (e) {
+      console.error("Trainers loader error:", e);
+    }
+  },
   head: () => ({
     meta: [
-      { title: "Trainers — LEER Sports" },
+      { title: "Creators — LEER" },
       {
         name: "description",
         content:
-          "Discover verified elite fitness trainers on LEER Sports. Follow, subscribe, and book private online coaching.",
+          "Discover verified elite fitness creators on LEER Sports. Follow, subscribe, and book private online coaching.",
       },
-      { property: "og:title", content: "Trainers — LEER Sports" },
+      { property: "og:title", content: "Creators — LEER" },
       {
         property: "og:description",
-        content: "Discover verified elite fitness trainers on LEER Sports.",
+        content: "Discover verified elite fitness creators on LEER Sports.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TrainersIndex,
-  errorComponent: ({ error }) => (
-    <div className="mx-auto max-w-3xl p-8 text-center">
-      <h1 className="font-display text-2xl">Could not load trainers</h1>
-      <p className="text-muted-foreground">{error.message}</p>
-    </div>
-  ),
+  errorComponent: ({ error }) => {
+    const isHtml = error.message?.includes("<html") || error.message?.includes("<!doctype");
+    const cleanMsg = isHtml
+      ? "Unable to connect to the server. Please check your connection."
+      : error.message || "An error occurred while loading creators.";
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
+          Could not load creators
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">{cleanMsg}</p>
+        <div className="mt-6 flex justify-center gap-3">
+          <Button onClick={() => window.location.reload()} className="font-bold bg-primary text-primary-foreground">
+            Try Again
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Go Home</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  },
   notFoundComponent: () => <div className="p-8">Not found.</div>,
 });
 
 function TrainersIndex() {
-  const { data: trainers } = useSuspenseQuery(trainersQuery);
+  const { data: trainersData } = useQuery(trainersQuery);
+  const trainers = trainersData ?? [];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -78,10 +102,9 @@ function TrainersIndex() {
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
-              />
-              <div className="p-4">
-                <div className="-mt-10 mb-3 flex items-end gap-3">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-card bg-muted">
+              >
+                <div className="absolute -bottom-8 left-4 z-10">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-card bg-muted shadow-md">
                     {t.avatar_url ? (
                       <ResponsiveImage
                         src={t.avatar_url}
@@ -97,6 +120,8 @@ function TrainersIndex() {
                     )}
                   </div>
                 </div>
+              </div>
+              <div className="px-4 pb-4 pt-11">
                 <div className="flex items-center gap-1.5">
                   <h3 className="truncate font-display text-lg">
                     {t.display_name ?? t.username}
