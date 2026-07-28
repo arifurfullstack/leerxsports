@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
-import { Loader2, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { sendTip } from "@/lib/payments-functions";
+import { PaidCheckoutButton } from "@/components/paid-checkout-button";
 
 export function TipModal({
   open,
@@ -26,58 +23,41 @@ export function TipModal({
   onSuccess,
 }: {
   open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onOpenChange: (value: boolean) => void;
   trainerId: string;
   trainerName: string;
   presets: number[];
   threadId?: string;
   onSuccess?: () => void;
 }) {
-  const [amount, setAmount] = useState<number>(presets[1] ?? presets[0] ?? 5);
+  const [amount, setAmount] = useState(presets[1] ?? presets[0] ?? 5);
   const [message, setMessage] = useState("");
-  const tip = useServerFn(sendTip);
-  const mut = useMutation({
-    mutationFn: () =>
-      tip({
-        data: {
-          trainerId,
-          amount,
-          threadId,
-          message: message.trim() || undefined,
-        },
-      }),
-    onSuccess: () => {
-      toast.success(`Sent ${amount} to ${trainerName}`);
-      onOpenChange(false);
-      onSuccess?.();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-widest">
-            Send a Tip
+            Coaching completed
           </DialogTitle>
           <DialogDescription>
-            Show appreciation to {trainerName} for the coaching.
+            Show your respect to {trainerName}. The platform applies the configured revenue split
+            only after payment confirmation.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-2">
-          {presets.map((p) => (
+          {presets.map((preset) => (
             <button
-              key={p}
+              key={preset}
               type="button"
-              onClick={() => setAmount(p)}
+              onClick={() => setAmount(preset)}
               className={`rounded-md border px-3 py-3 text-lg font-semibold transition-colors ${
-                amount === p
+                amount === preset
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50"
               }`}
             >
-              ${p}
+              ${preset}
             </button>
           ))}
         </div>
@@ -88,31 +68,46 @@ export function TipModal({
           <Input
             type="number"
             min={1}
+            max={10000}
             step="1"
             value={amount}
-            onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 0))}
+            onChange={(event) =>
+              setAmount(Math.min(10000, Math.max(1, Number(event.target.value) || 0)))
+            }
             className="mt-1"
           />
         </div>
         <Textarea
-          placeholder="Optional note (up to 280 chars)"
+          placeholder="Optional note (up to 280 characters)"
           maxLength={280}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(event) => setMessage(event.target.value)}
           rows={3}
         />
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Skip
+            Maybe next time
           </Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending || amount < 1}>
-            {mut.isPending ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-            ) : (
-              <Heart className="mr-1 h-4 w-4" />
-            )}
-            Send ${amount}
-          </Button>
+          <PaidCheckoutButton
+            kind="tip"
+            amount={amount}
+            trainerId={trainerId}
+            threadId={threadId}
+            message={message.trim() || undefined}
+            disabled={amount < 1}
+            title="Confirm coaching tip"
+            description={`Choose a payment method for your tip to ${trainerName}.`}
+            label={
+              <>
+                <Heart className="mr-1 h-4 w-4" />
+                Continue · ${amount.toFixed(2)}
+              </>
+            }
+            onPaid={() => {
+              onOpenChange(false);
+              onSuccess?.();
+            }}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

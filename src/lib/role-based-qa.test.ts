@@ -6,6 +6,7 @@
  * ============================================================
  */
 import { describe, it, expect, beforeEach } from "vitest";
+import { SECRET_FIELDS, validateGatewayConfigLive } from "@/lib/gateway-config-schemas";
 import {
   permissionsForRole,
   permissionForPath,
@@ -13,19 +14,9 @@ import {
   MODERATOR_PERMISSIONS,
   firstAccessibleAdminPath,
 } from "@/lib/admin-permissions";
-import {
-  checkPassword,
-  classifyAuthError,
-} from "@/lib/password-strength";
-import {
-  sanitizeRedirect,
-  resolveAuthIntent,
-  resolvePostAuthTarget,
-} from "@/lib/auth-intent";
-import {
-  isProtectedPath,
-  shouldRefreshBeforeUse,
-} from "@/lib/session-lifecycle";
+import { checkPassword, classifyAuthError } from "@/lib/password-strength";
+import { sanitizeRedirect, resolveAuthIntent, resolvePostAuthTarget } from "@/lib/auth-intent";
+import { isProtectedPath, shouldRefreshBeforeUse } from "@/lib/session-lifecycle";
 import {
   traineeOnboardingSchema,
   trainerApplicationSchema,
@@ -82,7 +73,9 @@ describe("[ROLE-1: GUEST] Access Controls & Route Protection", () => {
 
   it("GUEST-05: Login schema rejects weak or malformed inputs", () => {
     expect(loginSchema.safeParse({ email: "invalid-email", password: "123" }).success).toBe(false);
-    expect(loginSchema.safeParse({ email: "user@example.com", password: "abc" }).success).toBe(false);
+    expect(loginSchema.safeParse({ email: "user@example.com", password: "abc" }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -103,8 +96,12 @@ describe("[ROLE-2: TRAINEE] Registration, Onboarding & User Features", () => {
       native_language: "English",
       experience_level: "beginner",
     };
-    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: false }).success).toBe(false);
-    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: true }).success).toBe(true);
+    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: false }).success).toBe(
+      false,
+    );
+    expect(traineeOnboardingSchema.safeParse({ ...base, agreement_accepted: true }).success).toBe(
+      true,
+    );
   });
 
   it("TRAINEE-03: Trainee onboarding validates height, weight, body fat bounds", () => {
@@ -122,12 +119,22 @@ describe("[ROLE-2: TRAINEE] Registration, Onboarding & User Features", () => {
     expect(traineeOnboardingSchema.safeParse(valid).success).toBe(true);
     expect(traineeOnboardingSchema.safeParse({ ...valid, height_cm: 350 }).success).toBe(false);
     expect(traineeOnboardingSchema.safeParse({ ...valid, weight_kg: 600 }).success).toBe(false);
-    expect(traineeOnboardingSchema.safeParse({ ...valid, body_fat_percent: 90 }).success).toBe(false);
+    expect(traineeOnboardingSchema.safeParse({ ...valid, body_fat_percent: 90 }).success).toBe(
+      false,
+    );
   });
 
   it("TRAINEE-04: Trainee signup schema requires full name and valid email", () => {
-    expect(signupSchema.safeParse({ email: "new@test.com", password: "securepassword123", fullName: "Jane Doe" }).success).toBe(true);
-    expect(signupSchema.safeParse({ email: "new@test.com", password: "securepassword123" }).success).toBe(false);
+    expect(
+      signupSchema.safeParse({
+        email: "new@test.com",
+        password: "securepassword123",
+        fullName: "Jane Doe",
+      }).success,
+    ).toBe(true);
+    expect(
+      signupSchema.safeParse({ email: "new@test.com", password: "securepassword123" }).success,
+    ).toBe(false);
   });
 });
 
@@ -153,8 +160,12 @@ describe("[ROLE-3: TRAINER] Application Workflow & Creator Rules", () => {
       agreement_accepted: true as const,
     };
     expect(trainerApplicationSchema.safeParse(validApp).success).toBe(true);
-    expect(trainerApplicationSchema.safeParse({ ...validApp, requested_price: 1500 }).success).toBe(false);
-    expect(trainerApplicationSchema.safeParse({ ...validApp, agreement_accepted: false }).success).toBe(false);
+    expect(trainerApplicationSchema.safeParse({ ...validApp, requested_price: 1500 }).success).toBe(
+      false,
+    );
+    expect(
+      trainerApplicationSchema.safeParse({ ...validApp, agreement_accepted: false }).success,
+    ).toBe(false);
   });
 
   it("TRAINER-03: Story creation schema resolves default duration (5s image, 8s video)", () => {
@@ -176,7 +187,9 @@ describe("[ROLE-3: TRAINER] Application Workflow & Creator Rules", () => {
       price: 10,
     };
     expect(createClassSchema.safeParse(validClass).success).toBe(true);
-    expect(createClassSchema.safeParse({ ...validClass, slug: "HIIT Workout!" }).success).toBe(false);
+    expect(createClassSchema.safeParse({ ...validClass, slug: "HIIT Workout!" }).success).toBe(
+      false,
+    );
     expect(createClassSchema.safeParse({ ...validClass, price: -5 }).success).toBe(false);
   });
 });
@@ -232,10 +245,10 @@ describe("[ROLE-5: ADMIN] Full Platform Access & Demotion Protection", () => {
   it("ADMIN-03: SECURITY — Admin cannot demote themselves (assertCannotDemoteSelf)", () => {
     const ADMIN_ID = "00000000-0000-0000-0000-000000000001";
     expect(() => assertCannotDemoteSelf(ADMIN_ID, ADMIN_ID, [])).toThrow(
-      "You cannot remove your own admin role."
+      "You cannot remove your own admin role.",
     );
     expect(() => assertCannotDemoteSelf(ADMIN_ID, ADMIN_ID, ["trainer"])).toThrow(
-      "You cannot remove your own admin role."
+      "You cannot remove your own admin role.",
     );
   });
 
@@ -250,16 +263,18 @@ describe("[ROLE-5: ADMIN] Full Platform Access & Demotion Protection", () => {
 // ─── STRIPE SANDBOX KEY & INTEGRATION VERIFICATION ───────────────────────────
 
 describe("[STRIPE SANDBOX] Environment Keys & Payment Intent Infrastructure", () => {
-  it("STRIPE-01: Stripe test Publishable Key format is valid (pk_test_...)", () => {
-    const pubKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "";
-    expect(pubKey).toMatch(/^pk_test_[A-Za-z0-9]+/);
-    expect(pubKey).toContain("51Tx1RcDs1ObeDf1LpwGeGwemaq39XAshM");
+  it("STRIPE-01: Admin-configured Stripe test credentials validate", () => {
+    const errors = validateGatewayConfigLive("stripe", "test", {
+      publishable_key: "pk_test_example123",
+      secret_key: "sk_test_example123",
+      webhook_secret: "whsec_example123",
+    });
+    expect(errors).toEqual({});
   });
 
-  it("STRIPE-02: Stripe test Secret Key format is valid (sk_test_...)", () => {
-    const secKey = process.env.STRIPE_SECRET_KEY ?? "";
-    expect(secKey).toMatch(/^sk_test_[A-Za-z0-9]+/);
-    expect(secKey).toContain("51Tx1RcDs1ObeDf1LYO1uMAa0N73F7hrn6");
+  it("STRIPE-02: Stripe server secrets are classified for encryption", () => {
+    expect(SECRET_FIELDS.stripe).toEqual(expect.arrayContaining(["secret_key", "webhook_secret"]));
+    expect(SECRET_FIELDS.stripe).not.toContain("publishable_key");
   });
 
   it("STRIPE-03: Commission Math correctly calculates 20% platform fee for $15 subscription", () => {

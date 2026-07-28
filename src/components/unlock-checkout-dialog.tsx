@@ -1,18 +1,17 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Lock,
-  Loader2,
-  Sparkles,
+  Building2,
   CheckCircle2,
-  MessageSquare,
-  Video,
-  HelpCircle,
-  ShieldCheck,
-  Wallet,
   CreditCard,
-  Plus,
+  Loader2,
+  Lock,
+  MessageSquare,
+  ShieldCheck,
+  Sparkles,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { subscribeToTrainer } from "@/lib/subscription-functions";
-import { getUserWalletBalance, topUpUserWallet } from "@/lib/wallet-functions";
+import {
+  createCheckoutOrder,
+  listCheckoutGateways,
+  type CheckoutProvider,
+} from "@/lib/checkout-functions";
+import { getUserWalletBalance } from "@/lib/wallet-functions";
 
 type UnlockCheckoutDialogProps = {
   trainerId: string;
@@ -46,6 +49,13 @@ type UnlockCheckoutDialogProps = {
   triggerLabel?: React.ReactNode;
 };
 
+const providerIcon = {
+  wallet: Wallet,
+  stripe: CreditCard,
+  paypal: CreditCard,
+  bank: Building2,
+} satisfies Record<CheckoutProvider, typeof Wallet>;
+
 export function UnlockCheckoutDialog({
   trainerId,
   creatorName,
@@ -65,61 +75,73 @@ export function UnlockCheckoutDialog({
   triggerLabel,
 }: UnlockCheckoutDialogProps) {
   const [open, setOpen] = useState(false);
-  const [durationMonths, setDurationMonths] = useState<number>(1);
-  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "payment_gateway">("wallet");
+  const [durationMonths, setDurationMonths] = useState(1);
+  const [provider, setProvider] = useState<CheckoutProvider>("wallet");
+  const [bankInstructions, setBankInstructions] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const getWallet = useServerFn(getUserWalletBalance);
+  const getGateways = useServerFn(listCheckoutGateways);
+  const beginCheckout = useServerFn(createCheckoutOrder);
 
-  const qc = useQueryClient();
-  const subscribeFn = useServerFn(subscribeToTrainer);
-  const getWalletFn = useServerFn(getUserWalletBalance);
-  const topUpFn = useServerFn(topUpUserWallet);
-
-  // Fetch live wallet balance
   const walletQuery = useQuery({
     queryKey: ["user-wallet"],
-    queryFn: () => getWalletFn(),
+    queryFn: () => getWallet(),
     enabled: open,
   });
-
-  const walletBalance = walletQuery.data?.balance ?? 150;
-
-  // Top up mutation
-  const topUpMut = useMutation({
-    mutationFn: () => topUpFn({ data: { amount: 50 } }),
-    onSuccess: (res) => {
-      toast.success(`Added $50.00 to your wallet balance!`);
-      qc.invalidateQueries({ queryKey: ["user-wallet"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
+  const gatewayQuery = useQuery({
+    queryKey: ["checkout-gateways"],
+    queryFn: () => getGateways(),
+    enabled: open,
+    staleTime: 60_000,
   });
 
-  // Calculate pricing based on duration
-  const discountMultiplier = durationMonths === 12 ? 0.8 : durationMonths === 3 ? 0.9 : 1.0;
-  const pricePerMonth = subscriptionPrice * discountMultiplier;
-  const totalPrice = Math.round(pricePerMonth * durationMonths * 100) / 100;
+  const methods = useMemo(
+    () => [
+      { provider: "wallet" as const, displayName: "LEER Wallet", mode: "live" as const },
+      ...(gatewayQuery.data ?? []),
+    ],
+    [gatewayQuery.data],
+  );
 
-  const subMut = useMutation({
+  useEffect(() => {
+    if (!methods.some((method) => method.provider === provider)) {
+      setProvider(methods[0]?.provider ?? "wallet");
+    }
+  }, [methods, provider]);
+
+  const total = Math.round(subscriptionPrice * durationMonths * 100) / 100;
+  const walletBalance = walletQuery.data?.balance ?? 0;
+  const walletInsufficient = provider === "wallet" && walletBalance < total;
+
+  const checkout = useMutation({
     mutationFn: () =>
-      subscribeFn({
+      beginCheckout({
         data: {
+          kind: "subscription",
+          provider,
           trainerId,
-          paymentMethod,
           durationMonths,
         },
       }),
-    onSuccess: () => {
-      toast.success(`Unlocked full access to ${creatorName}!`);
-      qc.invalidateQueries({ queryKey: ["subscription-info", trainerId] });
-      qc.invalidateQueries({ queryKey: ["premium-urls", trainerId] });
-      qc.invalidateQueries({ queryKey: ["follow-counts", trainerId] });
-      qc.invalidateQueries({ queryKey: ["user-wallet"] });
+    onSuccess: (result) => {
+      if (result.status === "redirect" && result.redirectUrl) {
+        window.location.assign(result.redirectUrl);
+        return;
+      }
+      if (result.status === "pending") {
+        setBankInstructions(result.instructions);
+        toast.success("Bank transfer order created.");
+        return;
+      }
+      toast.success(`Full access to ${creatorName} is active.`);
+      queryClient.invalidateQueries({ queryKey: ["subscription-info", trainerId] });
+      queryClient.invalidateQueries({ queryKey: ["premium-urls", trainerId] });
+      queryClient.invalidateQueries({ queryKey: ["follow-counts", trainerId] });
+      queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
       setOpen(false);
     },
-    onError: (e: Error) => {
-      toast.error(e.message);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
-
-  const formattedPrice = `$${subscriptionPrice.toFixed(2)}`;
 
   if (isSubscribed) {
     return (
@@ -128,7 +150,7 @@ export function UnlockCheckoutDialog({
         variant="outline"
         className={
           triggerClassName ??
-          "group rounded-xl border border-neutral-700 bg-neutral-900/90 px-4 font-semibold text-white transition-all duration-200 hover:border-neutral-500 hover:bg-neutral-800 shadow-xl"
+          "rounded-xl border-neutral-700 bg-neutral-900/90 px-4 font-semibold text-white"
         }
       >
         <Sparkles className="mr-2 h-4 w-4 text-amber-400" />
@@ -136,255 +158,160 @@ export function UnlockCheckoutDialog({
       </Button>
     );
   }
+  if (!monetizationEnabled) return null;
 
-  if (!monetizationEnabled) {
-    return null;
-  }
-
-  const handleOpenCheck = (e: React.MouseEvent) => {
-    if (!hasEnoughPublicPosts) {
-      e.preventDefault();
-      toast.info(
-        `${creatorName} needs at least ${minPublicPostsRequired} public posts before accepting subscribers (${publicFeedCount}/${minPublicPostsRequired} uploaded).`
-      );
-    }
+  const handleOpenCheck = (event: React.MouseEvent) => {
+    if (hasEnoughPublicPosts) return;
+    event.preventDefault();
+    toast.info(
+      `${creatorName} needs ${minPublicPostsRequired} public posts before accepting subscribers (${publicFeedCount}/${minPublicPostsRequired}).`,
+    );
   };
 
-  const isWalletInsufficient = paymentMethod === "wallet" && walletBalance < totalPrice;
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setBankInstructions(null);
+      }}
+    >
       <DialogTrigger asChild onClick={handleOpenCheck}>
         <Button
           size={triggerSize}
           variant={triggerVariant}
           className={
             triggerClassName ??
-            "group rounded-xl border border-neutral-700 bg-neutral-900/90 px-4 font-bold uppercase tracking-wider text-white transition-all duration-200 ease-out hover:border-white/60 hover:bg-neutral-800 shadow-xl active:scale-95"
+            "group rounded-xl border border-neutral-700 bg-neutral-900/90 px-4 font-bold uppercase tracking-wider text-white hover:border-white/60 hover:bg-neutral-800"
           }
-          title={`Unlock full access for ${formattedPrice}/mo`}
         >
           {triggerLabel ?? (
             <>
-              <Lock className="mr-2 h-4 w-4 text-neutral-300 transition-transform group-hover:scale-110 group-hover:text-white" />
-              Unlock · {formattedPrice}/mo
+              <Lock className="mr-2 h-4 w-4" />
+              Unlock · ${subscriptionPrice.toFixed(2)}/mo
             </>
           )}
         </Button>
       </DialogTrigger>
-
-      <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="text-center sm:text-left">
-          <DialogTitle className="flex items-center gap-3 font-display text-2xl uppercase tracking-tight text-white">
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-neutral-900">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3 font-display text-2xl uppercase">
+            <span className="relative h-12 w-12 overflow-hidden rounded-full border border-white/20 bg-neutral-900">
               {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={creatorName}
-                  className="h-full w-full object-cover"
-                />
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center font-display text-lg text-neutral-400">
-                  {creatorName[0]?.toUpperCase()}
-                </div>
+                <span className="grid h-full place-items-center text-lg">
+                  {creatorName.slice(0, 1).toUpperCase()}
+                </span>
               )}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span>Unlock {creatorName}</span>
-                {isVerified && <ShieldCheck className="h-5 w-5 text-primary" />}
-              </div>
-              {creatorUsername && (
-                <p className="text-xs font-normal text-neutral-400 lowercase">
-                  @{creatorUsername}
-                </p>
-              )}
-            </div>
+            </span>
+            <span>
+              Unlock {creatorName}
+              {isVerified && <CheckCircle2 className="ml-2 inline h-5 w-5 text-sky-400" />}
+            </span>
           </DialogTitle>
-          <DialogDescription className="text-neutral-400 pt-1">
-            Get instant full access to all exclusive workout feed posts, video drills, and direct creator perks.
+          <DialogDescription className="text-neutral-400">
+            Premium posts, private coaching, and future subscriber content
+            {creatorUsername ? ` from @${creatorUsername}` : ""}.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Duration Selection Options */}
-        <div className="space-y-1.5 my-2">
-          <label className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-            Select Pass Duration
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { months: 1, label: "1 Month", savings: null },
-              { months: 3, label: "3 Months", savings: "10% OFF" },
-              { months: 12, label: "1 Year", savings: "20% OFF" },
-            ].map((opt) => (
-              <button
-                key={opt.months}
-                type="button"
-                onClick={() => setDurationMonths(opt.months)}
-                className={`relative flex flex-col items-center justify-center rounded-xl border p-2.5 transition-all text-center ${
-                  durationMonths === opt.months
-                    ? "border-white bg-neutral-900 text-white ring-1 ring-white"
-                    : "border-neutral-800 bg-neutral-900/40 text-neutral-400 hover:border-neutral-700 hover:text-white"
-                }`}
-              >
-                {opt.savings && (
-                  <span className="absolute -top-2 right-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-                    {opt.savings}
+        <div className="grid grid-cols-3 gap-2">
+          {[1, 3, 12].map((months) => (
+            <button
+              key={months}
+              type="button"
+              onClick={() => setDurationMonths(months)}
+              className={`rounded-xl border p-3 text-sm font-semibold ${
+                durationMonths === months
+                  ? "border-primary bg-primary/10 text-white"
+                  : "border-neutral-800 text-neutral-400"
+              }`}
+            >
+              {months} {months === 1 ? "month" : "months"}
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+          <div className="flex items-end justify-between">
+            <span className="text-sm text-neutral-400">Total due now</span>
+            <span className="font-display text-3xl">${total.toFixed(2)}</span>
+          </div>
+          <div className="mt-4 grid gap-2">
+            {methods.map((method) => {
+              const Icon = providerIcon[method.provider];
+              return (
+                <button
+                  key={method.provider}
+                  type="button"
+                  onClick={() => setProvider(method.provider)}
+                  className={`flex items-center justify-between rounded-xl border p-3 text-left ${
+                    provider === method.provider
+                      ? "border-primary bg-primary/10"
+                      : "border-neutral-800 hover:border-neutral-600"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-5 w-5" />
+                    <span>
+                      <span className="block text-sm font-semibold">{method.displayName}</span>
+                      <span className="block text-[11px] text-neutral-500">
+                        {method.provider === "wallet"
+                          ? `${walletBalance.toFixed(2)} ${walletQuery.data?.currency ?? "USD"} available`
+                          : `${method.mode} gateway`}
+                      </span>
+                    </span>
                   </span>
-                )}
-                <span className="text-xs font-bold uppercase">{opt.label}</span>
-                <span className="text-[11px] mt-0.5 font-mono text-neutral-300">
-                  ${(subscriptionPrice * (opt.months === 12 ? 0.8 : opt.months === 3 ? 0.9 : 1.0)).toFixed(2)}/mo
-                </span>
-              </button>
-            ))}
+                  {provider === method.provider && (
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Pricing Summary Banner */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-3.5 text-center backdrop-blur-md">
-          <div className="text-[11px] uppercase tracking-widest text-neutral-400 font-semibold">
-            Total Charge ({durationMonths} {durationMonths === 1 ? "Month" : "Months"})
+        {walletInsufficient && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+            Insufficient wallet balance.{" "}
+            <Link to="/wallet" className="font-semibold underline">
+              Add verified funds
+            </Link>
           </div>
-          <div className="mt-0.5 font-display text-3xl text-white">
-            ${totalPrice.toFixed(2)}
-          </div>
-          <div className="mt-0.5 text-[11px] text-neutral-400">
-            Cancel anytime from your account settings.
-          </div>
+        )}
+        {bankInstructions && (
+          <pre className="whitespace-pre-wrap rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-xs text-sky-100">
+            {bankInstructions}
+          </pre>
+        )}
+
+        <div className="grid gap-2 text-xs text-neutral-400">
+          <span className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            Provider-confirmed payment; access is never granted on an unverified charge.
+          </span>
+          <span className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-sky-400" />
+            {dmsEnabled
+              ? "Subscriber messaging enabled."
+              : "Messaging is disabled by this trainer."}
+          </span>
         </div>
 
-        {/* Subscriber Perks Overview */}
-        <div className="space-y-2 py-1">
-          <div className="flex items-start gap-2.5 rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-2.5">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-            <div className="text-xs text-neutral-200">
-              <span className="font-semibold text-white">Exclusive Content:</span> Unlock all blurred premium posts, workout logs, and breakdown videos.
-            </div>
-          </div>
-
-          {dmsEnabled && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-2.5">
-              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-white" />
-              <div className="text-xs text-neutral-200">
-                <span className="font-semibold text-white">Direct Messaging:</span> Send direct messages and chat 1-on-1 with {creatorName}.
-              </div>
-            </div>
+        <Button
+          className="w-full"
+          size="lg"
+          disabled={checkout.isPending || walletInsufficient || !!bankInstructions}
+          onClick={() => checkout.mutate()}
+        >
+          {checkout.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Lock className="mr-2 h-4 w-4" />
           )}
-
-          <div className="flex items-start gap-2.5 rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-2.5">
-            <Video className="mt-0.5 h-4 w-4 shrink-0 text-white" />
-            <div className="text-xs text-neutral-200">
-              <span className="font-semibold text-white">Exclusive Shorts & Drills:</span> Access subscriber-only athletic video technique shorts.
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2.5 rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-2.5">
-            <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-            <div className="text-xs text-neutral-200">
-              <span className="font-semibold text-white">Priority Q&A:</span> Priority responses on direct Q&A dispatch requests.
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Method Selection */}
-        <div className="space-y-2 pt-1 border-t border-neutral-800">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-              Payment Method
-            </label>
-            <div className="flex items-center gap-1 text-xs text-neutral-300">
-              <Wallet className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Balance: <strong className="text-white font-mono">${walletBalance.toFixed(2)}</strong></span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {/* Wallet Option */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("wallet")}
-              className={`flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all ${
-                paymentMethod === "wallet"
-                  ? "border-emerald-500/80 bg-emerald-950/30 text-white ring-1 ring-emerald-500/50"
-                  : "border-neutral-800 bg-neutral-900/40 text-neutral-400 hover:border-neutral-700 hover:text-white"
-              }`}
-            >
-              <Wallet className={`h-5 w-5 shrink-0 ${paymentMethod === "wallet" ? "text-emerald-400" : "text-neutral-400"}`} />
-              <div>
-                <div className="text-xs font-bold text-white">User Wallet</div>
-                <div className="text-[10px] text-neutral-400">
-                  ${walletBalance.toFixed(2)} available
-                </div>
-              </div>
-            </button>
-
-            {/* Payment Gateway Option */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("payment_gateway")}
-              className={`flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all ${
-                paymentMethod === "payment_gateway"
-                  ? "border-white bg-neutral-900 text-white ring-1 ring-white"
-                  : "border-neutral-800 bg-neutral-900/40 text-neutral-400 hover:border-neutral-700 hover:text-white"
-              }`}
-            >
-              <CreditCard className={`h-5 w-5 shrink-0 ${paymentMethod === "payment_gateway" ? "text-white" : "text-neutral-400"}`} />
-              <div>
-                <div className="text-xs font-bold text-white">Credit Card / Gateway</div>
-                <div className="text-[10px] text-neutral-400">Stripe / Visa / MC</div>
-              </div>
-            </button>
-          </div>
-
-          {/* Insufficient Wallet Warning & Top Up */}
-          {isWalletInsufficient && (
-            <div className="flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-950/30 p-2.5 text-xs text-amber-300">
-              <span>Insufficient wallet balance (${walletBalance.toFixed(2)} available).</span>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={topUpMut.isPending}
-                onClick={() => topUpMut.mutate()}
-                className="h-7 border-amber-500/50 bg-amber-900/40 text-amber-200 hover:bg-amber-800/60 text-[11px]"
-              >
-                {topUpMut.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="mr-1 h-3 w-3" /> Top Up $50
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Action Button */}
-        <div className="mt-2 pt-2 border-t border-neutral-800">
-          <Button
-            size="lg"
-            disabled={subMut.isPending || isWalletInsufficient}
-            onClick={() => subMut.mutate()}
-            className={`w-full rounded-xl font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
-              paymentMethod === "wallet"
-                ? "bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
-                : "bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10"
-            }`}
-          >
-            {subMut.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin text-black" />
-                Unlocking...
-              </>
-            ) : (
-              <>
-                <Lock className="mr-2 h-4 w-4 text-black" />
-                Pay ${totalPrice.toFixed(2)} with {paymentMethod === "wallet" ? "Wallet" : "Card"}
-              </>
-            )}
-          </Button>
-        </div>
+          {provider === "bank" ? "Create bank transfer" : `Pay ${total.toFixed(2)} USD`}
+        </Button>
       </DialogContent>
     </Dialog>
   );

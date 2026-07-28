@@ -239,6 +239,27 @@ export async function processStripeEvent(event: any): Promise<IngestResult> {
   if (!type) return { status: "ignored" };
 
   try {
+    const paymentOrderId =
+      obj?.metadata?.payment_order_id ?? obj?.client_reference_id;
+    if (
+      paymentOrderId &&
+      (type === "checkout.session.completed" ||
+        type === "payment_intent.succeeded")
+    ) {
+      const { data, error } = await (supabaseAdmin as any).rpc(
+        "complete_payment_order",
+        {
+          _order_id: paymentOrderId,
+          _external_reference: obj?.payment_intent ?? obj?.id ?? event?.id,
+        },
+      );
+      if (error) throw error;
+      return {
+        status: "processed",
+        transaction_id: data?.transaction_id ?? undefined,
+      };
+    }
+
     if (type === "charge.succeeded" || type === "payment_intent.succeeded") {
       const gross = Number(obj.amount_received ?? obj.amount ?? 0) / 100;
       const currency = String(obj.currency ?? "usd").toUpperCase();
@@ -294,6 +315,25 @@ export async function processPaypalEvent(event: any): Promise<IngestResult> {
   if (!type) return { status: "ignored" };
 
   try {
+    const paymentOrderId =
+      resource?.custom_id ??
+      resource?.purchase_units?.[0]?.custom_id ??
+      resource?.purchase_units?.[0]?.reference_id;
+    if (paymentOrderId && type === "PAYMENT.CAPTURE.COMPLETED") {
+      const { data, error } = await (supabaseAdmin as any).rpc(
+        "complete_payment_order",
+        {
+          _order_id: paymentOrderId,
+          _external_reference: resource?.id ?? event?.id,
+        },
+      );
+      if (error) throw error;
+      return {
+        status: "processed",
+        transaction_id: data?.transaction_id ?? undefined,
+      };
+    }
+
     if (
       type === "PAYMENT.CAPTURE.COMPLETED" ||
       type === "CHECKOUT.ORDER.APPROVED"

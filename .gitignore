@@ -57,3 +57,7 @@ Thumbs.db
 *.sw?
 .vscode/*
 !.vscode/extensions.json
+
+# Local compiler and Supabase CLI state
+*.tsbuildinfo
+supabase/.temp/

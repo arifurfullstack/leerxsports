@@ -38,55 +38,8 @@ export const getPlatformSettings = createServerFn({ method: "GET" })
 
 export const createPaymentIntent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
-      .object({
-        amount: z.number().positive(),
-        currency: z.string().default("usd"),
-        kind: z.enum(["subscription", "tip", "unlock", "dispatch"]),
-        metadata: z.record(z.string()).optional(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.VITE_STRIPE_SECRET_KEY;
-    const amountCents = Math.round(data.amount * 100);
-
-    if (stripeKey) {
-      try {
-        // @ts-ignore - Stripe optional dynamic import
-        const { default: Stripe } = await import("stripe");
-        const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" as any });
-        const intent = await stripe.paymentIntents.create({
-          amount: amountCents,
-          currency: data.currency.toLowerCase(),
-          metadata: {
-            payer_id: context.userId,
-            kind: data.kind,
-            ...(data.metadata ?? {}),
-          },
-          automatic_payment_methods: { enabled: true },
-        });
-
-        return {
-          clientSecret: intent.client_secret,
-          paymentIntentId: intent.id,
-          status: intent.status,
-          isMock: false,
-        };
-      } catch (err: any) {
-        console.error("[createPaymentIntent] Stripe API error, using fallback:", err?.message);
-      }
-    }
-
-    // Fallback mode when STRIPE_SECRET_KEY is absent or fails
-    const mockId = `pi_mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    return {
-      clientSecret: `${mockId}_secret_mock`,
-      paymentIntentId: mockId,
-      status: "succeeded",
-      isMock: true,
-    };
+  .handler(async () => {
+    throw new Error("Use createCheckoutOrder() for server-priced payments.");
   });
 
 export const updatePlatformSettings = createServerFn({ method: "POST" })
@@ -281,88 +234,8 @@ export const listTrainerTransactions = createServerFn({ method: "GET" })
 
 export const sendTip = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
-      .object({
-        trainerId: z.string().uuid(),
-        amount: z.number().min(1).max(10000),
-        threadId: z.string().uuid().optional(),
-        message: z.string().max(280).optional(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    const { userId } = context;
-    if (userId === data.trainerId) throw new Error("You can't tip yourself.");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: settings } = await supabaseAdmin
-      .from("platform_settings")
-      .select("commission_bps, base_currency")
-      .eq("id", true)
-      .maybeSingle();
-    const bps = settings?.commission_bps ?? 2000;
-    const currency = settings?.base_currency ?? "USD";
-    const gross = Math.round(data.amount * 100) / 100;
-    const platformFee = Math.round(gross * bps) / 10000;
-    const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
-
-    const { data: tx, error: txErr } = await supabaseAdmin
-      .from("transactions")
-      .insert({
-        kind: "tip",
-        status: "succeeded",
-        payer_id: userId,
-        trainer_id: data.trainerId,
-        gross,
-        platform_fee: platformFee,
-        trainer_amount: trainerAmount,
-        currency,
-        metadata: { source: "placeholder", threadId: data.threadId ?? null },
-      })
-      .select("id")
-      .single();
-    if (txErr) throw new Error(txErr.message);
-
-    const { data: tip, error: tipErr } = await supabaseAdmin
-      .from("tips")
-      .insert({
-        from_user_id: userId,
-        trainer_id: data.trainerId,
-        coaching_thread_id: data.threadId ?? null,
-        amount: gross,
-        currency,
-        status: "succeeded",
-        transaction_id: tx.id,
-        message: data.message ?? null,
-      })
-      .select("id")
-      .single();
-    if (tipErr) throw new Error(tipErr.message);
-
-    await supabaseAdmin.from("transactions").update({ tip_id: tip.id }).eq("id", tx.id);
-
-    const { data: bal } = await supabaseAdmin
-      .from("trainer_balances")
-      .select("trainer_id, available_amount")
-      .eq("trainer_id", data.trainerId)
-      .maybeSingle();
-    if (bal) {
-      await supabaseAdmin
-        .from("trainer_balances")
-        .update({
-          available_amount: Number(bal.available_amount ?? 0) + trainerAmount,
-        })
-        .eq("trainer_id", data.trainerId);
-    } else {
-      await supabaseAdmin.from("trainer_balances").insert({
-        trainer_id: data.trainerId,
-        available_amount: trainerAmount,
-        currency,
-      });
-    }
-
-    return { ok: true, tipId: tip.id };
+  .handler(async () => {
+    throw new Error("Use the verified checkout flow to send a tip.");
   });
 
 export type PayoutRow = {

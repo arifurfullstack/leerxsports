@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- payment tables/functions are introduced by the pending migration and are not in generated Supabase types yet */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -8,61 +9,52 @@ export type UserWallet = {
 };
 
 /**
- * Return signed-in user's wallet balance.
- * Initializes default starting balance ($100.00) if no row exists yet.
+ * Return the signed-in user's verified wallet balance.
+ * Wallets start at zero and are credited only after a provider-confirmed
+ * top-up or an administrator adjustment.
  */
 export const getUserWalletBalance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<UserWallet> => {
     const { supabase, userId } = context;
-
     const { data: row, error } = await (supabase as any)
       .from("user_wallets")
       .select("balance, currency")
       .eq("user_id", userId)
       .maybeSingle();
-
-    if (error) {
-      return { balance: 150, currency: "USD" };
-    }
-
-    if (!row) {
-      // Initialize starting test balance of $150.00
-      const { data: ins } = await (supabase as any)
-        .from("user_wallets")
-        .insert({ user_id: userId, balance: 150, currency: "USD" })
-        .select("balance, currency")
-        .single();
-      return { balance: Number(ins?.balance ?? 150), currency: ins?.currency ?? "USD" };
-    }
-
+    if (error) throw new Error(error.message);
     return {
-      balance: Number(row.balance ?? 0),
-      currency: row.currency ?? "USD",
+      balance: Number(row?.balance ?? 0),
+      currency: row?.currency ?? "USD",
     };
   });
 
-/**
- * Top up user wallet balance.
- */
-export const topUpUserWallet = createServerFn({ method: "POST" })
+export type WalletEntry = {
+  id: string;
+  kind: "topup" | "purchase" | "refund" | "adjustment";
+  amount: number;
+  balance_after: number;
+  currency: string;
+  description: string | null;
+  created_at: string;
+};
+
+export const listWalletEntries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) => z.object({ amount: z.number().min(5).max(1000) }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-
-    const { data: current } = await (supabase as any)
-      .from("user_wallets")
-      .select("balance")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const newBal = Number(current?.balance ?? 150) + data.amount;
-
-    const { error } = await (supabase as any)
-      .from("user_wallets")
-      .upsert({ user_id: userId, balance: newBal, currency: "USD", updated_at: new Date().toISOString() });
-
+  .validator((input) =>
+    z.object({ limit: z.number().int().min(1).max(100).default(50) }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<WalletEntry[]> => {
+    const { data: rows, error } = await (context.supabase as any)
+      .from("wallet_entries")
+      .select("id, kind, amount, balance_after, currency, description, created_at")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
     if (error) throw new Error(error.message);
-    return { ok: true, newBalance: newBal };
+    return (rows ?? []).map((row: any) => ({
+      ...row,
+      amount: Number(row.amount),
+      balance_after: Number(row.balance_after),
+    }));
   });

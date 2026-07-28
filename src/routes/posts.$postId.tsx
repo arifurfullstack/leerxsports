@@ -32,7 +32,8 @@ import {
   type CommentNode,
 } from "@/lib/engagement-functions";
 import type { PostEngagement } from "@/lib/engagement-functions";
-import { getPostUnlockInfo, unlockPost, type UnlockInfo } from "@/lib/unlock-functions";
+import { getPostUnlockInfo, type UnlockInfo } from "@/lib/unlock-functions";
+import { PaidCheckoutButton } from "@/components/paid-checkout-button";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,7 +145,6 @@ function PostDetailPage() {
   const addFn = useServerFn(addComment);
   const viewFn = useServerFn(logPostView);
   const unlockInfoFn = useServerFn(getPostUnlockInfo);
-  const unlockFn = useServerFn(unlockPost);
 
   // Log a view once per session per post (best-effort, non-blocking).
   useEffect(() => {
@@ -172,14 +172,6 @@ function PostDetailPage() {
     queryFn: () => unlockInfoFn({ data: { postId: post.id } }),
     enabled: signedIn && post.is_premium,
     staleTime: 30 * 60 * 1000,
-  });
-  const unlockMut = useMutation({
-    mutationFn: () => unlockFn({ data: { postId: post.id } }),
-    onSuccess: (res) => {
-      toast.success(res.alreadyUnlocked ? "Already unlocked" : "Unlocked");
-      qc.invalidateQueries({ queryKey: unlockKey });
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
   const unlockInfo: UnlockInfo | undefined = unlockQ.data;
   const effectiveMediaUrl = post.is_premium
@@ -442,29 +434,24 @@ function PostDetailPage() {
                   Unlock this post from {trainerName} — one-time purchase, yours forever.
                 </p>
                 {signedIn ? (
-                  <Button
-                    type="button"
-                    onClick={() => unlockMut.mutate()}
-                    disabled={unlockMut.isPending || unlockPrice <= 0}
+                  <PaidCheckoutButton
+                    kind="unlock"
+                    amount={unlockPrice}
+                    trainerId={post.trainer.user_id}
+                    postId={post.id}
+                    disabled={unlockPrice <= 0}
                     className="mt-2 rounded-full px-5"
-                    style={{
-                      backgroundColor: "var(--premium)",
-                      color: "var(--premium-foreground)",
-                    }}
-                  >
-                    {unlockMut.isPending ? (
-                      <>
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        Unlocking…
-                      </>
-                    ) : (
+                    title="Unlock premium content"
+                    description={`One-time access to this post from ${trainerName}. The content stays in your library.`}
+                    label={
                       <>
                         <Lock className="mr-1.5 h-3.5 w-3.5" />
                         Unlock · {unlockCurrency === "USD" ? "$" : ""}
                         {unlockPrice.toFixed(2)}
                       </>
-                    )}
-                  </Button>
+                    }
+                    onPaid={() => qc.invalidateQueries({ queryKey: unlockKey })}
+                  />
                 ) : (
                   <Link
                     to="/auth"

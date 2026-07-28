@@ -3,6 +3,39 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type AuthedCtx = { supabase: any; userId: string };
 
+const MANAGED_TABLES = new Set([
+  "posts",
+  "comments",
+  "community_posts",
+  "community_comments",
+  "transformation_posts",
+  "subscriptions",
+  "transactions",
+  "coaching_requests",
+  "notifications",
+  "tips",
+  "trainer_balances",
+  "payouts",
+  "trainer_strikes",
+  "moderation_actions",
+  "audit_logs",
+  "countries",
+  "languages",
+  "fitness_categories",
+  "policies",
+]);
+
+const MODERATOR_MUTABLE_TABLES = new Set([
+  "posts",
+  "comments",
+  "community_posts",
+  "community_comments",
+  "transformation_posts",
+  "coaching_requests",
+  "trainer_strikes",
+  "moderation_actions",
+]);
+
 async function requireModOrAdmin(context: AuthedCtx): Promise<"admin" | "moderator"> {
   const [{ data: a }, { data: m }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
@@ -45,28 +78,7 @@ export const adminListRows = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await requireModOrAdmin(context);
-    const ALLOWED = new Set([
-      "posts",
-      "comments",
-      "community_posts",
-      "community_comments",
-      "transformation_posts",
-      "subscriptions",
-      "transactions",
-      "coaching_requests",
-      "notifications",
-      "tips",
-      "trainer_balances",
-      "payouts",
-      "trainer_strikes",
-      "moderation_actions",
-      "audit_logs",
-      "countries",
-      "languages",
-      "fitness_categories",
-      "policies",
-    ]);
-    if (!ALLOWED.has(data.table)) throw new Error("Table not allowed");
+    if (!MANAGED_TABLES.has(data.table)) throw new Error("Table not allowed");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = (supabaseAdmin as any)
       .from(data.table)
@@ -84,15 +96,17 @@ export const adminListRows = createServerFn({ method: "POST" })
 
 export const adminUpdateRow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
-    (d: { table: string; id: string; patch: Record<string, unknown> }) => ({
-      table: String(d.table),
-      id: String(d.id),
-      patch: d.patch ?? {},
-    }),
-  )
+  .validator((d: { table: string; id: string; patch: Record<string, unknown> }) => ({
+    table: String(d.table),
+    id: String(d.id),
+    patch: d.patch ?? {},
+  }))
   .handler(async ({ data, context }) => {
-    await requireModOrAdmin(context);
+    const role = await requireModOrAdmin(context);
+    if (!MANAGED_TABLES.has(data.table)) throw new Error("Table not allowed");
+    if (role === "moderator" && !MODERATOR_MUTABLE_TABLES.has(data.table)) {
+      throw new Error("Forbidden: moderators cannot modify this table");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any)
       .from(data.table)
@@ -110,11 +124,9 @@ export const adminDeleteRow = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
+    if (!MANAGED_TABLES.has(data.table)) throw new Error("Table not allowed");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any)
-      .from(data.table)
-      .delete()
-      .eq("id", data.id);
+    const { error } = await (supabaseAdmin as any).from(data.table).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

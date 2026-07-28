@@ -84,7 +84,6 @@ import {
   cancelSubscription,
   getPremiumPostUrls,
   getSubscriptionInfo,
-  subscribeToTrainer,
   toggleFollow,
   type SubscriptionInfo,
 } from "@/lib/subscription-functions";
@@ -392,7 +391,6 @@ function TrainerProfileInner({
   // PRD: Trainer must have >= 3 public posts before subscribers can subscribe
   const MIN_PUBLIC_POSTS = 3;
   const hasEnoughPublicPosts = publicFeedCount >= MIN_PUBLIC_POSTS;
-  const canSubscribe = t.monetization_enabled && hasEnoughPublicPosts;
 
   // Detect signed-in state for gated calls
   const [signedIn, setSignedIn] = useState(false);
@@ -441,26 +439,9 @@ function TrainerProfileInner({
   const info: SubscriptionInfo | undefined = infoQ.data;
   const unlocked = unlockedQ.data ?? {};
 
-  const subFn = useServerFn(subscribeToTrainer);
   const cancelFn = useServerFn(cancelSubscription);
   const followFn = useServerFn(toggleFollow);
 
-  const subscribeMut = useMutation({
-    mutationFn: () => subFn({ data: { trainerId: t.user_id } }),
-    onMutate: () => applyOptimisticSubscribe(qc, t.user_id, true),
-    onError: (e: Error, _v, ctx: SubscribeMutationContext | undefined) => {
-      rollbackOptimisticSubscribe(qc, t.user_id, ctx);
-      toast.error(e.message);
-    },
-    onSuccess: () => {
-      toast.success(`Subscribed to ${t.display_name ?? t.username}`);
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["subscription-info", t.user_id] });
-      qc.invalidateQueries({ queryKey: ["premium-urls", t.user_id] });
-      qc.invalidateQueries({ queryKey: ["follow-counts", t.user_id] });
-    },
-  });
   const cancelMut = useMutation({
     mutationFn: () => cancelFn({ data: { trainerId: t.user_id } }),
     onMutate: () => applyOptimisticSubscribe(qc, t.user_id, false),
@@ -932,26 +913,29 @@ function TrainerProfileInner({
               <p className="mt-1 text-xs text-muted-foreground">
                 Premium posts, monthly video call, priority Q&amp;A.
               </p>
-              <Button
-                size="sm"
-                className="mt-4 w-full bg-premium font-semibold uppercase tracking-widest"
-                disabled={
-                  !canSubscribe ||
-                  info?.isSubscribed ||
-                  subscribeMut.isPending
-                }
-                onClick={() => requireAuth(() => subscribeMut.mutate())}
-              >
-                {info?.isSubscribed
-                  ? "Subscribed"
-                  : !t.monetization_enabled
+              <UnlockCheckoutDialog
+                trainerId={t.user_id}
+                creatorName={t.display_name ?? t.username ?? "Creator"}
+                creatorUsername={t.username ?? undefined}
+                avatarUrl={t.avatar_url ?? undefined}
+                isVerified={t.is_verified}
+                subscriptionPrice={t.subscription_price}
+                monetizationEnabled={t.monetization_enabled}
+                hasEnoughPublicPosts={hasEnoughPublicPosts}
+                publicFeedCount={publicFeedCount}
+                minPublicPostsRequired={MIN_PUBLIC_POSTS}
+                isSubscribed={info?.isSubscribed}
+                dmsEnabled={t.dms_enabled}
+                triggerSize="sm"
+                triggerClassName="mt-4 w-full bg-premium font-semibold uppercase tracking-widest"
+                triggerLabel={
+                  !t.monetization_enabled
                     ? "Not accepting subscribers"
                     : !hasEnoughPublicPosts
                       ? `${publicFeedCount}/${MIN_PUBLIC_POSTS} public posts needed`
-                      : subscribeMut.isPending
-                        ? "Subscribing…"
-                        : "Subscribe"}
-              </Button>
+                      : "Subscribe"
+                }
+              />
               {t.monetization_enabled && !hasEnoughPublicPosts && !info?.isSubscribed && (
                 <p className="mt-2 text-center text-xs text-muted-foreground">
                   This creator needs at least {MIN_PUBLIC_POSTS} public posts before accepting subscribers.
