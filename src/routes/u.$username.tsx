@@ -41,6 +41,7 @@ import {
   LayoutGrid,
   Heart,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -403,9 +404,10 @@ function TraineePage() {
                       <span className="text-neutral-400">following</span>
                     </span>
                   </div>
-                  <Button asChild size="default" className="group rounded-xl border border-neutral-700 bg-neutral-900 font-bold uppercase tracking-wider text-white gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/60 hover:bg-neutral-800 hover:text-white shadow-lg">
-                    <Link to="/trainers">
-                      Find a creator <ArrowRight className="h-4 w-4 text-neutral-300 transition-transform group-hover:translate-x-1 group-hover:text-white" />
+                  <Button asChild size="default" className="group rounded-xl border border-primary/40 bg-neutral-900 font-bold uppercase tracking-wider text-white gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/20 hover:text-white shadow-lg">
+                    <Link to="/trainers/$username" params={{ username: p.username ?? "" }}>
+                      <Sparkles className="h-4 w-4 text-primary transition-transform group-hover:scale-110" />
+                      Creator Profile <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
                     </Link>
                   </Button>
                   <Button onClick={share} variant="outline" size="default" className="group rounded-xl border border-neutral-800 bg-neutral-900/80 gap-2 px-4 font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md">

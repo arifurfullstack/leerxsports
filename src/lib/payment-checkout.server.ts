@@ -200,6 +200,51 @@ export async function createProviderCheckout(params: {
   };
 }
 
+async function creditCreatorFromOrder(orderId: string): Promise<void> {
+  try {
+    const { creditCreatorWallet } = await import("./wallet-functions");
+    const { data: order } = await (supabaseAdmin as any)
+      .from("payment_orders")
+      .select("id, trainer_id, payer_id, kind, amount, currency")
+      .eq("id", orderId)
+      .maybeSingle();
+    if (!order || !order.trainer_id) return;
+
+    const { data: tx } = await (supabaseAdmin as any)
+      .from("transactions")
+      .select("id, trainer_amount, currency")
+      .eq("metadata->>payment_order_id", orderId)
+      .maybeSingle();
+
+    const { data: payerProfile } = await (supabaseAdmin as any)
+      .from("profiles")
+      .select("display_name, username")
+      .eq("user_id", order.payer_id)
+      .maybeSingle();
+
+    const payerName = payerProfile?.display_name || payerProfile?.username || "supporter";
+    let desc = `Earned payment from ${payerName}`;
+    if (order.kind === "tip") desc = `Earned tip from ${payerName}`;
+    if (order.kind === "subscription") desc = `Earned subscription from ${payerName}`;
+    if (order.kind === "unlock") desc = `Earned content unlock from ${payerName}`;
+
+    const earned = Number(tx?.trainer_amount ?? Math.round(Number(order.amount) * 0.8 * 100) / 100);
+    const curr = tx?.currency || order.currency || "USD";
+
+    await creditCreatorWallet(
+      supabaseAdmin,
+      order.trainer_id,
+      earned,
+      curr,
+      tx?.id,
+      desc,
+      order.id,
+    );
+  } catch (e) {
+    console.error("[verifyAndCompleteProviderOrder] Error crediting creator wallet:", e);
+  }
+}
+
 export async function verifyAndCompleteProviderOrder(params: {
   orderId: string;
   providerReference: string;
@@ -243,6 +288,7 @@ export async function verifyAndCompleteProviderOrder(params: {
       },
     );
     if (settleError) throw new Error(settleError.message);
+    await creditCreatorFromOrder(params.orderId);
     return data as Record<string, unknown>;
   }
 
@@ -295,6 +341,7 @@ export async function verifyAndCompleteProviderOrder(params: {
       },
     );
     if (settleError) throw new Error(settleError.message);
+    await creditCreatorFromOrder(params.orderId);
     return data as Record<string, unknown>;
   }
 

@@ -4,6 +4,7 @@
  * `await import()` from inside server route handlers.
  */
 import { createHmac, timingSafeEqual } from "crypto";
+import { creditCreatorWallet } from "@/lib/wallet-functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { SECRET_FIELDS } from "./gateway-config-schemas";
 import { decryptSecret } from "./gateway-crypto.server";
@@ -279,9 +280,14 @@ export async function processStripeEvent(event: any): Promise<IngestResult> {
           },
           { onConflict: "stripe_payment_intent_id" },
         )
-        .select("id")
+        .select("id, trainer_amount, currency, metadata")
         .single();
       if (error) throw error;
+      // Credit creator's wallet if trainer_id is present in metadata
+      const trainerId = (data?.metadata?.trainer_id) as string | undefined;
+      if (trainerId && data.trainer_amount && data.currency) {
+        await creditCreatorWallet(supabaseAdmin, trainerId, data.trainer_amount, data.currency, data.id);
+      }
       return { status: "processed", transaction_id: data.id };
     }
 

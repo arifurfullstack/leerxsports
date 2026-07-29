@@ -8,6 +8,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BadgeCheck,
   Heart,
   Bookmark,
   MessageCircle,
@@ -539,6 +540,48 @@ export function PostDetailDialog({
             role="tabpanel"
             aria-label="Comments"
           >
+            {/* Creator Header */}
+            {(post as any).trainer && (
+              <div className="flex items-center justify-between border-b border-border bg-muted/20 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenChange(false);
+                    const username = (post as any).trainer?.username ?? post.trainer_id;
+                    navigate({ to: "/trainers/$username", params: { username } });
+                  }}
+                  className="group flex items-center gap-3 text-left transition-opacity hover:opacity-80"
+                >
+                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-border/80 bg-muted ring-1 ring-primary/20">
+                    {(post as any).trainer?.avatar_url ? (
+                      <img
+                        src={(post as any).trainer.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-muted-foreground">
+                        {((post as any).trainer?.display_name ?? (post as any).trainer?.username ?? "?")[0]?.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1 truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                      {(post as any).trainer?.display_name ?? (post as any).trainer?.username}
+                      {(post as any).trainer?.is_verified && (
+                        <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </p>
+                    {(post as any).trainer?.username && (
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        @{(post as any).trainer.username}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </div>
+            )}
+
             {post.caption && (
               <div className="border-b border-border p-4 text-sm">
                 <p className="whitespace-pre-wrap">{post.caption}</p>

@@ -653,23 +653,47 @@ function CommunityPage() {
                     key={`${c.username ?? c.name}-${i}`}
                     className="flex items-center justify-between gap-3"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="w-6 shrink-0 font-display text-xl text-muted-foreground">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <UserAvatar
-                        src={c.avatar}
-                        name={c.name}
-                        size="sm"
-                        isTrainer={c.is_trainer}
-                      />
-                      <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-bold uppercase tracking-tight">
-                        <span className="truncate">{c.name}</span>
-                        {c.is_trainer && (
-                          <BadgeCheck className="h-3 w-3 shrink-0 text-primary" />
-                        )}
-                      </span>
-                    </div>
+                    {c.username ? (
+                      <Link
+                        to="/trainers/$username"
+                        params={{ username: c.username }}
+                        className="group/contributor flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
+                      >
+                        <span className="w-6 shrink-0 font-display text-xl text-muted-foreground">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <UserAvatar
+                          src={c.avatar}
+                          name={c.name}
+                          size="sm"
+                          isTrainer={c.is_trainer}
+                        />
+                        <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-bold uppercase tracking-tight transition-colors group-hover/contributor:text-primary">
+                          <span className="truncate">{c.name}</span>
+                          {c.is_trainer && (
+                            <BadgeCheck className="h-3 w-3 shrink-0 text-primary" />
+                          )}
+                        </span>
+                      </Link>
+                    ) : (
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <span className="w-6 shrink-0 font-display text-xl text-muted-foreground">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <UserAvatar
+                          src={c.avatar}
+                          name={c.name}
+                          size="sm"
+                          isTrainer={c.is_trainer}
+                        />
+                        <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-bold uppercase tracking-tight">
+                          <span className="truncate">{c.name}</span>
+                          {c.is_trainer && (
+                            <BadgeCheck className="h-3 w-3 shrink-0 text-primary" />
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <span className="shrink-0 text-[10px] font-black text-primary">
                       {c.xp} XP
                     </span>
@@ -851,25 +875,56 @@ function PostCard({
         className="cursor-pointer p-6 pb-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       >
       <header className="flex items-center gap-3 text-xs">
-        <UserAvatar
-          src={post.author?.avatar_url}
-          name={post.author?.display_name ?? post.author?.username}
-          size="md"
-          isTrainer={post.author?.is_trainer}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1 truncate text-sm font-bold uppercase tracking-tight">
-            <span className="truncate">
-              {post.author?.display_name ?? post.author?.username ?? "user"}
-            </span>
-            {post.author?.is_trainer && (
-              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
-            )}
-          </p>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            {new Date(post.created_at).toLocaleDateString()}
-          </p>
-        </div>
+        {post.author?.username ? (
+          <Link
+            to="/trainers/$username"
+            params={{ username: post.author.username }}
+            onClick={(e) => e.stopPropagation()}
+            className="group/author flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
+          >
+            <UserAvatar
+              src={post.author?.avatar_url}
+              name={post.author?.display_name ?? post.author?.username}
+              size="md"
+              isTrainer={post.author?.is_trainer}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 truncate text-sm font-bold uppercase tracking-tight transition-colors group-hover/author:text-primary">
+                <span className="truncate">
+                  {post.author?.display_name ?? post.author?.username ?? "user"}
+                </span>
+                {post.author?.is_trainer && (
+                  <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+                )}
+              </p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {new Date(post.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <UserAvatar
+              src={post.author?.avatar_url}
+              name={post.author?.display_name ?? post.author?.username}
+              size="md"
+              isTrainer={post.author?.is_trainer}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 truncate text-sm font-bold uppercase tracking-tight">
+                <span className="truncate">
+                  {post.author?.display_name ?? post.author?.username ?? "user"}
+                </span>
+                {post.author?.is_trainer && (
+                  <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+                )}
+              </p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {new Date(post.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        )}
         <span
           className={`ml-auto inline-flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[10px] font-black uppercase tracking-tighter ${
             post.kind === "question"

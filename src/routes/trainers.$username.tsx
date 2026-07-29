@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { UnlockCheckoutDialog } from "@/components/unlock-checkout-dialog";
 import { TipModal } from "@/components/tip-modal";
+import { CreatorMobileActionBar } from "@/components/creator-mobile-action-bar";
 
 function normalizeUsername(raw: string): string {
   return raw
@@ -1050,6 +1051,34 @@ function TrainerProfileInner({
         trainerId={t.user_id}
         trainerName={t.display_name ?? t.username ?? "this creator"}
         presets={[5, 10, 25]}
+      />
+      <CreatorMobileActionBar
+        trainerId={t.user_id}
+        creatorName={t.display_name ?? t.username ?? "Creator"}
+        creatorUsername={t.username ?? undefined}
+        avatarUrl={t.avatar_url ?? undefined}
+        isVerified={t.is_verified}
+        subscriptionPrice={t.subscription_price}
+        monetizationEnabled={t.monetization_enabled}
+        hasEnoughPublicPosts={hasEnoughPublicPosts}
+        publicFeedCount={publicFeedCount}
+        minPublicPostsRequired={MIN_PUBLIC_POSTS}
+        isSubscribed={info?.isSubscribed}
+        isFollowing={info?.isFollowing}
+        dmsEnabled={t.dms_enabled}
+        isPendingFollow={followMut.isPending}
+        onFollowClick={() => requireAuth(() => followMut.mutate())}
+        onMessageClick={() =>
+          requireAuth(() => {
+            if (!info?.isSubscribed) {
+              toast.info("Subscribe to send this creator a direct message.");
+              return;
+            }
+            router.navigate({ to: "/messages", search: { to: t.user_id } });
+          })
+        }
+        onTipClick={() => requireAuth(() => setTipOpen(true))}
+        isSelfProfile={currentUserId === t.user_id}
       />
     </article>
   );

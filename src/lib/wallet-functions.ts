@@ -58,3 +58,66 @@ export const listWalletEntries = createServerFn({ method: "POST" })
       balance_after: Number(row.balance_after),
     }));
   });
+
+export const creditCreatorWallet = async (
+  supabaseAdmin: any,
+  creatorId: string,
+  amount: number,
+  currency: string,
+  transactionId?: string,
+  description?: string,
+  orderId?: string,
+): Promise<void> => {
+  if (!creatorId || !(amount > 0)) return;
+
+  const { data: existing, error: fetchErr } = await supabaseAdmin
+    .from("user_wallets")
+    .select("balance, currency")
+    .eq("user_id", creatorId)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  const newBalance = Math.round((Number(existing?.balance ?? 0) + amount) * 100) / 100;
+
+  const { error: upsertErr } = await supabaseAdmin
+    .from("user_wallets")
+    .upsert(
+      {
+        user_id: creatorId,
+        balance: newBalance,
+        currency,
+      },
+      { onConflict: "user_id" },
+    );
+  if (upsertErr) throw new Error(upsertErr.message);
+
+  const entryDesc =
+    description ?? (transactionId ? `Earned payment (${transactionId.slice(0, 8)})` : "Earned payment");
+
+  if (orderId) {
+    await supabaseAdmin
+      .from("wallet_entries")
+      .upsert(
+        {
+          user_id: creatorId,
+          order_id: orderId,
+          kind: "adjustment",
+          amount,
+          balance_after: newBalance,
+          currency,
+          description: entryDesc,
+        },
+        { onConflict: "order_id, kind" },
+      );
+  } else {
+    await supabaseAdmin.from("wallet_entries").insert({
+      user_id: creatorId,
+      kind: "adjustment",
+      amount,
+      balance_after: newBalance,
+      currency,
+      description: entryDesc,
+    });
+  }
+};
+

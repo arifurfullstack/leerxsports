@@ -86,6 +86,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     let trainerId = data.trainerId ?? null;
     let postId = data.postId ?? null;
     const metadata: Record<string, unknown> = {};
+  // Attach trainer identifier for downstream webhook processing (e.g., wallet credit)
+  if (trainerId) {
+    metadata.trainer_id = trainerId;
+  }
 
     if (data.kind === "subscription") {
       if (trainerId === userId) throw new Error("You cannot subscribe to yourself.");
@@ -206,6 +210,45 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         _order_id: order.id,
       });
       if (error) throw new Error(error.message);
+
+      if (trainerId) {
+        try {
+          const { creditCreatorWallet } = await import("./wallet-functions");
+          const { data: tx } = await (supabaseAdmin as any)
+            .from("transactions")
+            .select("id, trainer_amount, currency")
+            .eq("metadata->>payment_order_id", order.id)
+            .maybeSingle();
+
+          const { data: payerProfile } = await (supabaseAdmin as any)
+            .from("profiles")
+            .select("display_name, username")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          const payerName = payerProfile?.display_name || payerProfile?.username || "supporter";
+          let desc = `Earned payment from ${payerName}`;
+          if (data.kind === "tip") desc = `Earned tip from ${payerName}`;
+          if (data.kind === "subscription") desc = `Earned subscription from ${payerName}`;
+          if (data.kind === "unlock") desc = `Earned content unlock from ${payerName}`;
+
+          const earned = Number(tx?.trainer_amount ?? Math.round(order.amount * 0.8 * 100) / 100);
+          const curr = tx?.currency || currency || "USD";
+
+          await creditCreatorWallet(
+            supabaseAdmin,
+            trainerId,
+            earned,
+            curr,
+            tx?.id,
+            desc,
+            order.id,
+          );
+        } catch (e) {
+          console.error("[Checkout] Error crediting creator wallet:", e);
+        }
+      }
+
       return {
         orderId: order.id,
         status: "paid",
