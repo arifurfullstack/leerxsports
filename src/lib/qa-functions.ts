@@ -228,7 +228,7 @@ export const listMyQADispatches = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     let q = supabase
       .from("qa_dispatches")
-      .select("id, fan_id, creator_id, question, answer, price, status, answered_at, expires_at, created_at")
+      .select("id, fan_id, creator_id, question, answer, followup_question, followup_answer, price, status, answered_at, expires_at, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
     if (data.role === "fan") q = q.eq("fan_id", userId);
