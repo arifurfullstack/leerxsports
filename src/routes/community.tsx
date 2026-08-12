@@ -180,7 +180,7 @@ export const Route = createFileRoute("/community")({
 
 function CommunityPage() {
   const [filter, setFilter] = useState<Filter>({ kind: "all", sort: "new" });
-  const first = useQuery(listQuery({ kind: "all", sort: "new" }));
+  const first = useSuspenseQuery(listQuery({ kind: "all", sort: "new" }));
   const listFilter: Filter =
     filter.kind === "saved" ? { kind: "all", sort: filter.sort } : filter;
   const q = useQuery({ ...listQuery(listFilter), initialData: first.data });
