@@ -979,7 +979,7 @@ function TrainerProfileInner({
               Shorts
             </TabsTrigger>
             <TabsTrigger value="community" className="font-display uppercase tracking-widest text-xs">
-              Community
+              Coaching
             </TabsTrigger>
           </TabsList>
 
