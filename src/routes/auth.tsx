@@ -32,44 +32,47 @@ function AuthPage() {
   const isLogin = mode === "signin";
 
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-8 sm:py-12 lg:px-8">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#000000] px-4 py-8 sm:py-12 lg:px-8">
       {!redirect && !intent && <RedirectIfAuthed />}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-sport/15 blur-[140px]" />
-        <div className="absolute -bottom-40 -right-40 h-[520px] w-[520px] rounded-full bg-sport/5 blur-[140px]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#000000]">
+        <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-sport/20 blur-[140px]" />
+        <div className="absolute -bottom-40 -right-40 h-[520px] w-[520px] rounded-full bg-sport/10 blur-[140px]" />
       </div>
 
-      <div className="relative z-10 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-2xl border border-white/10 bg-card/70 shadow-[0_40px_120px_-40px_hsl(var(--sport)/0.35)] backdrop-blur-xl md:grid-cols-2">
+      <div className="relative z-10 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-2xl border border-white/10 bg-black/90 shadow-[0_40px_120px_-40px_hsl(var(--sport)/0.4)] backdrop-blur-xl md:grid-cols-2">
         {/* LEFT — brand panel */}
-        <aside className="relative hidden overflow-hidden bg-black p-10 md:flex md:flex-col md:justify-between lg:p-12">
-          <div aria-hidden className="absolute inset-0 opacity-30">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,hsl(var(--sport))_0%,transparent_55%)]" />
+        <aside className="relative hidden overflow-hidden bg-black p-10 md:flex md:flex-col md:justify-between lg:p-12 border-r border-white/10">
+          <div aria-hidden className="absolute inset-0 opacity-40">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,hsl(var(--sport))_0%,transparent_60%)]" />
           </div>
           <div
             aria-hidden
-            className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(hsl(0_0%_100%/1)_1px,transparent_1px),linear-gradient(90deg,hsl(0_0%_100%/1)_1px,transparent_1px)] [background-size:40px_40px]"
+            className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(hsl(0_0%_100%/1)_1px,transparent_1px),linear-gradient(90deg,hsl(0_0%_100%/1)_1px,transparent_1px)] [background-size:40px_40px]"
           />
 
-          <div className="relative z-10">
-            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.32em] text-sport">
+          <div className="relative z-10 space-y-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-sport/40 bg-sport/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-sport shadow-[0_0_12px_hsl(var(--sport)/0.3)]">
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sport shadow-[0_0_12px_hsl(var(--sport))]" />
-              System Access
+              RESTRICTED AREA
             </span>
-            <h1 className="mt-6 text-6xl font-black leading-[0.9] tracking-tighter text-white lg:text-8xl">
+            <h1 className="text-6xl font-black leading-[0.88] tracking-tighter text-white lg:text-7xl font-display uppercase italic">
               LEER
             </h1>
-            <p className="mt-6 max-w-[280px] text-sm leading-relaxed text-white/50">
-              The ultimate standard for creator-led training. Access your workspace.
+            <p className="font-display text-lg uppercase tracking-widest text-sport italic font-bold">
+              FITNESS IS THE ONLY LAW
+            </p>
+            <p className="max-w-[290px] text-xs leading-relaxed text-white/60">
+              Exclusive space for verified pro creators and premium athletes. Access your workspace.
             </p>
           </div>
 
-          <div className="relative z-10 space-y-4">
-            <blockquote className="border-l-2 border-sport/60 pl-4 text-sm italic text-white/70">
+          <div className="relative z-10 space-y-4 pt-8">
+            <blockquote className="border-l-2 border-sport pl-4 text-xs italic text-white/80">
               "Discipline is choosing between what you want now and what you want most."
             </blockquote>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-white/30">
+            <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.28em] text-white/40">
+              <span>LEER Sports</span>
               <span>v2.0 — Kinetic</span>
-              <span>© LEER</span>
             </div>
           </div>
         </aside>

@@ -94,6 +94,22 @@ function ProfilePage() {
   const profile = s.data?.profile;
   const userId = profile?.user_id;
 
+  const trainerAppQuery = useQuery({
+    queryKey: ["profile-trainer-app", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from("trainer_applications")
+        .select("status, created_at, admin_notes")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
   const [form, setForm] = useState({
     display_name: "",
     username: "",
@@ -352,11 +368,17 @@ function ProfilePage() {
             <div className="space-y-5">
               {/* Row 1: Username & Action Buttons */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h1 className="font-display text-2xl font-bold uppercase tracking-tight sm:text-3xl text-foreground">
                     {profile?.username ? `@${profile.username}` : "Profile"}
                   </h1>
                   {(profile as any)?.is_verified && <VerifiedBadge size="lg" />}
+                  {trainerAppQuery.data?.status === "pending" && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-500 shadow-sm">
+                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                      Trainer Application Pending
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 ml-auto">

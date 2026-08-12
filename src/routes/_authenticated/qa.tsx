@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SLACountdown from "@/components/sla-countdown";
 import {
   answerQADispatch,
+  submitQAFollowup,
   listMyQADispatches,
   QA_PRICE,
   type QADispatch,
@@ -32,8 +33,8 @@ export const Route = createFileRoute("/_authenticated/qa")({
 });
 
 function statusIcon(s: QADispatch["status"]) {
-  if (s === "answered") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (s === "pending") return <Clock className="h-4 w-4 text-amber-500" />;
+  if (s === "completed" || s === "coached") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+  if (s === "pending" || s === "followup_pending") return <Clock className="h-4 w-4 text-amber-500" />;
   return <XCircle className="h-4 w-4 text-muted-foreground" />;
 }
 
@@ -53,7 +54,7 @@ function QAInbox() {
 
   // Count overdue pending requests for the trainer
   const overdueCount = (received.data ?? []).filter((d) => {
-    if (d.status !== "pending") return false;
+    if (d.status !== "pending" && d.status !== "followup_pending") return false;
     const deadline = new Date(d.created_at).getTime() + 48 * 60 * 60 * 1000;
     return Date.now() > deadline;
   }).length;
@@ -63,11 +64,11 @@ function QAInbox() {
       <header className="mb-8">
         <div className="flex items-center gap-2 text-premium">
           <HelpCircle className="h-4 w-4" />
-          <span className="text-xs uppercase tracking-[0.2em]">Paid Q&A</span>
+          <span className="text-xs uppercase tracking-[0.2em]">Private Coaching</span>
         </div>
-        <h1 className="mt-1 font-display text-3xl uppercase">Questions</h1>
+        <h1 className="mt-1 font-display text-3xl uppercase">Coaching Inbox</h1>
         <p className="text-sm text-muted-foreground">
-          Every question is a ${QA_PRICE} paid dispatch. Creators have 48 hours to answer or the fan is refunded.
+          5-Step 1:1 Private Coaching sessions. Submit workout videos, receive HD video feedback, and 1 follow-up reply per session.
         </p>
       </header>
 
@@ -89,7 +90,7 @@ function QAInbox() {
         <TabsContent value="received" className="mt-6 space-y-4">
           {received.isLoading && <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />}
           {received.data?.length === 0 && (
-            <EmptyState text="No questions yet. Share your profile to get inbound." />
+            <EmptyState text="No coaching dispatches yet. Share your profile to get inbound subscribers." />
           )}
           {received.data?.map((d) => (
             <ReceivedCard key={d.id} d={d} onAnswered={() => qc.invalidateQueries({ queryKey: ["qa"] })} />
@@ -99,9 +100,11 @@ function QAInbox() {
         <TabsContent value="sent" className="mt-6 space-y-4">
           {sent.isLoading && <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />}
           {sent.data?.length === 0 && (
-            <EmptyState text="You haven't asked anything yet. Find a creator and hit Ask · $300 on their profile." />
+            <EmptyState text="You haven't requested coaching yet. Find a creator and hit Ask · $300 on their profile." />
           )}
-          {sent.data?.map((d) => <SentCard key={d.id} d={d} />)}
+          {sent.data?.map((d) => (
+            <SentCard key={d.id} d={d} onFollowupSent={() => qc.invalidateQueries({ queryKey: ["qa"] })} />
+          ))}
         </TabsContent>
       </Tabs>
     </main>
@@ -119,13 +122,21 @@ function EmptyState({ text }: { text: string }) {
 
 function Meta({ d }: { d: QADispatch }) {
   const created = new Date(d.created_at).toLocaleDateString();
+  const label =
+    d.status === "completed"
+      ? "COACHING COMPLETED (LOCKED)"
+      : d.status === "coached"
+        ? "COACHED (1 FOLLOW-UP OPEN)"
+        : d.status === "followup_pending"
+          ? "FOLLOW-UP PENDING"
+          : d.status.toUpperCase();
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
       {statusIcon(d.status)}
-      <span className="uppercase tracking-widest">{d.status}</span>
+      <span className="font-bold uppercase tracking-widest text-foreground">{label}</span>
       <span>· ${Number(d.price).toFixed(2)}</span>
       <span>· sent {created}</span>
-      {d.status === "pending" && (
+      {(d.status === "pending" || d.status === "followup_pending") && (
         <SLACountdown createdAt={d.created_at} deadlineHours={48} compact />
       )}
     </div>
@@ -137,8 +148,8 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
   const [text, setText] = useState("");
   const mut = useMutation({
     mutationFn: () => answer({ data: { dispatchId: d.id, answer: text } }),
-    onSuccess: () => {
-      toast.success("Answer sent. Payout released.");
+    onSuccess: (res) => {
+      toast.success(res.status === "completed" ? "Final answer sent! Thread locked." : "Primary feedback sent!");
       setText("");
       onAnswered();
     },
@@ -153,20 +164,42 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
         <Meta d={d} />
       </div>
       <p className="whitespace-pre-wrap text-sm">{d.question}</p>
-      {d.status === "answered" && d.answer && (
+      
+      {d.answer && (
         <div className="mt-4 rounded-md border-l-2 border-premium bg-muted/30 p-3 text-sm">
-          <div className="mb-1 text-xs uppercase tracking-widest text-premium">Your answer</div>
+          <div className="mb-1 text-xs uppercase tracking-widest text-premium">Your Primary Feedback</div>
           <p className="whitespace-pre-wrap">{d.answer}</p>
         </div>
       )}
-      {d.status === "pending" && (
-        <div className="mt-4 space-y-3">
-          {/* Prominent SLA countdown for trainer */}
-          <div className="flex items-center gap-2">
-            <SLACountdown createdAt={d.created_at} deadlineHours={48} />
+
+      {d.followup_question && (
+        <div className="mt-4 rounded-md border-l-2 border-amber-500 bg-amber-500/10 p-3 text-sm">
+          <div className="mb-1 text-xs font-bold uppercase tracking-widest text-amber-500">
+            Trainee Follow-Up Question (Final Reply Allowed)
           </div>
+          <p className="whitespace-pre-wrap">{d.followup_question}</p>
+        </div>
+      )}
+
+      {d.followup_answer && (
+        <div className="mt-4 rounded-md border-l-2 border-emerald-500 bg-emerald-500/10 p-3 text-sm">
+          <div className="mb-1 text-xs font-bold uppercase tracking-widest text-emerald-500">
+            Your Final Response
+          </div>
+          <p className="whitespace-pre-wrap">{d.followup_answer}</p>
+        </div>
+      )}
+
+      {d.status === "completed" && (
+        <div className="mt-4 rounded-md border border-white/10 bg-black/40 p-3 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          🔒 Thread Locked · Coaching Session Completed
+        </div>
+      )}
+
+      {(d.status === "pending" || d.status === "followup_pending") && (
+        <div className="mt-4 space-y-3">
           <Textarea
-            placeholder="Write your answer…"
+            placeholder={d.status === "followup_pending" ? "Write your final response…" : "Write your posture feedback & coaching analysis…"}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={4}
@@ -179,7 +212,7 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
               onClick={() => mut.mutate()}
             >
               {mut.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-              Answer · Release ${Number(d.price).toFixed(2)}
+              {d.status === "followup_pending" ? "Final Answer · Complete Session" : `Answer · Release $${Number(d.price).toFixed(2)}`}
             </Button>
           </div>
         </div>
@@ -188,8 +221,21 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
   );
 }
 
-function SentCard({ d }: { d: QADispatch }) {
+function SentCard({ d, onFollowupSent }: { d: QADispatch; onFollowupSent: () => void }) {
+  const followupFn = useServerFn(submitQAFollowup);
+  const [followupText, setFollowupText] = useState("");
   const to = d.creator?.display_name ?? d.creator?.username ?? "creator";
+
+  const followupMut = useMutation({
+    mutationFn: () => followupFn({ data: { dispatchId: d.id, question: followupText } }),
+    onSuccess: () => {
+      toast.success("Follow-up submitted!");
+      setFollowupText("");
+      onFollowupSent();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <article className="rounded-lg border border-border/60 bg-card p-5">
       <div className="mb-3 flex items-center justify-between">
@@ -197,20 +243,59 @@ function SentCard({ d }: { d: QADispatch }) {
         <Meta d={d} />
       </div>
       <p className="whitespace-pre-wrap text-sm">{d.question}</p>
-      {d.answer ? (
+      
+      {d.answer && (
         <div className="mt-4 rounded-md border-l-2 border-premium bg-muted/30 p-3 text-sm">
-          <div className="mb-1 text-xs uppercase tracking-widest text-premium">Answer</div>
+          <div className="mb-1 text-xs uppercase tracking-widest text-premium">Trainer Feedback</div>
           <p className="whitespace-pre-wrap">{d.answer}</p>
         </div>
-      ) : d.status === "pending" ? (
-        <div className="mt-3 flex items-center gap-2">
-          <p className="text-xs text-muted-foreground">Waiting on {to} to answer.</p>
-          <SLACountdown createdAt={d.created_at} deadlineHours={48} compact />
+      )}
+
+      {/* Step 3: Single Follow-Up Input */}
+      {d.status === "coached" && !d.followup_question && (
+        <div className="mt-4 space-y-3 rounded-md border border-sport/30 bg-sport/5 p-4">
+          <div className="text-xs font-bold uppercase tracking-widest text-sport">
+            ⚡ Ask Your 1 Allowed Follow-Up Question
+          </div>
+          <Textarea
+            placeholder="Ask clarification on posture, reps, or program adjustments…"
+            value={followupText}
+            onChange={(e) => setFollowupText(e.target.value)}
+            rows={3}
+            maxLength={2000}
+          />
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="bg-sport text-white font-bold uppercase tracking-widest"
+              disabled={followupText.trim().length < 5 || followupMut.isPending}
+              onClick={() => followupMut.mutate()}
+            >
+              {followupMut.isPending && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+              Submit 1 Follow-Up
+            </Button>
+          </div>
         </div>
-      ) : (
-        <p className="mt-3 text-xs text-muted-foreground">
-          No answer within the deadline — refund processed.
-        </p>
+      )}
+
+      {d.followup_question && (
+        <div className="mt-4 rounded-md border-l-2 border-amber-500 bg-amber-500/10 p-3 text-sm">
+          <div className="mb-1 text-xs font-bold uppercase tracking-widest text-amber-500">Your Follow-Up</div>
+          <p className="whitespace-pre-wrap">{d.followup_question}</p>
+        </div>
+      )}
+
+      {d.followup_answer && (
+        <div className="mt-4 rounded-md border-l-2 border-emerald-500 bg-emerald-500/10 p-3 text-sm">
+          <div className="mb-1 text-xs font-bold uppercase tracking-widest text-emerald-500">Trainer Final Response</div>
+          <p className="whitespace-pre-wrap">{d.followup_answer}</p>
+        </div>
+      )}
+
+      {d.status === "completed" && (
+        <div className="mt-4 rounded-md border border-white/10 bg-black/40 p-3 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          🔒 Thread Locked · Coaching Session Completed
+        </div>
       )}
     </article>
   );

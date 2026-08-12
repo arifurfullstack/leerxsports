@@ -100,7 +100,14 @@ function DashboardPage() {
 
   const profileIncomplete = !state.profile?.username || !state.profile?.display_name;
   const greeting = getGreeting();
-  const roleLabel = state.isTrainer ? "Trainer" : state.isAdmin ? "Admin" : "Trainee";
+  const roleLabel =
+    state.trainerApplication?.status === "pending"
+      ? "Trainer Application Pending"
+      : state.isTrainer
+        ? "Trainer"
+        : state.isAdmin
+          ? "Admin"
+          : "Trainee";
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-background py-6 sm:py-12">

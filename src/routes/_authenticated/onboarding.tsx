@@ -217,11 +217,14 @@ function OnboardingPage() {
     logResume({ data: { source } }).catch(() => { /* ignore */ });
   }, [resume, profileIncomplete, state.onboardingCompleted, search.source, logResume]);
 
+  const selectedRole = state.userMetadata?.selected_role;
   const initialStep: Step = state.trainerApplication
     ? "pending"
-    : state.onboardingCompleted
-      ? "role" // shouldn't happen (should be redirected), but safe default
-      : "role";
+    : selectedRole === "trainer"
+      ? "trainer"
+      : selectedRole === "trainee"
+        ? "trainee"
+        : "role";
   const [step, setStep] = useState<Step>(initialStep);
 
   if (state.onboardingCompleted && !state.trainerApplication && !resume && !profileIncomplete) {

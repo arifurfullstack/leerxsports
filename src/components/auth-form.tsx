@@ -78,6 +78,7 @@ export function AuthForm({
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [role, setRole] = useState<"trainee" | "trainer" | "">("");
 
   const confirmMismatch =
     !isLogin && confirmPassword.length > 0 && confirmPassword !== password;
@@ -137,12 +138,20 @@ export function AuthForm({
           setLoading(false);
           return;
         }
+        if (!role) {
+          toast.error("Role selection required", {
+            description: "Please select 'I am a Trainee' or 'I am a Pro Trainer' to continue.",
+          });
+          setError("Please select your role ('I am a Trainee' or 'I am a Pro Trainer') to continue.");
+          setLoading(false);
+          return;
+        }
         fireAuthLog("signup_attempt", { email });
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: { full_name: fullName, selected_role: role },
           },
         });
         if (signUpError) throw signUpError;
@@ -208,6 +217,52 @@ export function AuthForm({
   const formInner = (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!isLogin && (
+          <div className="space-y-2">
+            <Label className={labelClass || "text-xs font-semibold uppercase tracking-wider text-foreground"}>
+              Select Role <span className="text-sport">*</span>
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("trainee")}
+                className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all ${
+                  role === "trainee"
+                    ? "border-sport bg-sport/15 text-foreground ring-1 ring-sport"
+                    : "border-border/60 bg-muted/20 text-muted-foreground hover:border-border hover:text-foreground"
+                }`}
+              >
+                <span className={`text-xs font-bold uppercase tracking-wider ${role === "trainee" ? "text-sport" : "text-foreground"}`}>
+                  🏃 Trainee
+                </span>
+                <span className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                  Workout &amp; learn from pro creators
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("trainer")}
+                className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all ${
+                  role === "trainer"
+                    ? "border-sport bg-sport/15 text-foreground ring-1 ring-sport"
+                    : "border-border/60 bg-muted/20 text-muted-foreground hover:border-border hover:text-foreground"
+                }`}
+              >
+                <span className={`text-xs font-bold uppercase tracking-wider ${role === "trainer" ? "text-sport" : "text-foreground"}`}>
+                  ⚡ Pro Trainer
+                </span>
+                <span className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                  Apply for verified coaching status
+                </span>
+              </button>
+            </div>
+            {!role && (
+              <p className="text-[10px] font-medium text-amber-500">
+                Please select a role to enable signup.
+              </p>
+            )}
+          </div>
+        )}
         {!isLogin && (
           <div className="space-y-1.5">
             <Label htmlFor="fullName" className={labelClass}>Full name</Label>
@@ -331,7 +386,7 @@ export function AuthForm({
               ? "relative h-12 w-full overflow-hidden rounded-none bg-sport text-xs font-black uppercase tracking-[0.24em] text-white shadow-none transition-all hover:bg-sport/90 hover:shadow-[0_0_24px_hsl(var(--sport)/0.4)]"
               : "w-full"
           }
-          disabled={loading || confirmMismatch}
+          disabled={loading || confirmMismatch || (!isLogin && !role)}
         >
           {loading ? (
             <>

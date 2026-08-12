@@ -976,6 +976,8 @@ export type Database = {
           creator_id: string
           expires_at: string
           fan_id: string
+          followup_answer: string | null
+          followup_question: string | null
           id: string
           price: number
           question: string
@@ -990,6 +992,8 @@ export type Database = {
           creator_id: string
           expires_at?: string
           fan_id: string
+          followup_answer?: string | null
+          followup_question?: string | null
           id?: string
           price?: number
           question: string
@@ -1004,6 +1008,8 @@ export type Database = {
           creator_id?: string
           expires_at?: string
           fan_id?: string
+          followup_answer?: string | null
+          followup_question?: string | null
           id?: string
           price?: number
           question?: string

@@ -61,3 +61,4 @@ Thumbs.db
 # Local compiler and Supabase CLI state
 *.tsbuildinfo
 supabase/.temp/
+docs/

@@ -118,6 +118,22 @@ export function Navbar() {
     enabled: !!user,
   });
 
+  const trainerAppQuery = useQuery({
+    queryKey: ["navbar-trainer-app", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("trainer_applications")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -360,9 +376,9 @@ export function Navbar() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`inline-block h-2 w-2 rounded-full ${mode === "creator" ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
+                        <span className={`inline-block h-2 w-2 rounded-full ${trainerAppQuery.data?.status === "pending" ? "bg-amber-500 animate-pulse" : mode === "creator" ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
                         <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {mode === "creator" ? "Creator Profile" : "Athlete Profile"}
+                          {trainerAppQuery.data?.status === "pending" ? "Trainer Application Pending" : mode === "creator" ? "Creator Profile" : "Athlete Profile"}
                         </p>
                       </div>
                     </div>
