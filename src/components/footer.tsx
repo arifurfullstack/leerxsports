@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import type { User } from "@supabase/supabase-js";
@@ -140,6 +140,20 @@ export function Footer() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const checkAdmin = useServerFn(isAdmin);
+
+  const pathname = useRouter().state.location.pathname;
+  const [isAdminRoute, setIsAdminRoute] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname.startsWith("/admin");
+    }
+    return pathname.startsWith("/admin");
+  });
+
+  useEffect(() => {
+    setIsAdminRoute(pathname.startsWith("/admin"));
+  }, [pathname]);
+
+  if (isAdminRoute) return null;
 
   useEffect(() => {
     let active = true;

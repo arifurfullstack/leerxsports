@@ -4,10 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -174,9 +175,9 @@ function DynamicSiteFavicon() {
 }
 
 function AppLayout() {
-  const router = useRouter();
-  const pathname = router.state.location.pathname;
+  const pathname = useLocation({ select: (loc) => loc.pathname });
   const isAdminRoute = pathname.startsWith("/admin");
+
   return (
     <>
       <a
@@ -186,11 +187,11 @@ function AppLayout() {
         Skip to main content
       </a>
       <div className={isAdminRoute ? "min-h-dvh" : "flex min-h-dvh flex-col"}>
-        {!isAdminRoute && <Navbar />}
+        <Navbar />
         <main id="main-content" tabIndex={-1} className={isAdminRoute ? "min-h-dvh outline-none" : "flex-1 outline-none"}>
           <Outlet />
         </main>
-        {!isAdminRoute && <Footer />}
+        <Footer />
       </div>
     </>
   );

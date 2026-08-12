@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:8081";
+const BASE_URL = process.env.BASE_URL ?? "https://leersports.cliplyx.com";
 const PASSWORD = process.env.PASSWORD ?? "DemoPass123!";
 
 async function run() {

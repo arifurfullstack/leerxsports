@@ -112,6 +112,20 @@ export function Navbar() {
   const getWallet = useServerFn(getUserWalletBalance);
   const { mode, switchMode } = useProfileMode();
 
+  const pathname = useRouter().state.location.pathname;
+  const [isAdminRoute, setIsAdminRoute] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname.startsWith("/admin");
+    }
+    return pathname.startsWith("/admin");
+  });
+
+  useEffect(() => {
+    setIsAdminRoute(pathname.startsWith("/admin"));
+  }, [pathname]);
+
+  if (isAdminRoute) return null;
+
   const walletQuery = useQuery({
     queryKey: ["user-wallet"],
     queryFn: () => getWallet(),
