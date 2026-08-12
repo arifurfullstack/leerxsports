@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
         to: "/auth",
         search: {
           intent: "admin",
-          redirect: location.pathname + location.search,
+          redirect: location.pathname + (location.searchStr ?? ""),
         },
       });
     }

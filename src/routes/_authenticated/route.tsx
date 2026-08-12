@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname.startsWith("/admin")) {
         throw redirect({
           to: "/auth",
-          search: { intent: "admin", redirect: location.pathname + location.search },
+          search: { intent: "admin", redirect: location.pathname + (location.searchStr ?? "") },
         });
       }
       throw redirect({
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (location.pathname.startsWith("/admin")) {
         throw redirect({
           to: "/auth",
-          search: { intent: "admin", redirect: location.pathname + location.search },
+          search: { intent: "admin", redirect: location.pathname + (location.searchStr ?? "") },
         });
       }
       throw redirect({
