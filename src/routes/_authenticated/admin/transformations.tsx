@@ -3,11 +3,12 @@ import { AdminManagementTable } from "@/components/admin-management-table";
 
 type Row = {
   id: string;
-  author_id: string;
-  caption: string | null;
-  is_hidden: boolean | null;
+  user_id: string;
+  kind: string;
+  notes: string | null;
+  visibility: string;
+  captured_on: string;
   created_at: string;
-  is_demo: boolean | null;
 };
 
 export const Route = createFileRoute("/_authenticated/admin/transformations")({
@@ -17,29 +18,40 @@ export const Route = createFileRoute("/_authenticated/admin/transformations")({
       title="Transformations"
       subtitle="Body transformation submissions posted by trainees."
       table="transformation_posts"
-      select="id, author_id, caption, is_hidden, created_at, is_demo"
-      searchColumn="caption"
-      hideToggleColumn={{ column: "is_hidden", on: true, off: false }}
+      select="id, user_id, kind, notes, visibility, captured_on, created_at"
+      searchColumn="notes"
+      hideToggleColumn={{ column: "visibility", on: "private", off: "public", label: "Hide" }}
       filters={[
         {
-          column: "is_hidden",
+          column: "kind",
+          label: "Type",
+          options: [
+            { label: "Photo", value: "photo" },
+            { label: "Video", value: "video" },
+          ],
+        },
+        {
+          column: "visibility",
           label: "Visibility",
           options: [
-            { label: "Visible", value: "false" },
-            { label: "Hidden", value: "true" },
+            { label: "Public", value: "public" },
+            { label: "Subscribers", value: "subscribers" },
+            { label: "Private", value: "private" },
           ],
         },
       ]}
       columns={[
-        { key: "caption", label: "Caption", render: (r) => r.caption ?? "—" },
+        { key: "notes", label: "Notes", render: (r) => r.notes ?? "—" },
+        { key: "kind", label: "Type", render: (r) => r.kind.toUpperCase() },
+        { key: "visibility", label: "Visibility" },
         {
-          key: "is_hidden",
-          label: "Status",
-          render: (r) => (r.is_hidden ? "Hidden" : "Visible"),
+          key: "captured_on",
+          label: "Captured",
+          render: (r) => new Date(r.captured_on).toLocaleDateString(),
         },
         {
           key: "created_at",
-          label: "Created",
+          label: "Submitted",
           render: (r) => new Date(r.created_at).toLocaleDateString(),
         },
       ]}
