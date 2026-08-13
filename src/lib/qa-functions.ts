@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const QA_PRICE = 300;
@@ -24,7 +25,7 @@ export type QADispatch = {
 
 /** Send a paid question ($300 placeholder charge) to a creator. */
 export const sendQADispatch = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input: any) => {
     const payload = input?.data ?? input;
     return z
@@ -134,7 +135,7 @@ export const sendQADispatch = createServerFn({ method: "POST" })
 
 /** Creator answers a pending dispatch or follow-up. Releases held funds to their balance. */
 export const answerQADispatch = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input: any) => {
     const payload = input?.data ?? input;
     return z
@@ -228,7 +229,7 @@ export const answerQADispatch = createServerFn({ method: "POST" })
 
 /** Trainee submits exactly 1 follow-up reply on a coached question. */
 export const submitQAFollowup = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input: any) => {
     const payload = input?.data ?? input;
     return z
@@ -274,7 +275,7 @@ export const submitQAFollowup = createServerFn({ method: "POST" })
 
 /** List dispatches where the caller is fan or creator. */
 export const listMyQADispatches = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input: any) => {
     const payload = input?.data ?? input ?? {};
     return z.object({ role: z.enum(["fan", "creator", "all"]).default("all") }).parse(payload);
