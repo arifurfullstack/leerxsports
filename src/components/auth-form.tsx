@@ -79,6 +79,17 @@ export function AuthForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [role, setRole] = useState<"trainee" | "trainer" | "">("");
+  const [traineeData, setTraineeData] = useState({
+    username: "",
+    display_name: "",
+    country: "",
+    native_language: "",
+    height_cm: "",
+    weight_kg: "",
+    experience_level: "beginner",
+    goal: "",
+    agreement_accepted: false,
+  });
 
   const confirmMismatch =
     !isLogin && confirmPassword.length > 0 && confirmPassword !== password;
@@ -146,6 +157,35 @@ export function AuthForm({
           setLoading(false);
           return;
         }
+
+        if (role === "trainee") {
+          if (!traineeData.username.match(/^[a-z0-9_]{3,30}$/)) {
+            showAuthErrorToast("Username must be 3-30 lowercase letters, numbers, and underscores.", "signup");
+            setLoading(false);
+            return;
+          }
+          if (!traineeData.display_name || !traineeData.country || !traineeData.native_language) {
+            showAuthErrorToast("Please fill in all required trainee fields.", "signup");
+            setLoading(false);
+            return;
+          }
+          if (!traineeData.agreement_accepted) {
+            showAuthErrorToast("You must accept the Trainee Agreement.", "signup");
+            setLoading(false);
+            return;
+          }
+          const { data: existingUser } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .ilike("username", traineeData.username)
+            .maybeSingle();
+          if (existingUser) {
+            showAuthErrorToast("That username is already taken.", "signup");
+            setLoading(false);
+            return;
+          }
+        }
+
         fireAuthLog("signup_attempt", { email });
         const { error: signUpError } = await supabase.auth.signUp({
           email,
@@ -156,6 +196,26 @@ export function AuthForm({
         });
         if (signUpError) throw signUpError;
         const { data: u1 } = await supabase.auth.getUser();
+
+        if (u1.user && role === "trainee") {
+          const { error: profErr } = await supabase.from("profiles").update({
+            username: traineeData.username.toLowerCase(),
+            display_name: traineeData.display_name,
+            country: traineeData.country,
+            native_language: traineeData.native_language,
+            height_cm: traineeData.height_cm ? Number(traineeData.height_cm) : null,
+            weight_kg: traineeData.weight_kg ? Number(traineeData.weight_kg) : null,
+            goal: traineeData.goal || null,
+            experience_level: traineeData.experience_level,
+            onboarding_completed: true,
+            agreement_accepted_at: new Date().toISOString(),
+          }).eq("user_id", u1.user.id);
+          
+          if (profErr) {
+            console.error("Profile update error", profErr);
+          }
+        }
+
         fireAuthLog("signup_success", { email, userId: u1.user?.id ?? null });
         toast.success("Account created", { description: "You're signed in." });
         // Auto sign-in in case the session wasn't returned with signUp
@@ -369,6 +429,64 @@ export function AuthForm({
                 Passwords don't match.
               </p>
             )}
+          </div>
+        )}
+
+        {!isLogin && role === "trainee" && (
+          <div className="space-y-4 pt-4 border-t border-border mt-4">
+            <h3 className={labelClass || "text-xs font-semibold uppercase tracking-wider text-foreground"}>Trainee Profile Details</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className={labelClass}>Username <span className="text-sport">*</span></Label>
+                <Input id="username" required value={traineeData.username} onChange={(e) => setTraineeData({...traineeData, username: e.target.value})} className={inputClass} placeholder="johndoe" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="display_name" className={labelClass}>Display Name <span className="text-sport">*</span></Label>
+                <Input id="display_name" required value={traineeData.display_name} onChange={(e) => setTraineeData({...traineeData, display_name: e.target.value})} className={inputClass} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="country" className={labelClass}>Country <span className="text-sport">*</span></Label>
+                <Input id="country" required value={traineeData.country} onChange={(e) => setTraineeData({...traineeData, country: e.target.value})} className={inputClass} placeholder="e.g. USA" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="native_language" className={labelClass}>Language <span className="text-sport">*</span></Label>
+                <Input id="native_language" required value={traineeData.native_language} onChange={(e) => setTraineeData({...traineeData, native_language: e.target.value})} className={inputClass} placeholder="e.g. English" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Height (cm)</Label>
+                <Input type="number" step="0.1" value={traineeData.height_cm} onChange={(e) => setTraineeData({...traineeData, height_cm: e.target.value})} className={inputClass} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Weight (kg)</Label>
+                <Input type="number" step="0.1" value={traineeData.weight_kg} onChange={(e) => setTraineeData({...traineeData, weight_kg: e.target.value})} className={inputClass} />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+               <Label htmlFor="experience_level" className={labelClass}>Experience Level</Label>
+               <select id="experience_level" value={traineeData.experience_level} onChange={(e) => setTraineeData({...traineeData, experience_level: e.target.value})} className={inputClass || "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"}>
+                 <option value="beginner">Beginner</option>
+                 <option value="intermediate">Intermediate</option>
+                 <option value="advanced">Advanced</option>
+                 <option value="elite">Elite</option>
+               </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="goal" className={labelClass}>Fitness Goal</Label>
+              <Input id="goal" value={traineeData.goal} onChange={(e) => setTraineeData({...traineeData, goal: e.target.value})} placeholder="e.g. hypertrophy, marathon" className={inputClass} />
+            </div>
+
+            <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-sm mt-4">
+              <input type="checkbox" required checked={traineeData.agreement_accepted} onChange={(e) => setTraineeData({...traineeData, agreement_accepted: e.target.checked})} className="mt-1 h-4 w-4 accent-[var(--sport)]" />
+              <span className="text-xs">
+                I accept the LEER Sports Trainee Agreement, including community rules, content policy, and payment terms.
+              </span>
+            </label>
           </div>
         )}
 
