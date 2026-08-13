@@ -286,21 +286,26 @@ async function fetchDiscovery(
     const subscribedTrainerIds = new Set<string>();
     const unlockedPostIds = new Set<string>();
 
-    if (currentUserId && supabase) {
+    if (currentUserId) {
       try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const [subRes, unlockRes] = await Promise.all([
-          supabase
+          (supabaseAdmin as any)
             .from("subscriptions")
-            .select("trainer_id")
-            .eq("subscriber_id", currentUserId)
-            .eq("status", "active"),
-          supabase
+            .select("trainer_id, status, current_period_end")
+            .eq("subscriber_id", currentUserId),
+          (supabaseAdmin as any)
             .from("post_unlocks")
             .select("post_id")
             .eq("user_id", currentUserId),
         ]);
         for (const s of subRes.data ?? []) {
-          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+          const isSubActive =
+            ["active", "trial", "grace"].includes(s.status) &&
+            (!s.current_period_end || new Date(s.current_period_end).getTime() > Date.now());
+          if (s.trainer_id && isSubActive) {
+            subscribedTrainerIds.add(s.trainer_id);
+          }
         }
         for (const u of unlockRes.data ?? []) {
           if (u.post_id) unlockedPostIds.add(u.post_id);
@@ -716,26 +721,33 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
     const subscribedTrainerIds = new Set<string>();
     const unlockedPostIds = new Set<string>();
 
-    if (currentUserId && supabase) {
+    if (currentUserId) {
       try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const [subRes, unlockRes] = await Promise.all([
-          supabase
+          (supabaseAdmin as any)
             .from("subscriptions")
-            .select("trainer_id")
-            .eq("subscriber_id", currentUserId)
-            .eq("status", "active"),
-          supabase
+            .select("trainer_id, status, current_period_end")
+            .eq("subscriber_id", currentUserId),
+          (supabaseAdmin as any)
             .from("post_unlocks")
             .select("post_id")
             .eq("user_id", currentUserId),
         ]);
         for (const s of subRes.data ?? []) {
-          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+          const isSubActive =
+            ["active", "trial", "grace"].includes(s.status) &&
+            (!s.current_period_end || new Date(s.current_period_end).getTime() > Date.now());
+          if (s.trainer_id && isSubActive) {
+            subscribedTrainerIds.add(s.trainer_id);
+          }
         }
         for (const u of unlockRes.data ?? []) {
           if (u.post_id) unlockedPostIds.add(u.post_id);
         }
-      } catch {}
+      } catch (e) {
+        console.error("Error fetching subscriptions/unlocks in getTrainerByUsername:", e);
+      }
     }
 
     const signedPosts = await decoratePosts(
@@ -834,26 +846,33 @@ export const getPostDetail = createServerFn({ method: "GET" })
     const subscribedTrainerIds = new Set<string>();
     const unlockedPostIds = new Set<string>();
 
-    if (currentUserId && supabase) {
+    if (currentUserId) {
       try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const [subRes, unlockRes] = await Promise.all([
-          supabase
+          (supabaseAdmin as any)
             .from("subscriptions")
-            .select("trainer_id")
-            .eq("subscriber_id", currentUserId)
-            .eq("status", "active"),
-          supabase
+            .select("trainer_id, status, current_period_end")
+            .eq("subscriber_id", currentUserId),
+          (supabaseAdmin as any)
             .from("post_unlocks")
             .select("post_id")
             .eq("user_id", currentUserId),
         ]);
         for (const s of subRes.data ?? []) {
-          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+          const isSubActive =
+            ["active", "trial", "grace"].includes(s.status) &&
+            (!s.current_period_end || new Date(s.current_period_end).getTime() > Date.now());
+          if (s.trainer_id && isSubActive) {
+            subscribedTrainerIds.add(s.trainer_id);
+          }
         }
         for (const u of unlockRes.data ?? []) {
           if (u.post_id) unlockedPostIds.add(u.post_id);
         }
-      } catch {}
+      } catch (e) {
+        console.error("Error fetching subscriptions/unlocks in getPostDetail:", e);
+      }
     }
 
     const [signed] = await decoratePosts(
