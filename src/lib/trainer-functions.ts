@@ -195,6 +195,7 @@ async function fetchDiscovery(
       const pr = profileMap.get(p.trainer_id);
       const tp = tpMap.get(p.trainer_id);
       if (!pr) return false;
+      if (!tp) return false; // MUST HAVE TRAINER PROFILE
       if (filters.verifiedOnly && !tp?.is_verified) return false;
       if (filters.country && pr.country?.toLowerCase() !== filters.country.toLowerCase())
         return false;

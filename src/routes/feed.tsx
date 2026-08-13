@@ -97,7 +97,7 @@ const feedQuery = queryOptions({
 });
 
 const feedSearchSchema = z.object({
-  tab: fallback(z.string(), "all").default("all"),
+  tab: fallback(z.string(), "feed").default("feed"),
   post: fallback(z.string(), "").default(""),
   panel: fallback(z.string(), "media").default("media"),
   sort: fallback(z.string(), "newest").default("newest"),
@@ -973,29 +973,14 @@ function FeedTile({
             </div>
           ) : null}
           <div
-            className="group glass-tile relative z-10 aspect-[4/5] overflow-hidden rounded-2xl shadow-lg shadow-black/20 ring-1 ring-white/5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20 hover:ring-premium/40 motion-reduce:transform-none motion-reduce:transition-none sm:aspect-[3/4] lg:aspect-[4/5]"
+            className="group glass-tile relative z-10 aspect-square overflow-hidden rounded-2xl shadow-lg shadow-black/20 ring-1 ring-white/5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20 hover:ring-premium/40 motion-reduce:transform-none motion-reduce:transition-none"
           >
       <Link
-        to="/posts/$postId"
-        params={{ postId: p.id }}
+        to="/trainers/$username"
+        params={{ username: p.trainer.username ?? p.trainer.user_id }}
         ref={registerRef as never}
-        aria-label={`Open post${p.caption ? `: ${p.caption.slice(0, 60)}` : ""}`}
-        onClick={(e) => {
-          // Preserve modifier-clicks and middle-clicks for "open in new tab".
-          if (
-            e.defaultPrevented ||
-            e.button !== 0 ||
-            e.metaKey ||
-            e.ctrlKey ||
-            e.shiftKey ||
-            e.altKey
-          ) {
-            return;
-          }
-          e.preventDefault();
-          onOpen({ liked, saved, respectCount, saveCount });
-        }}
-        className="absolute inset-0 z-0 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        aria-label={`Go to ${p.trainer.display_name ?? trainerHref}'s profile`}
+        className="absolute inset-0 z-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       />
       {thumb || p.is_premium ? (
         <ResponsiveImage

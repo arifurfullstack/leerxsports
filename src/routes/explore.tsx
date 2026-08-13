@@ -465,7 +465,7 @@ function ExploreGridSkeleton() {
           key={i}
           className="relative overflow-hidden rounded-lg border border-border bg-card"
         >
-          <div className="relative aspect-[4/5] w-full animate-pulse bg-muted">
+          <div className="relative aspect-square w-full animate-pulse bg-muted">
             <div className="absolute inset-x-0 bottom-0 space-y-2 bg-gradient-to-t from-black/40 to-transparent p-3">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-muted-foreground/20" />
@@ -505,11 +505,11 @@ function ExploreTile({
 
   return (
     <Link
-      to="/posts/$postId"
-      params={{ postId: post.id }}
+      to="/trainers/$username"
+      params={{ username: post.trainer.username ?? post.trainer.user_id }}
       className="group relative block overflow-hidden rounded-lg border border-border bg-card"
     >
-      <div className="relative aspect-[4/5] w-full bg-muted">
+      <div className="relative aspect-square w-full bg-muted">
         {post.is_premium ? (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-background">
             <span className="rounded-full border border-primary/50 bg-background/70 px-3 py-1 text-[10px] uppercase tracking-wider text-primary backdrop-blur">
