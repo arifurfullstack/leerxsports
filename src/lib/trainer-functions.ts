@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { optionalSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 
 function getPublicSupabase() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -354,19 +355,19 @@ async function fetchDiscovery(
 }
 
 export const getDiscoveryFeed = createServerFn({ method: "GET" })
-  .middleware([optionalSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .handler(async ({ context }): Promise<DiscoveryPost[]> =>
     fetchDiscovery("feed", { sort: "recent" }, context.userId, context.supabase),
   );
 
 export const getShortsFeed = createServerFn({ method: "GET" })
-  .middleware([optionalSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .handler(async ({ context }): Promise<DiscoveryPost[]> =>
     fetchDiscovery("short", { sort: "top" }, context.userId, context.supabase),
   );
 
 export const getExplorePosts = createServerFn({ method: "POST" })
-  .middleware([optionalSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .validator((input) =>
     z
       .object({
@@ -678,7 +679,7 @@ export const findSimilarTrainers = createServerFn({ method: "POST" })
   });
 
 export const getTrainerByUsername = createServerFn({ method: "GET" })
-  .middleware([optionalSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .validator((input) => z.object({ username: z.string() }).parse(input))
   .handler(async ({ data, context }): Promise<TrainerDetail | null> => {
     const supabase = (context.supabase as ReturnType<typeof getPublicSupabase>) ?? getPublicSupabase();
@@ -799,7 +800,7 @@ export type PostDetail = DiscoveryPost & {
 };
 
 export const getPostDetail = createServerFn({ method: "GET" })
-  .middleware([optionalSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<PostDetail | null> => {
     const supabase = (context.supabase as ReturnType<typeof getPublicSupabase>) ?? getPublicSupabase();
