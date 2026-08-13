@@ -43,7 +43,7 @@ export type FilterOption = {
   options: { label: string; value: string }[];
 };
 
-export function AdminManagementTable<T extends { id: string; is_demo?: boolean | null }>({
+export function AdminManagementTable<T extends { id?: string; is_demo?: boolean | null }>({
   title,
   subtitle,
   table,
@@ -288,9 +288,9 @@ export function AdminManagementTable<T extends { id: string; is_demo?: boolean |
             {isFetching ? "Loading…" : "No rows found."}
           </p>
         ) : (
-          rows.map((row) => (
+          rows.map((row, idx) => (
             <div
-              key={row.id}
+              key={row.id ?? (row as any).trainer_id ?? idx}
               className="grid items-center gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-0"
               style={{ gridTemplateColumns: `${columns.map(() => "1fr").join(" ")} auto` }}
             >
