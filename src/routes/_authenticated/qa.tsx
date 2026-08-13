@@ -155,12 +155,15 @@ function Meta({ d }: { d: QADispatch }) {
 
 function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void }) {
   const answer = useServerFn(answerQADispatch);
+  const qc = useQueryClient();
   const [text, setText] = useState("");
   const mut = useMutation({
     mutationFn: () => answer({ data: { dispatchId: d.id, answer: text } }),
     onSuccess: () => {
-      toast.success("Answer sent successfully!");
+      toast.success("Answer sent successfully! Funds credited to your wallet.");
       setText("");
+      qc.invalidateQueries({ queryKey: ["user-wallet"] });
+      qc.invalidateQueries({ queryKey: ["qa"] });
       onAnswered();
     },
     onError: (e: Error) => toast.error(e.message),
