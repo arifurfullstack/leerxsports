@@ -136,18 +136,27 @@ export function Navbar() {
     enabled: !!user,
   });
 
-  const trainerAppQuery = useQuery({
-    queryKey: ["navbar-trainer-app", user?.id],
+  const trainerStatusQuery = useQuery({
+    queryKey: ["navbar-trainer-status", user?.id],
     queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase
-        .from("trainer_applications")
-        .select("status")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
+      if (!user) return { isApproved: false, isPending: false };
+      const [{ data: app }, { data: prof }] = await Promise.all([
+        supabase
+          .from("trainer_applications")
+          .select("status")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("trainer_profiles")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+      const isApproved = app?.status === "approved" || !!prof;
+      const isPending = app?.status === "pending" && !isApproved;
+      return { isApproved, isPending };
     },
     enabled: !!user,
   });
@@ -280,7 +289,9 @@ export function Navbar() {
     router.navigate({ to: "/", replace: true });
   };
 
-  const primary = getPrimaryLinks(!!user, mode === "creator");
+  const isTrainer = !!trainerStatusQuery.data?.isApproved;
+  const isCreatorMode = isTrainer || mode === "creator";
+  const primary = getPrimaryLinks(!!user, isCreatorMode);
   const secondary = getSecondaryLinks(!!user);
   const initials = initialsFrom(user);
   const displayName =
@@ -394,41 +405,43 @@ export function Navbar() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`inline-block h-2 w-2 rounded-full ${trainerAppQuery.data?.status === "pending" ? "bg-amber-500 animate-pulse" : mode === "creator" ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
+                        <span className={`inline-block h-2 w-2 rounded-full ${trainerStatusQuery.data?.isPending ? "bg-amber-500 animate-pulse" : isCreatorMode ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
                         <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {trainerAppQuery.data?.status === "pending" ? "Trainer Application Pending" : mode === "creator" ? "Creator Profile" : "Athlete Profile"}
+                          {isTrainer ? "Trainer Profile" : trainerStatusQuery.data?.isPending ? "Trainer Application Pending" : mode === "creator" ? "Creator Profile" : "Athlete Profile"}
                         </p>
                       </div>
                     </div>
                   </DropdownMenuLabel>
 
-                  {/* Mode Switcher Segmented Control */}
-                  <div className="mx-2 my-1 rounded-lg border border-border/60 bg-muted/40 p-1">
-                    <div className="grid grid-cols-2 gap-1 rounded-md border border-hairline bg-background/80 p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => switchMode("normal")}
-                        className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                          mode === "normal"
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <UserIcon className="h-3 w-3" /> Athlete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => switchMode("creator")}
-                        className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                          mode === "creator"
-                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Sparkles className="h-3 w-3" /> Creator
-                      </button>
+                  {/* Mode Switcher Segmented Control — only for non-trainers */}
+                  {!isTrainer && (
+                    <div className="mx-2 my-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+                      <div className="grid grid-cols-2 gap-1 rounded-md border border-hairline bg-background/80 p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => switchMode("normal")}
+                          className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
+                            mode === "normal"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <UserIcon className="h-3 w-3" /> Athlete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => switchMode("creator")}
+                          className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
+                            mode === "creator"
+                              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Sparkles className="h-3 w-3" /> Creator
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <DropdownMenuSeparator />
 
@@ -436,8 +449,8 @@ export function Navbar() {
                     Account
                   </DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link to={mode === "creator" ? "/creator/dashboard" : "/dashboard"} className="flex w-full items-center font-semibold text-foreground">
-                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary" /> {mode === "creator" ? "Creator Studio" : "Athlete Dashboard"}
+                    <Link to={isCreatorMode ? "/creator/dashboard" : "/dashboard"} className="flex w-full items-center font-semibold text-foreground">
+                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary" /> {isCreatorMode ? "Creator Studio" : "Athlete Dashboard"}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
