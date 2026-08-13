@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 
 type AuthedCtx = { supabase: any; userId: string };
 
@@ -56,7 +57,7 @@ async function requireAdmin(context: AuthedCtx) {
 
 /** Generic paged list for management pages. Returns raw rows. */
 export const adminListRows = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator(
     (d: {
       table: string;
@@ -95,7 +96,7 @@ export const adminListRows = createServerFn({ method: "POST" })
   });
 
 export const adminUpdateRow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { table: string; id: string; patch: Record<string, unknown> }) => ({
     table: String(d.table),
     id: String(d.id),
@@ -117,7 +118,7 @@ export const adminUpdateRow = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteRow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { table: string; id: string }) => ({
     table: String(d.table),
     id: String(d.id),
