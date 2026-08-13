@@ -94,7 +94,9 @@ import { Clock, MessageCircle } from "lucide-react";
 const feedQuery = queryOptions({
   queryKey: ["discovery-feed"],
   queryFn: () => getDiscoveryFeed(),
+  staleTime: 0, // always re-fetch on mount so auth token is included
 });
+
 
 const feedSearchSchema = z.object({
   tab: fallback(z.string(), "feed").default("feed"),
@@ -108,12 +110,11 @@ const feedSearchSchema = z.object({
 type FeedSearch = z.infer<typeof feedSearchSchema>;
 
 export const Route = createFileRoute("/feed")({
-  loader: async ({ context }) => {
-    try {
-      await context.queryClient.ensureQueryData(feedQuery);
-    } catch (e) {
-      console.error("Feed loader error:", e);
-    }
+  loader: async ({ context: _context }) => {
+    // Do NOT prefetch here: SSR runs without auth token (client-side
+    // attachSupabaseAuth middleware does not run server-side), so
+    // pre-populating the cache would lock all premium posts even for
+    // subscribed users. The client will fetch on mount with staleTime:0.
   },
   validateSearch: zodValidator(feedSearchSchema),
   head: () => ({
@@ -402,16 +403,21 @@ function FeedPage() {
     let alive = true;
     supabase.auth.getUser().then(({ data }) => {
       if (!alive) return;
-      setUserId(data.user?.id ?? null);
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      // Invalidate the feed so it re-fetches with auth token (subscription unlock)
+      void qc.invalidateQueries({ queryKey: ["discovery-feed"] });
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       setUserId(session?.user?.id ?? null);
+      // Re-fetch feed when login/logout changes so premium locks update correctly
+      void qc.invalidateQueries({ queryKey: ["discovery-feed"] });
     });
     return () => {
       alive = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [qc]);
 
   const posts = useMemo(
     () => {
