@@ -71,7 +71,7 @@ function getPrimaryLinks(authed: boolean): NavLink[] {
   if (!authed) return BASE_PRIMARY_LINKS;
   return [
     { to: "/home", label: "Home", icon: Home, accent: "text-foreground/60", hover: HOVER },
-    ...BASE_PRIMARY_LINKS,
+    ...BASE_PRIMARY_LINKS.filter((l) => l.to !== "/pricing"),
   ];
 }
 
