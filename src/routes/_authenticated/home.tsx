@@ -283,7 +283,7 @@ function HomePage() {
       >
         {/* Desktop / tablet sidebar — hidden on mobile (Instagram-style) */}
         <aside className="hidden h-full min-h-0 self-start overflow-hidden md:block">
-          <div className="h-full overflow-y-auto overscroll-contain pr-1 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-8 md:[scrollbar-width:thin]">
+          <div className="h-full overflow-y-auto overscroll-contain pr-1 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-8 scrollbar-none">
             <div className="hidden lg:block">
               <LeftSidebar variant={collapsed ? "rail" : "full"} collapsed={collapsed} onCreate={openCreate} />
             </div>
@@ -293,14 +293,14 @@ function HomePage() {
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-4 px-2 pt-3 pb-24 md:h-full md:min-h-0 md:space-y-8 md:overflow-y-auto md:overscroll-contain md:px-0 md:pt-0 md:pb-8 md:pr-1 md:[scrollbar-width:thin]">
+        <main className="min-w-0 space-y-4 px-2 pt-3 pb-24 md:h-full md:min-h-0 md:space-y-8 md:overflow-y-auto md:overscroll-contain scrollbar-none md:px-0 md:pt-0 md:pb-8 md:pr-1">
           <StoriesRail />
           <ReelsRail />
           <FeedGrid />
         </main>
 
         <aside className="hidden h-full min-h-0 self-start overflow-hidden md:block">
-          <div className="h-full space-y-4 overflow-y-auto overscroll-contain pr-1 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-8 md:[scrollbar-width:thin]">
+          <div className="h-full space-y-4 overflow-y-auto overscroll-contain pr-1 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-8 scrollbar-none">
             <div className="hidden lg:block">
               <RightSidebar />
             </div>

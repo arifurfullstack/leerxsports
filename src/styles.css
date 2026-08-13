@@ -772,11 +772,42 @@
   border-radius: 9999px;
 }
 
-/* Hide horizontal scrollbar on touch rails (Trainer spotlight, etc.). */
+/* ---------- Global Ultra-Minimal Dark Scrollbars ---------- */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+/* Hide scrollbar completely on scrollbar-none elements while allowing scroll */
 @utility scrollbar-none {
   scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
     display: none;
+    width: 0;
+    height: 0;
   }
 }
 
