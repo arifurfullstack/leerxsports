@@ -15,7 +15,7 @@ export type QADispatch = {
   followup_question?: string | null;
   followup_answer?: string | null;
   price: number;
-  status: "pending" | "coached" | "followup_pending" | "completed" | "expired" | "refunded" | "disputing";
+  status: "pending" | "answered" | "coached" | "followup_pending" | "completed" | "expired" | "refunded" | "disputing";
   answered_at: string | null;
   expires_at: string;
   created_at: string;
@@ -157,26 +157,15 @@ export const answerQADispatch = createServerFn({ method: "POST" })
     if (!row) throw new Error("Question not found.");
     if (row.creator_id !== userId) throw new Error("Not authorized.");
 
-    if (row.status === "completed" || row.status === "expired" || row.status === "refunded") {
-      throw new Error("This coaching thread is locked and completed.");
+    if (row.status === "answered" || row.status === "expired" || row.status === "refunded") {
+      throw new Error("This question has already been answered.");
     }
 
-    const isFinalAnswer = row.status === "followup_pending";
-    const nextStatus: QADispatch["status"] = isFinalAnswer ? "completed" : "coached";
-
-    if (isFinalAnswer) {
-      const { error: updErr } = await supabase
-        .from("qa_dispatches")
-        .update({ followup_answer: data.answer, status: "completed" })
-        .eq("id", data.dispatchId);
-      if (updErr) throw new Error(updErr.message);
-    } else {
-      const { error: updErr } = await supabase
-        .from("qa_dispatches")
-        .update({ answer: data.answer, status: "coached", answered_at: new Date().toISOString() })
-        .eq("id", data.dispatchId);
-      if (updErr) throw new Error(updErr.message);
-    }
+    const { error: updErr } = await supabase
+      .from("qa_dispatches")
+      .update({ answer: data.answer, status: "answered", answered_at: new Date().toISOString() })
+      .eq("id", data.dispatchId);
+    if (updErr) throw new Error(updErr.message);
 
     // Release held funds to creator balance if not already released.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -224,10 +213,10 @@ export const answerQADispatch = createServerFn({ method: "POST" })
       "Earned Paid Q&A response",
     );
 
-    return { ok: true, status: nextStatus };
+    return { ok: true, status: "answered" as const };
   });
 
-/** Trainee submits exactly 1 follow-up reply on a coached question. */
+/** Trainee submits a follow-up reply. */
 export const submitQAFollowup = createServerFn({ method: "POST" })
   .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input: any) => {
@@ -243,34 +232,14 @@ export const submitQAFollowup = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
       .from("qa_dispatches")
-      .select("id, fan_id, status, followup_question")
+      .select("id, fan_id, status")
       .eq("id", data.dispatchId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Question not found.");
     if (row.fan_id !== userId) throw new Error("Only the original trainee can submit a follow-up.");
 
-    if (row.status !== "coached") {
-      throw new Error(
-        row.status === "completed"
-          ? "This coaching thread is completed and locked. Only 1 follow-up was allowed."
-          : "Follow-up can only be submitted after the trainer provides initial coaching."
-      );
-    }
-    if (row.followup_question) {
-      throw new Error("Only 1 follow-up is allowed per coaching session.");
-    }
-
-    const { error: updErr } = await supabase
-      .from("qa_dispatches")
-      .update({
-        followup_question: data.question,
-        status: "followup_pending",
-      })
-      .eq("id", data.dispatchId);
-    if (updErr) throw new Error(updErr.message);
-
-    return { ok: true, status: "followup_pending" };
+    return { ok: true, status: "answered" as const };
   });
 
 /** List dispatches where the caller is fan or creator. */

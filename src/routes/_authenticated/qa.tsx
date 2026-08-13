@@ -37,8 +37,8 @@ export const Route = createFileRoute("/_authenticated/qa")({
 });
 
 function statusIcon(s: QADispatch["status"]) {
-  if (s === "completed" || s === "coached") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (s === "pending" || s === "followup_pending") return <Clock className="h-4 w-4 text-amber-500" />;
+  if (s === "answered") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+  if (s === "pending") return <Clock className="h-4 w-4 text-amber-500" />;
   return <XCircle className="h-4 w-4 text-muted-foreground" />;
 }
 
@@ -58,7 +58,7 @@ function QAInbox() {
 
   // Count overdue pending requests for the trainer
   const overdueCount = (received.data ?? []).filter((d) => {
-    if (d.status !== "pending" && d.status !== "followup_pending") return false;
+    if (d.status !== "pending") return false;
     const deadline = new Date(d.created_at).getTime() + 48 * 60 * 60 * 1000;
     return Date.now() > deadline;
   }).length;
@@ -158,8 +158,8 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
   const [text, setText] = useState("");
   const mut = useMutation({
     mutationFn: () => answer({ data: { dispatchId: d.id, answer: text } }),
-    onSuccess: (res) => {
-      toast.success(res.status === "completed" ? "Final answer sent! Thread locked." : "Primary feedback sent!");
+    onSuccess: () => {
+      toast.success("Answer sent successfully!");
       setText("");
       onAnswered();
     },
