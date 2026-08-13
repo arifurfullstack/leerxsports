@@ -7,6 +7,8 @@ import type { Database } from "@/integrations/supabase/types";
 export type CommunityKind = "question" | "flex";
 export type CommunitySort = "new" | "top" | "trending";
 
+export type CoachingStatus = "pending" | "coached" | "coaching_completed";
+
 export type CommunityPost = {
   id: string;
   author_id: string;
@@ -18,6 +20,7 @@ export type CommunityPost = {
   respect_count: number;
   comment_count: number;
   trainer_answered: boolean;
+  coaching_status: CoachingStatus | null;
   created_at: string;
   author: {
     username: string | null;
@@ -101,7 +104,7 @@ export const listCommunityPosts = createServerFn({ method: "POST" })
     let q = supabase
       .from("community_posts")
       .select(
-        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, created_at",
+        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, coaching_status, created_at",
       )
       .eq("status", "visible");
     if (data.kind !== "all") q = q.eq("kind", data.kind);
@@ -118,6 +121,7 @@ export const listCommunityPosts = createServerFn({ method: "POST" })
 
     let posts = (rows ?? []).map<CommunityPost>((r) => ({
       ...r,
+      coaching_status: (r.coaching_status ?? null) as CoachingStatus | null,
       author: authors.get(r.author_id) ?? null,
     }));
 
@@ -157,7 +161,7 @@ export const getCommunityPost = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("community_posts")
       .select(
-        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, created_at, target_trainer_id",
+        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, coaching_status, created_at, target_trainer_id",
       )
       .eq("id", data.id)
       .eq("status", "visible")
@@ -191,7 +195,7 @@ export const getCommunityPost = createServerFn({ method: "POST" })
     const authors = await hydrateAuthors(supabase, ids);
 
     return {
-      post: { ...row, author: authors.get(row.author_id) ?? null },
+      post: { ...row, coaching_status: (row.coaching_status ?? null) as CoachingStatus | null, author: authors.get(row.author_id) ?? null },
       comments: visibleComments.map<CommunityComment>((c) => ({
         ...c,
         media_urls: c.media_urls ?? [],
@@ -241,6 +245,8 @@ export const createCommunityPost = createServerFn({ method: "POST" })
         hashtags: data.hashtags,
         media: data.media,
         target_trainer_id: data.targetTrainerId ?? null,
+        // Coaching threads start in PENDING state
+        coaching_status: data.targetTrainerId ? "pending" : null,
       })
       .select("id")
       .single();
@@ -303,68 +309,119 @@ export const addCommunityComment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Fetch the post to resolve ownership + target trainer
+    // ── Fetch post ────────────────────────────────────────────────────────
     const { data: postRow, error: postErr } = await supabase
       .from("community_posts")
-      .select("author_id, target_trainer_id")
+      .select("author_id, target_trainer_id, coaching_status")
       .eq("id", data.postId)
       .single();
     if (postErr) throw new Error(postErr.message);
 
-    const isTargetTrainer = postRow.target_trainer_id === userId;
-    const isPostOwner = postRow.author_id === userId;
+    const isCoachingThread = !!postRow.target_trainer_id;
+    const isTargetTrainer  = postRow.target_trainer_id === userId;
+    const isPostOwner      = postRow.author_id === userId;
+    const coachingStatus   = postRow.coaching_status as CoachingStatus | null;
 
-    // Only the target trainer can mark a reply as private
+    // ── Guard: rich-media only for trainer ───────────────────────────────
     if (data.isPrivate && !isTargetTrainer) {
       throw new Error("Only the coaching trainer can post a private response.");
     }
-
-    // Only trainer can attach media to a reply (rich response)
     if (data.mediaUrls.length > 0 && !isTargetTrainer) {
       throw new Error("Only the coaching trainer can attach video responses.");
     }
 
-    // PRD: Only post owner can reply to a trainer's top-level comment
-    if (data.parentId) {
-      const { data: parentComment, error: pcErr } = await supabase
-        .from("community_comments")
-        .select("id, author_id, parent_id")
-        .eq("id", data.parentId)
-        .maybeSingle();
-      if (pcErr) throw new Error(pcErr.message);
-      if (!parentComment) throw new Error("Parent comment not found.");
+    // ── 8.3 Coaching Lifecycle enforcement ───────────────────────────────
+    if (isCoachingThread) {
+      // Step 5 guard — thread fully locked
+      if (coachingStatus === "coaching_completed") {
+        throw new Error(
+          "This coaching thread is complete and locked. No further replies are allowed."
+        );
+      }
 
-      // Check if parent is a top-level trainer comment
-      if (!parentComment.parent_id) {
-        const { data: authorRole } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", parentComment.author_id)
-          .eq("role", "trainer")
-          .maybeSingle();
+      if (isTargetTrainer) {
+        // Step 2: Trainer's first response (PENDING → COACHED)
+        // Step 4: Trainer's final answer   (COACHED → COACHING_COMPLETED)
+        if (coachingStatus === "pending") {
+          // Will transition to COACHED below
+        } else if (coachingStatus === "coached") {
+          // Trainer can only give final answer AFTER the trainee has sent a follow-up
+          const { count } = await supabase
+            .from("community_comments")
+            .select("id", { count: "exact", head: true })
+            .eq("post_id", data.postId)
+            .eq("author_id", postRow.author_id)
+            .is("parent_id", null);
 
-        if (authorRole) {
-          // Parent is a trainer's top-level comment
-          const isCommentAuthor = parentComment.author_id === userId;
-
-          const { data: adminRole } = await supabase.rpc("has_role", {
-            _user_id: userId,
-            _role: "admin",
-          });
-          const isAdmin = !!adminRole;
-
-          if (!isPostOwner && !isCommentAuthor && !isAdmin) {
+          if (!count || count === 0) {
             throw new Error(
-              "Only the post author can reply to a trainer's comment."
+              "Waiting for the trainee's follow-up question before you can provide the final answer."
             );
+          }
+          // Will transition to COACHING_COMPLETED below
+        } else {
+          throw new Error("Unexpected coaching status — cannot reply.");
+        }
+      } else if (isPostOwner) {
+        // Step 3: Trainee's ONE follow-up reply (only allowed while COACHED)
+        if (coachingStatus !== "coached") {
+          throw new Error(
+            "You can only send a follow-up after the trainer has provided their initial coaching."
+          );
+        }
+        // Exactly one follow-up allowed
+        const { count } = await supabase
+          .from("community_comments")
+          .select("id", { count: "exact", head: true })
+          .eq("post_id", data.postId)
+          .eq("author_id", userId)
+          .is("parent_id", null);
+
+        if (count && count > 0) {
+          throw new Error(
+            "You have already submitted your follow-up question. Only one follow-up is allowed per coaching thread."
+          );
+        }
+      } else {
+        throw new Error(
+          "Only the subscriber and their trainer can comment on a coaching thread."
+        );
+      }
+    } else {
+      // ── Standard community thread reply-permission rules ─────────────
+      if (data.parentId) {
+        const { data: parentComment, error: pcErr } = await supabase
+          .from("community_comments")
+          .select("id, author_id, parent_id")
+          .eq("id", data.parentId)
+          .maybeSingle();
+        if (pcErr) throw new Error(pcErr.message);
+        if (!parentComment) throw new Error("Parent comment not found.");
+
+        if (!parentComment.parent_id) {
+          const { data: authorRole } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", parentComment.author_id)
+            .eq("role", "trainer")
+            .maybeSingle();
+
+          if (authorRole) {
+            const isCommentAuthor = parentComment.author_id === userId;
+            const { data: adminRole } = await supabase.rpc("has_role", {
+              _user_id: userId,
+              _role: "admin",
+            });
+            const isAdmin = !!adminRole;
+            if (!isPostOwner && !isCommentAuthor && !isAdmin) {
+              throw new Error("Only the post author can reply to a trainer's comment.");
+            }
           }
         }
       }
     }
 
-    // If the trainer is posting a top-level reply, mark the post as trainer_answered
-    const shouldMarkAnswered = isTargetTrainer && !data.parentId;
-
+    // ── Insert comment ────────────────────────────────────────────────────
     const { data: row, error } = await supabase
       .from("community_comments")
       .insert({
@@ -379,16 +436,31 @@ export const addCommunityComment = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    // Mark post as trainer_answered when trainer gives first top-level reply
-    if (shouldMarkAnswered) {
-      await supabase
-        .from("community_posts")
-        .update({ trainer_answered: true })
-        .eq("id", data.postId);
+    // ── Advance coaching lifecycle status ─────────────────────────────────
+    if (isCoachingThread) {
+      let nextStatus: CoachingStatus | null = null;
+
+      if (isTargetTrainer && coachingStatus === "pending") {
+        nextStatus = "coached"; // Step 2 complete
+      } else if (isTargetTrainer && coachingStatus === "coached") {
+        nextStatus = "coaching_completed"; // Step 4 → Step 5
+      }
+      // trainee follow-up keeps status as "coached"
+
+      if (nextStatus) {
+        await supabase
+          .from("community_posts")
+          .update({
+            coaching_status: nextStatus,
+            trainer_answered: true,
+          })
+          .eq("id", data.postId);
+      }
     }
 
     return { id: row.id };
   });
+
 
 export const getMyCommunityRespects = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

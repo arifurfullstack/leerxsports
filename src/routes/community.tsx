@@ -1486,6 +1486,7 @@ export function ComposeCommunityDialog({
         respect_count: 0,
         comment_count: 0,
         trainer_answered: false,
+        coaching_status: targetTrainerId ? "pending" : null,
         created_at: new Date().toISOString(),
         author: me
           ? {
@@ -2157,7 +2158,22 @@ function CommentsDialog({
                   <MessageSquare className="h-4 w-4" />
                   {detail?.comments.length ?? post.comment_count} Comments
                 </span>
-                {post.trainer_answered && (
+                {detail?.post?.coaching_status === "pending" && (
+                  <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                    Step 1: Pending Trainer
+                  </span>
+                )}
+                {detail?.post?.coaching_status === "coached" && (
+                  <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                    Step 2: Coached
+                  </span>
+                )}
+                {detail?.post?.coaching_status === "coaching_completed" && (
+                  <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                    <Lock className="h-3 w-3" /> Step 5: Completed &amp; Archived
+                  </span>
+                )}
+                {!detail?.post?.coaching_status && post.trainer_answered && (
                   <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
                     <BadgeCheck className="h-3 w-3" /> Trainer Answered
                   </span>
@@ -2232,6 +2248,7 @@ function CommentsDialog({
                         <TrainerReplyBox
                           postId={post.id}
                           trainerId={currentUserId}
+                          coachingStatus={detail?.post?.coaching_status}
                           onSuccess={() => {
                             qc.invalidateQueries({ queryKey: ["community-post", post.id, currentUserId] });
                             qc.invalidateQueries({ queryKey: ["community"] });
@@ -2406,7 +2423,13 @@ function CommentsDialog({
               </section>
             </div>
 
-            {/* Sticky composer */}
+            {/* Sticky composer / Read-only archive banner */}
+            {detail?.post?.coaching_status === "coaching_completed" ? (
+              <div className="shrink-0 border-t border-border bg-muted/80 px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2 sm:px-6">
+                <Lock className="h-4 w-4 text-amber-500" />
+                Coaching Completed — Thread locked in permanent read-only archive
+              </div>
+            ) : (
             <div className="shrink-0 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
           {signedIn ? (
                 <>
@@ -2472,6 +2495,7 @@ function CommentsDialog({
             </div>
           )}
             </div>
+            )}
           </div>
         </div>
 

@@ -15,6 +15,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 async function checkColumns() {
   const checks = [
     { table: "community_posts",    column: "target_trainer_id" },
+    { table: "community_posts",    column: "coaching_status" },
     { table: "community_comments", column: "media_urls" },
     { table: "community_comments", column: "is_private" },
   ];

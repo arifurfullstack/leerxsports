@@ -168,6 +168,7 @@ export type Database = {
         Row: {
           author_id: string
           body: string
+          coaching_status: string | null
           comment_count: number
           created_at: string
           hashtags: string[]
@@ -185,6 +186,7 @@ export type Database = {
         Insert: {
           author_id: string
           body?: string
+          coaching_status?: string | null
           comment_count?: number
           created_at?: string
           hashtags?: string[]
@@ -202,6 +204,7 @@ export type Database = {
         Update: {
           author_id?: string
           body?: string
+          coaching_status?: string | null
           comment_count?: number
           created_at?: string
           hashtags?: string[]

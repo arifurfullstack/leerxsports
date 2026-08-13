@@ -79,6 +79,7 @@ export type TrainerCommunityPost = {
   respect_count: number;
   comment_count: number;
   trainer_answered: boolean;
+  coaching_status: "pending" | "coached" | "coaching_completed" | null;
   created_at: string;
   author_id: string;
   target_trainer_id: string | null;
@@ -677,7 +678,7 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
     const { data: comm, error: cmErr } = await supabase
       .from("community_posts")
       .select(
-        "id, kind, title, body, hashtags, respect_count, comment_count, trainer_answered, created_at, target_trainer_id, author_id",
+        "id, kind, title, body, hashtags, respect_count, comment_count, trainer_answered, coaching_status, created_at, target_trainer_id, author_id",
       )
       .or(`author_id.eq.${profile.user_id},target_trainer_id.eq.${profile.user_id}`)
       .eq("status", "visible")
@@ -693,6 +694,7 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       respect_count: c.respect_count ?? 0,
       comment_count: c.comment_count ?? 0,
       trainer_answered: c.trainer_answered ?? false,
+      coaching_status: (c.coaching_status ?? null) as TrainerCommunityPost["coaching_status"],
       created_at: c.created_at,
       author_id: c.author_id,
       target_trainer_id: c.target_trainer_id,

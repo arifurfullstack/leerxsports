@@ -15,11 +15,12 @@ const ACCEPTED = ["video/mp4", "video/quicktime", "video/webm", "image/jpeg", "i
 interface TrainerReplyBoxProps {
   postId: string;
   trainerId: string;
+  coachingStatus?: "pending" | "coached" | "coaching_completed" | null;
   onSuccess: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function TrainerReplyBox({ postId, trainerId, onSuccess }: TrainerReplyBoxProps) {
+export function TrainerReplyBox({ postId, trainerId, coachingStatus, onSuccess }: TrainerReplyBoxProps) {
   const addFn = useServerFn(addCommunityComment);
 
   // Form state
@@ -139,7 +140,11 @@ export function TrainerReplyBox({ postId, trainerId, onSuccess }: TrainerReplyBo
             <VideoIcon className="h-3.5 w-3.5 text-primary" />
           </div>
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
-            Coaching Response
+            {coachingStatus === "pending"
+              ? "Step 2: Primary Feedback"
+              : coachingStatus === "coached"
+                ? "Step 4: Final Answer"
+                : "Coaching Response"}
           </span>
         </div>
 

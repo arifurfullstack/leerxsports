@@ -21,6 +21,7 @@ import {
   Loader2,
   Flag,
   CalendarDays,
+  Clock,
   HelpCircle,
   Trophy,
   Dumbbell,
@@ -1230,7 +1231,22 @@ function CommunityList({
             <span className="text-muted-foreground">
               {new Date(c.created_at).toLocaleDateString()}
             </span>
-            {c.trainer_answered && (
+            {c.coaching_status === "pending" && (
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                <Clock className="h-3 w-3" /> Step 1: Pending
+              </span>
+            )}
+            {c.coaching_status === "coached" && (
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                <MessageSquare className="h-3 w-3" /> Step 2: Coached
+              </span>
+            )}
+            {c.coaching_status === "coaching_completed" && (
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                <Lock className="h-3 w-3" /> Completed &amp; Archived
+              </span>
+            )}
+            {!c.coaching_status && c.trainer_answered && (
               <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-primary">
                 <BadgeCheck className="h-3 w-3" /> Trainer answered
               </span>
