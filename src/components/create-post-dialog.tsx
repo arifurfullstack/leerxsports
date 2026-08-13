@@ -155,8 +155,15 @@ export function CreatePostDialog({
     supabase.auth.getUser().then(async ({ data }) => {
       const uid = data.user?.id ?? null;
       setUserId(uid);
-      // Publishing is open to all signed-in users.
-      setIsTrainer(true);
+      if (!uid) {
+        setIsTrainer(false);
+        return;
+      }
+      const { count } = await supabase
+        .from("trainer_profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", uid);
+      setIsTrainer(count ? count > 0 : false);
     });
   }, [open]);
 
@@ -204,10 +211,31 @@ export function CreatePostDialog({
         setError("Only image or video files are supported.");
         return;
       }
+      if (isVid) {
+        const vid = document.createElement("video");
+        vid.src = URL.createObjectURL(f);
+        vid.onloadedmetadata = () => {
+          if (vid.videoWidth > vid.videoHeight) {
+            setError("Shorts must be vertical videos (portrait).");
+            URL.revokeObjectURL(vid.src);
+            return;
+          }
+          if (preview) URL.revokeObjectURL(preview);
+          setFile(f);
+          setPreview(vid.src);
+          setKind("short");
+          setStep("edit");
+        };
+        vid.onerror = () => {
+          setError("Could not read video file.");
+        };
+        return;
+      }
+      
       if (preview) URL.revokeObjectURL(preview);
       setFile(f);
       setPreview(URL.createObjectURL(f));
-      setKind(isVid ? "short" : "feed");
+      setKind("feed");
       setStep("edit");
     },
     [preview],
