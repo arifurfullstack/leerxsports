@@ -15,7 +15,7 @@ export function PostTile({
 }) {
   const rawThumb = post.thumbnail_url ?? post.media_url;
   const thumb = post.is_premium && unlockedUrl ? unlockedUrl : rawThumb;
-  const locked = post.is_premium && !unlockedUrl;
+  const locked = post.is_premium && !unlockedUrl && !post.media_url;
   const isVideo = post.kind === "short";
   const label = locked
     ? "Locked premium post — subscribe to unlock"

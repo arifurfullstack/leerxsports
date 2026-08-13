@@ -34,6 +34,7 @@ import {
   Check,
   Sparkles,
   Heart,
+  Settings,
 } from "lucide-react";
 import { UnlockCheckoutDialog } from "@/components/unlock-checkout-dialog";
 import { TipModal } from "@/components/tip-modal";
@@ -438,7 +439,7 @@ function TrainerProfileInner({
   const unlockedQ = useQuery({
     queryKey: ["premium-urls", t.user_id],
     queryFn: () => getUnlocked({ data: { trainerId: t.user_id } }),
-    enabled: signedIn && !!infoQ.data?.isSubscribed,
+    enabled: signedIn && (currentUserId === t.user_id || !!infoQ.data?.isSubscribed),
   });
 
   const info: SubscriptionInfo | undefined = infoQ.data;
@@ -714,126 +715,157 @@ function TrainerProfileInner({
           {/* Action buttons row */}
           <div className="flex shrink-0 flex-wrap items-center gap-2 pb-2 sm:justify-end">
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-800 bg-neutral-950/90 p-2 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
-              {/* Follow / Following Button (Gymshark White High-Contrast CTA) */}
-              <Button
-                size="default"
-                disabled={followMut.isPending}
-                onClick={() => requireAuth(() => followMut.mutate())}
-                aria-pressed={!!info?.isFollowing}
-                aria-label={info?.isFollowing ? "Unfollow this creator" : "Follow this creator"}
-                className={`group relative overflow-hidden rounded-xl px-5 font-bold uppercase tracking-wider transition-all duration-200 ease-out transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
-                  info?.isFollowing
-                    ? "border border-neutral-700 bg-neutral-900/90 text-neutral-200 hover:border-red-500/60 hover:bg-red-950/40 hover:text-red-300"
-                    : "bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10"
-                }`}
-              >
-                {followMut.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" />
-                ) : info?.isFollowing ? (
-                  <>
-                    <UserCheck className="mr-2 h-4 w-4 text-emerald-400 group-hover:hidden transition-transform" />
-                    <UserX className="mr-2 hidden h-4 w-4 text-rose-400 group-hover:block transition-transform" />
-                    <span className="group-hover:hidden">Following</span>
-                    <span className="hidden group-hover:inline">Unfollow</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4 text-black transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
-                    Follow
-                  </>
-                )}
-              </Button>
+              {currentUserId === t.user_id ? (
+                <>
+                  <Button
+                    size="default"
+                    onClick={() => router.navigate({ to: "/settings" })}
+                    className="bg-white text-black hover:bg-neutral-200 font-bold uppercase tracking-wider rounded-xl px-5 transition-all duration-200"
+                  >
+                    <Settings className="mr-2 h-4 w-4 text-black" />
+                    Edit Profile
+                  </Button>
+                  <Button
+                    size="default"
+                    variant="outline"
+                    onClick={shareProfile}
+                    aria-label="Share profile"
+                    title="Share profile"
+                    className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-2 h-4 w-4 text-emerald-400 animate-in zoom-in-50 duration-200" />
+                        <span className="text-emerald-400 font-semibold">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="mr-2 h-4 w-4 text-neutral-400 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12 group-hover:text-white" />
+                        Share
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* Follow / Following Button */}
+                  <Button
+                    size="default"
+                    disabled={followMut.isPending}
+                    onClick={() => requireAuth(() => followMut.mutate())}
+                    aria-pressed={!!info?.isFollowing}
+                    aria-label={info?.isFollowing ? "Unfollow this creator" : "Follow this creator"}
+                    className={`group relative overflow-hidden rounded-xl px-5 font-bold uppercase tracking-wider transition-all duration-200 ease-out transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
+                      info?.isFollowing
+                        ? "border border-neutral-700 bg-neutral-900/90 text-neutral-200 hover:border-red-500/60 hover:bg-red-950/40 hover:text-red-300"
+                        : "bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10"
+                    }`}
+                  >
+                    {followMut.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" />
+                    ) : info?.isFollowing ? (
+                      <>
+                        <UserCheck className="mr-2 h-4 w-4 text-emerald-400 group-hover:hidden transition-transform" />
+                        <UserX className="mr-2 hidden h-4 w-4 text-rose-400 group-hover:block transition-transform" />
+                        <span className="group-hover:hidden">Following</span>
+                        <span className="hidden group-hover:inline">Unfollow</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="mr-2 h-4 w-4 text-black transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
 
-              {/* Subscribe / Unlock Button (Gymshark Matte Black Luxury Button) */}
-              <UnlockCheckoutDialog
-                trainerId={t.user_id}
-                creatorName={t.display_name ?? t.username ?? "Creator"}
-                creatorUsername={t.username ?? undefined}
-                avatarUrl={t.avatar_url ?? undefined}
-                isVerified={t.is_verified}
-                subscriptionPrice={t.subscription_price}
-                monetizationEnabled={t.monetization_enabled}
-                hasEnoughPublicPosts={hasEnoughPublicPosts}
-                publicFeedCount={publicFeedCount}
-                minPublicPostsRequired={MIN_PUBLIC_POSTS}
-                isSubscribed={info?.isSubscribed}
-                dmsEnabled={t.dms_enabled}
-              />
+                  {/* Subscribe / Unlock Button */}
+                  <UnlockCheckoutDialog
+                    trainerId={t.user_id}
+                    creatorName={t.display_name ?? t.username ?? "Creator"}
+                    creatorUsername={t.username ?? undefined}
+                    avatarUrl={t.avatar_url ?? undefined}
+                    isVerified={t.is_verified}
+                    subscriptionPrice={t.subscription_price}
+                    monetizationEnabled={t.monetization_enabled}
+                    hasEnoughPublicPosts={hasEnoughPublicPosts}
+                    publicFeedCount={publicFeedCount}
+                    minPublicPostsRequired={MIN_PUBLIC_POSTS}
+                    isSubscribed={info?.isSubscribed}
+                    dmsEnabled={t.dms_enabled}
+                  />
 
-              {/* Message Button */}
-              <Button
-                size="default"
-                variant="outline"
-                disabled={!t.dms_enabled}
-                title={
-                  !t.dms_enabled
-                    ? "This creator has disabled direct messages"
-                    : info?.isSubscribed
-                      ? "Open direct messages"
-                      : "Subscribe to send a direct message"
-                }
-                onClick={() =>
-                  requireAuth(() => {
-                    if (!info?.isSubscribed) {
-                      toast.info("Subscribe to send this creator a direct message.");
-                      return;
+                  {/* Message Button */}
+                  <Button
+                    size="default"
+                    variant="outline"
+                    disabled={!t.dms_enabled}
+                    title={
+                      !t.dms_enabled
+                        ? "This creator has disabled direct messages"
+                        : info?.isSubscribed
+                          ? "Open direct messages"
+                          : "Subscribe to send a direct message"
                     }
-                    router.navigate({ to: "/messages", search: { to: t.user_id } });
-                  })
-                }
-                className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
-              >
-                <MessageSquare className="mr-2 h-4 w-4 text-neutral-300 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6 group-hover:text-white" />
-                {t.dms_enabled ? "Message" : "DMs Off"}
-              </Button>
+                    onClick={() =>
+                      requireAuth(() => {
+                        if (!info?.isSubscribed) {
+                          toast.info("Subscribe to send this creator a direct message.");
+                          return;
+                        }
+                        router.navigate({ to: "/messages", search: { to: t.user_id } });
+                      })
+                    }
+                    className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4 text-neutral-300 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6 group-hover:text-white" />
+                    {t.dms_enabled ? "Message" : "DMs Off"}
+                  </Button>
 
-              {/* Ask Question Dialog Button ($300) */}
-              <AskQuestionDialog
-                creatorId={t.user_id}
-                creatorName={t.display_name ?? t.username ?? "this creator"}
-                disabled={!t.monetization_enabled}
-              />
+                  {/* Ask Question Dialog Button ($300) */}
+                  <AskQuestionDialog
+                    creatorId={t.user_id}
+                    creatorName={t.display_name ?? t.username ?? "this creator"}
+                    disabled={!t.monetization_enabled}
+                  />
 
-              <Button
-                size="default"
-                variant="outline"
-                disabled={!t.monetization_enabled || currentUserId === t.user_id}
-                title={
-                  currentUserId === t.user_id
-                    ? "You cannot tip yourself"
-                    : "Send a coaching tip"
-                }
-                onClick={() => requireAuth(() => setTipOpen(true))}
-                className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/10 hover:shadow-md"
-              >
-                <Heart className="mr-2 h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-110" />
-                Tip
-              </Button>
+                  <Button
+                    size="default"
+                    variant="outline"
+                    disabled={!t.monetization_enabled}
+                    title="Send a coaching tip"
+                    onClick={() => requireAuth(() => setTipOpen(true))}
+                    className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/10 hover:shadow-md"
+                  >
+                    <Heart className="mr-2 h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-110" />
+                    Tip
+                  </Button>
 
-              {/* Share Button */}
-              <Button
-                size="default"
-                variant="outline"
-                onClick={shareProfile}
-                aria-label="Share profile"
-                title="Share profile"
-                className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
-              >
-                {copied ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4 text-emerald-400 animate-in zoom-in-50 duration-200" />
-                    <span className="text-emerald-400 font-semibold">Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="mr-2 h-4 w-4 text-neutral-400 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12 group-hover:text-white" />
-                    Share
-                  </>
-                )}
-              </Button>
+                  {/* Share Button */}
+                  <Button
+                    size="default"
+                    variant="outline"
+                    onClick={shareProfile}
+                    aria-label="Share profile"
+                    title="Share profile"
+                    className="group rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 text-white font-semibold backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-2 h-4 w-4 text-emerald-400 animate-in zoom-in-50 duration-200" />
+                        <span className="text-emerald-400 font-semibold">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="mr-2 h-4 w-4 text-neutral-400 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12 group-hover:text-white" />
+                        Share
+                      </>
+                    )}
+                  </Button>
 
-              {/* Report Button */}
-              <ReportButton trainerId={t.user_id} />
+                  {/* Report Button */}
+                  <ReportButton trainerId={t.user_id} />
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -923,7 +955,7 @@ function TrainerProfileInner({
               }}
             >
               <p className="font-display text-[11px] uppercase tracking-widest text-muted-foreground">
-                Subscription
+                {currentUserId === t.user_id ? "Your Subscription Plan" : "Subscription"}
               </p>
               <p className="mt-1 font-display text-3xl text-premium">
                 {t.monetization_enabled
@@ -934,32 +966,45 @@ function TrainerProfileInner({
                 )}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Premium posts, monthly video call, priority Q&amp;A.
+                {currentUserId === t.user_id
+                  ? "Trainees pay this price to unlock your premium drops and perks."
+                  : "Premium posts, monthly video call, priority Q&A."}
               </p>
-              <UnlockCheckoutDialog
-                trainerId={t.user_id}
-                creatorName={t.display_name ?? t.username ?? "Creator"}
-                creatorUsername={t.username ?? undefined}
-                avatarUrl={t.avatar_url ?? undefined}
-                isVerified={t.is_verified}
-                subscriptionPrice={t.subscription_price}
-                monetizationEnabled={t.monetization_enabled}
-                hasEnoughPublicPosts={hasEnoughPublicPosts}
-                publicFeedCount={publicFeedCount}
-                minPublicPostsRequired={MIN_PUBLIC_POSTS}
-                isSubscribed={info?.isSubscribed}
-                dmsEnabled={t.dms_enabled}
-                triggerSize="sm"
-                triggerClassName="mt-4 w-full bg-premium font-semibold uppercase tracking-widest"
-                triggerLabel={
-                  !t.monetization_enabled
-                    ? "Not accepting subscribers"
-                    : !hasEnoughPublicPosts
-                      ? `${publicFeedCount}/${MIN_PUBLIC_POSTS} public posts needed`
-                      : "Subscribe"
-                }
-              />
-              {t.monetization_enabled && !hasEnoughPublicPosts && !info?.isSubscribed && (
+              {currentUserId === t.user_id ? (
+                <Button
+                  size="sm"
+                  onClick={() => router.navigate({ to: "/settings" })}
+                  className="mt-4 w-full bg-neutral-800 hover:bg-neutral-700 text-white font-semibold uppercase tracking-widest"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Pricing & Perks
+                </Button>
+              ) : (
+                <UnlockCheckoutDialog
+                  trainerId={t.user_id}
+                  creatorName={t.display_name ?? t.username ?? "Creator"}
+                  creatorUsername={t.username ?? undefined}
+                  avatarUrl={t.avatar_url ?? undefined}
+                  isVerified={t.is_verified}
+                  subscriptionPrice={t.subscription_price}
+                  monetizationEnabled={t.monetization_enabled}
+                  hasEnoughPublicPosts={hasEnoughPublicPosts}
+                  publicFeedCount={publicFeedCount}
+                  minPublicPostsRequired={MIN_PUBLIC_POSTS}
+                  isSubscribed={info?.isSubscribed}
+                  dmsEnabled={t.dms_enabled}
+                  triggerSize="sm"
+                  triggerClassName="mt-4 w-full bg-premium font-semibold uppercase tracking-widest"
+                  triggerLabel={
+                    !t.monetization_enabled
+                      ? "Not accepting subscribers"
+                      : !hasEnoughPublicPosts
+                        ? `${publicFeedCount}/${MIN_PUBLIC_POSTS} public posts needed`
+                        : "Subscribe"
+                  }
+                />
+              )}
+              {t.monetization_enabled && !hasEnoughPublicPosts && currentUserId !== t.user_id && !info?.isSubscribed && (
                 <p className="mt-2 text-center text-xs text-muted-foreground">
                   This creator needs at least {MIN_PUBLIC_POSTS} public posts before accepting subscribers.
                 </p>
@@ -993,8 +1038,9 @@ function TrainerProfileInner({
                 unlocked={unlocked}
                 emptyLabel="No feed posts yet."
                 onOpen={setActivePost}
+                isSelf={currentUserId === t.user_id}
               />
-              {publicFeedCount > 0 && premiumCount > 0 && !info?.isSubscribed && (
+              {publicFeedCount > 0 && premiumCount > 0 && currentUserId !== t.user_id && !info?.isSubscribed && (
                 <p className="mt-4 text-center text-xs text-muted-foreground">
                   Subscribe to unlock {premiumCount} premium{" "}
                   {premiumCount === 1 ? "post" : "posts"}.
@@ -1011,6 +1057,7 @@ function TrainerProfileInner({
                 emptyLabel="No shorts yet."
                 columns="shorts"
                 onOpen={setActivePost}
+                isSelf={currentUserId === t.user_id}
               />
             </TabPanel>
           </TabsContent>
@@ -1157,12 +1204,14 @@ function PostGrid({
   emptyLabel,
   columns = "feed",
   onOpen,
+  isSelf = false,
 }: {
   posts: Post[];
   unlocked: Record<string, { media_url: string; thumbnail_url: string | null }>;
   emptyLabel: string;
   columns?: "feed" | "shorts";
   onOpen?: (post: Post) => void;
+  isSelf?: boolean;
 }) {
   if (posts.length === 0) {
     return (
@@ -1186,7 +1235,9 @@ function PostGrid({
           onClick={() => onOpen?.(p)}
           unlockedUrl={
             p.is_premium
-              ? unlocked[p.id]?.thumbnail_url ?? unlocked[p.id]?.media_url ?? null
+              ? isSelf
+                ? (p.thumbnail_url || p.media_url || unlocked[p.id]?.thumbnail_url || unlocked[p.id]?.media_url)
+                : (unlocked[p.id]?.thumbnail_url ?? unlocked[p.id]?.media_url ?? null)
               : null
           }
         />
