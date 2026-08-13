@@ -285,9 +285,9 @@ export const listMyQADispatches = createServerFn({ method: "POST" })
     if (!userId) return [];
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let q = supabaseAdmin
+    let q = (supabaseAdmin as any)
       .from("qa_dispatches")
-      .select("id, fan_id, creator_id, question, answer, followup_question, followup_answer, price, status, answered_at, expires_at, created_at")
+      .select("id, fan_id, creator_id, question, answer, price, status, answered_at, expires_at, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
     if (data.role === "fan") q = q.eq("fan_id", userId);
@@ -296,8 +296,8 @@ export const listMyQADispatches = createServerFn({ method: "POST" })
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
-    const ids = Array.from(
-      new Set((rows ?? []).flatMap((r) => [r.fan_id, r.creator_id])),
+    const ids: string[] = Array.from(
+      new Set((rows ?? []).flatMap((r: any) => [String(r.fan_id), String(r.creator_id)])),
     );
     const { data: profiles } = ids.length
       ? await supabaseAdmin
@@ -306,8 +306,10 @@ export const listMyQADispatches = createServerFn({ method: "POST" })
           .in("user_id", ids)
       : { data: [] as Array<{ user_id: string; username: string | null; display_name: string | null; avatar_url: string | null }> };
     const pmap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
-    return (rows ?? []).map((r) => ({
+    return (rows ?? []).map((r: any) => ({
       ...r,
+      followup_question: r.followup_question ?? null,
+      followup_answer: r.followup_answer ?? null,
       price: Number(r.price),
       status: r.status as QADispatch["status"],
       fan: pmap.get(r.fan_id) ?? null,
