@@ -25,15 +25,16 @@ export type QADispatch = {
 /** Send a paid question ($300 placeholder charge) to a creator. */
 export const sendQADispatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
+  .validator((input: any) => {
+    const payload = input?.data ?? input;
+    return z
       .object({
         creatorId: z.string().uuid(),
         question: z.string().min(10).max(2000),
         videoUrl: z.string().url().optional().nullable(),
       })
-      .parse(input),
-  )
+      .parse(payload);
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (data.creatorId === userId) throw new Error("You can't message yourself.");
@@ -134,15 +135,16 @@ export const sendQADispatch = createServerFn({ method: "POST" })
 /** Creator answers a pending dispatch or follow-up. Releases held funds to their balance. */
 export const answerQADispatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
+  .validator((input: any) => {
+    const payload = input?.data ?? input;
+    return z
       .object({
         dispatchId: z.string().uuid(),
         answer: z.string().min(10).max(5000),
         videoUrl: z.string().url().optional().nullable(),
       })
-      .parse(input),
-  )
+      .parse(payload);
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -227,14 +229,15 @@ export const answerQADispatch = createServerFn({ method: "POST" })
 /** Trainee submits exactly 1 follow-up reply on a coached question. */
 export const submitQAFollowup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
+  .validator((input: any) => {
+    const payload = input?.data ?? input;
+    return z
       .object({
         dispatchId: z.string().uuid(),
         question: z.string().min(5).max(2000),
       })
-      .parse(input),
-  )
+      .parse(payload);
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -272,12 +275,14 @@ export const submitQAFollowup = createServerFn({ method: "POST" })
 /** List dispatches where the caller is fan or creator. */
 export const listMyQADispatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z.object({ role: z.enum(["fan", "creator", "all"]).default("all") }).parse(input),
-  )
+  .validator((input: any) => {
+    const payload = input?.data ?? input ?? {};
+    return z.object({ role: z.enum(["fan", "creator", "all"]).default("all") }).parse(payload);
+  })
   .handler(async ({ data, context }): Promise<QADispatch[]> => {
-    const { supabase, userId } = context;
-    let q = supabase
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin
       .from("qa_dispatches")
       .select("id, fan_id, creator_id, question, answer, followup_question, followup_answer, price, status, answered_at, expires_at, created_at")
       .order("created_at", { ascending: false })
@@ -292,7 +297,7 @@ export const listMyQADispatches = createServerFn({ method: "POST" })
       new Set((rows ?? []).flatMap((r) => [r.fan_id, r.creator_id])),
     );
     const { data: profiles } = ids.length
-      ? await supabase
+      ? await supabaseAdmin
           .from("profiles")
           .select("user_id, username, display_name, avatar_url")
           .in("user_id", ids)
