@@ -110,3 +110,65 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     });
   },
 );
+
+export const optionalSupabaseAuth = createMiddleware({ type: 'function' }).server(
+  async ({ next }) => {
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY =
+      process.env.SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      throw new Error("Missing Supabase environment variables");
+    }
+
+    let userId: string | null = null;
+    let claims: any = null;
+    let authSupabase = createClient<Database>(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        global: {
+          fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+        },
+        auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      }
+    );
+
+    try {
+      const request = getRequest();
+      const authHeader = request?.headers?.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace('Bearer ', '');
+        if (token && token.split('.').length === 3) {
+          const authedClient = createClient<Database>(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            {
+              global: {
+                fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+                headers: { Authorization: `Bearer ${token}` },
+              },
+              auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+            }
+          );
+          const { data, error } = await authedClient.auth.getClaims(token);
+          if (!error && data?.claims?.sub) {
+            userId = data.claims.sub;
+            claims = data.claims;
+            authSupabase = authedClient;
+          }
+        }
+      }
+    } catch {}
+
+    return next({
+      context: {
+        supabase: authSupabase,
+        userId,
+        claims,
+      },
+    });
+  },
+);

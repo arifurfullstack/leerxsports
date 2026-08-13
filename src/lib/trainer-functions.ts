@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { optionalSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function getPublicSupabase() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -96,17 +97,20 @@ export type DiscoveryPost = Post & {
 };
 
 async function decoratePosts<
-  T extends { trainer_id?: string; is_premium?: boolean; media_url: string; thumbnail_url: string | null }
+  T extends { media_url: string; thumbnail_url: string | null }
 >(
   supabase: ReturnType<typeof getPublicSupabase>,
   posts: T[],
   currentUserId?: string | null,
   subscribedTrainerIds?: Set<string>,
+  unlockedPostIds?: Set<string>,
 ): Promise<T[]> {
   const canAccess = (p: T) => {
-    if (!p.is_premium) return true;
-    if (currentUserId && p.trainer_id && currentUserId === p.trainer_id) return true;
-    if (subscribedTrainerIds && p.trainer_id && subscribedTrainerIds.has(p.trainer_id)) return true;
+    const item = p as unknown as { id?: string; trainer_id?: string; is_premium?: boolean };
+    if (!item.is_premium) return true;
+    if (currentUserId && item.trainer_id && currentUserId === item.trainer_id) return true;
+    if (subscribedTrainerIds && item.trainer_id && subscribedTrainerIds.has(item.trainer_id)) return true;
+    if (unlockedPostIds && item.id && unlockedPostIds.has(item.id)) return true;
     return false;
   };
 
@@ -127,9 +131,10 @@ async function decoratePosts<
     }
   }
 
-  return posts.map((p) => {
+  return posts.map((p): T => {
     const hasAccess = canAccess(p);
-    if (p.is_premium && !hasAccess) {
+    const item = p as unknown as { is_premium?: boolean };
+    if (item.is_premium && !hasAccess) {
       return { ...p, media_url: "", thumbnail_url: null };
     }
     return {
@@ -171,9 +176,11 @@ export type ExploreFilters = {
 async function fetchDiscovery(
   kind: "feed" | "short" | "all",
   filters: ExploreFilters = {},
+  contextUserId?: string | null,
+  contextSupabase?: ReturnType<typeof getPublicSupabase> | null,
 ): Promise<DiscoveryPost[]> {
   try {
-    const supabase = getPublicSupabase();
+    const supabase = contextSupabase ?? getPublicSupabase();
     let query = supabase
       .from("posts")
       .select(
@@ -274,24 +281,41 @@ async function fetchDiscovery(
       }
     }
 
-    let currentUserId: string | null = null;
+    let currentUserId: string | null = contextUserId ?? null;
     const subscribedTrainerIds = new Set<string>();
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData?.user) {
-        currentUserId = authData.user.id;
-        const { data: subRows } = await supabase
-          .from("subscriptions")
-          .select("trainer_id")
-          .eq("subscriber_id", currentUserId)
-          .eq("status", "active");
-        for (const s of subRows ?? []) {
+    const unlockedPostIds = new Set<string>();
+
+    if (currentUserId && supabase) {
+      try {
+        const [subRes, unlockRes] = await Promise.all([
+          supabase
+            .from("subscriptions")
+            .select("trainer_id")
+            .eq("subscriber_id", currentUserId)
+            .eq("status", "active"),
+          supabase
+            .from("post_unlocks")
+            .select("post_id")
+            .eq("user_id", currentUserId),
+        ]);
+        for (const s of subRes.data ?? []) {
           if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
         }
+        for (const u of unlockRes.data ?? []) {
+          if (u.post_id) unlockedPostIds.add(u.post_id);
+        }
+      } catch (e) {
+        console.error("Error fetching subscriptions/unlocks in fetchDiscovery:", e);
       }
-    } catch {}
+    }
 
-    const signed = await decoratePosts(supabase, filtered, currentUserId, subscribedTrainerIds);
+    const signed = await decoratePosts(
+      supabase,
+      filtered,
+      currentUserId,
+      subscribedTrainerIds,
+      unlockedPostIds,
+    );
     return signed.map((p) => {
       const pr = profileMap.get(p.trainer_id);
       return {
@@ -329,16 +353,20 @@ async function fetchDiscovery(
   }
 }
 
-export const getDiscoveryFeed = createServerFn({ method: "GET" }).handler(
-  async (): Promise<DiscoveryPost[]> =>
-    fetchDiscovery("feed", { sort: "recent" }),
-);
+export const getDiscoveryFeed = createServerFn({ method: "GET" })
+  .middleware([optionalSupabaseAuth])
+  .handler(async ({ context }): Promise<DiscoveryPost[]> =>
+    fetchDiscovery("feed", { sort: "recent" }, context.userId, context.supabase),
+  );
 
-export const getShortsFeed = createServerFn({ method: "GET" }).handler(
-  async (): Promise<DiscoveryPost[]> => fetchDiscovery("short", { sort: "top" }),
-);
+export const getShortsFeed = createServerFn({ method: "GET" })
+  .middleware([optionalSupabaseAuth])
+  .handler(async ({ context }): Promise<DiscoveryPost[]> =>
+    fetchDiscovery("short", { sort: "top" }, context.userId, context.supabase),
+  );
 
 export const getExplorePosts = createServerFn({ method: "POST" })
+  .middleware([optionalSupabaseAuth])
   .validator((input) =>
     z
       .object({
@@ -350,7 +378,9 @@ export const getExplorePosts = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }): Promise<DiscoveryPost[]> => fetchDiscovery(data.kind, data));
+  .handler(async ({ data, context }): Promise<DiscoveryPost[]> =>
+    fetchDiscovery(data.kind, data, context.userId, context.supabase),
+  );
 
 export const getExploreFacets = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ countries: string[]; specialties: string[] }> => {
@@ -648,9 +678,10 @@ export const findSimilarTrainers = createServerFn({ method: "POST" })
   });
 
 export const getTrainerByUsername = createServerFn({ method: "GET" })
+  .middleware([optionalSupabaseAuth])
   .validator((input) => z.object({ username: z.string() }).parse(input))
-  .handler(async ({ data }): Promise<TrainerDetail | null> => {
-    const supabase = getPublicSupabase();
+  .handler(async ({ data, context }): Promise<TrainerDetail | null> => {
+    const supabase = (context.supabase as ReturnType<typeof getPublicSupabase>) ?? getPublicSupabase();
     const { data: profile, error: pErr } = await supabase
       .from("profiles")
       .select("user_id, username, display_name, avatar_url, cover_url, country, bio")
@@ -679,31 +710,40 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (postErr) throw new Error(postErr.message);
 
-    // Generate signed URLs for storage paths (bucket is private).
     const rawPosts = posts ?? [];
-    // Premium posts are gated: never sign their URLs on the public path.
-    const paths = rawPosts
-      .flatMap((p) => (p.is_premium ? [] : [p.media_url, p.thumbnail_url]))
-      .filter((p): p is string => !!p && !p.startsWith("http"));
-    const signedMap = new Map<string, string>();
-    if (paths.length > 0) {
-      const { data: signed } = await supabase.storage
-        .from("post-media")
-        .createSignedUrls(Array.from(new Set(paths)), 60 * 60);
-      for (const s of signed ?? []) {
-        if (s.path && s.signedUrl) signedMap.set(s.path, s.signedUrl);
-      }
+    let currentUserId: string | null = context.userId ?? null;
+    const subscribedTrainerIds = new Set<string>();
+    const unlockedPostIds = new Set<string>();
+
+    if (currentUserId && supabase) {
+      try {
+        const [subRes, unlockRes] = await Promise.all([
+          supabase
+            .from("subscriptions")
+            .select("trainer_id")
+            .eq("subscriber_id", currentUserId)
+            .eq("status", "active"),
+          supabase
+            .from("post_unlocks")
+            .select("post_id")
+            .eq("user_id", currentUserId),
+        ]);
+        for (const s of subRes.data ?? []) {
+          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+        }
+        for (const u of unlockRes.data ?? []) {
+          if (u.post_id) unlockedPostIds.add(u.post_id);
+        }
+      } catch {}
     }
-    const signedPosts = rawPosts.map((p) => {
-      if (p.is_premium) return { ...p, media_url: "", thumbnail_url: null };
-      return {
-        ...p,
-        media_url: signedMap.get(p.media_url) ?? p.media_url,
-        thumbnail_url: p.thumbnail_url
-          ? signedMap.get(p.thumbnail_url) ?? p.thumbnail_url
-          : null,
-      };
-    });
+
+    const signedPosts = await decoratePosts(
+      supabase,
+      rawPosts,
+      currentUserId,
+      subscribedTrainerIds,
+      unlockedPostIds,
+    );
 
     // Community threads authored by this trainer or targeted at this trainer.
     const { data: comm, error: cmErr } = await supabase
@@ -759,9 +799,10 @@ export type PostDetail = DiscoveryPost & {
 };
 
 export const getPostDetail = createServerFn({ method: "GET" })
+  .middleware([optionalSupabaseAuth])
   .validator((input) => z.object({ postId: z.string().uuid() }).parse(input))
-  .handler(async ({ data }): Promise<PostDetail | null> => {
-    const supabase = getPublicSupabase();
+  .handler(async ({ data, context }): Promise<PostDetail | null> => {
+    const supabase = (context.supabase as ReturnType<typeof getPublicSupabase>) ?? getPublicSupabase();
     const { data: post, error } = await supabase
       .from("posts")
       .select(
@@ -788,22 +829,31 @@ export const getPostDetail = createServerFn({ method: "GET" })
     const profile = profRes.data;
     if (!profile) return null;
 
-    let currentUserId: string | null = null;
+    let currentUserId: string | null = context.userId ?? null;
     const subscribedTrainerIds = new Set<string>();
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData?.user) {
-        currentUserId = authData.user.id;
-        const { data: subRows } = await supabase
-          .from("subscriptions")
-          .select("trainer_id")
-          .eq("subscriber_id", currentUserId)
-          .eq("status", "active");
-        for (const s of subRows ?? []) {
+    const unlockedPostIds = new Set<string>();
+
+    if (currentUserId && supabase) {
+      try {
+        const [subRes, unlockRes] = await Promise.all([
+          supabase
+            .from("subscriptions")
+            .select("trainer_id")
+            .eq("subscriber_id", currentUserId)
+            .eq("status", "active"),
+          supabase
+            .from("post_unlocks")
+            .select("post_id")
+            .eq("user_id", currentUserId),
+        ]);
+        for (const s of subRes.data ?? []) {
           if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
         }
-      }
-    } catch {}
+        for (const u of unlockRes.data ?? []) {
+          if (u.post_id) unlockedPostIds.add(u.post_id);
+        }
+      } catch {}
+    }
 
     const [signed] = await decoratePosts(
       supabase,
@@ -826,6 +876,7 @@ export const getPostDetail = createServerFn({ method: "GET" })
       ],
       currentUserId,
       subscribedTrainerIds,
+      unlockedPostIds,
     );
 
     return {
