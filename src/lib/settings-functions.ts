@@ -29,7 +29,7 @@ export const getSettings = createServerFn({ method: "GET" })
     const { data: profile, error: pErr } = await context.supabase
       .from("profiles")
       .select(
-        "user_id, username, display_name, avatar_url, avatar_urls, bio, country, native_language, preferred_language, profile_visibility, transformation_visibility, additional_languages",
+        "user_id, username, display_name, avatar_url, avatar_urls, bio, country, native_language, preferred_language, profile_visibility, transformation_visibility, additional_languages, height_cm, weight_kg, skeletal_muscle_kg, body_fat_percent, personal_records, goal, experience_level, injuries",
       )
       .eq("user_id", context.userId)
       .maybeSingle();

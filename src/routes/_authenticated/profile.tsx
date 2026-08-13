@@ -26,6 +26,10 @@ import {
   Lock,
   Clapperboard,
   Sparkles,
+  Calendar,
+  Activity,
+  Dumbbell,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProfileMode } from "@/lib/profile-mode-context";
@@ -33,7 +37,8 @@ import { LazyImage } from "@/components/ui/lazy-image";
 import { supabase } from "@/integrations/supabase/client";
 import { getSettings, updateProfileSettings } from "@/lib/settings-functions";
 import { getFollowCounts } from "@/lib/trainer-functions";
-import { getTraineePosts } from "@/lib/transformation-functions";
+import { getTraineePosts, listMyTransformations } from "@/lib/transformation-functions";
+import { TransformationComposer } from "@/components/transformation-composer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,10 +127,18 @@ function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const fetchTransformations = useServerFn(listMyTransformations);
+  const [logTransformationOpen, setLogTransformationOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"posts" | "shorts">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "shorts" | "transformations">("posts");
+
+  const transformationsQ = useQuery({
+    queryKey: ["my-transformations"],
+    queryFn: () => fetchTransformations(),
+    enabled: !!userId,
+  });
 
   useEffect(() => {
     if (!profile) return;
@@ -474,6 +487,9 @@ function ProfilePage() {
                   {form.native_language && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground">
                       <Languages className="h-3 w-3 text-primary" /> {form.native_language}
+                      {profile?.additional_languages && profile.additional_languages.length > 0
+                        ? ` (+${profile.additional_languages.join(", ")})`
+                        : ""}
                     </span>
                   )}
                   {profile?.username && (
@@ -486,6 +502,70 @@ function ProfilePage() {
                     </Link>
                   )}
                 </div>
+
+                {/* 10.1 Fitness Profile Card */}
+                {(profile?.height_cm ||
+                  profile?.weight_kg ||
+                  profile?.skeletal_muscle_kg ||
+                  profile?.body_fat_percent ||
+                  profile?.goal ||
+                  profile?.experience_level ||
+                  profile?.personal_records) && (
+                  <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3.5 shadow-sm space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+                        <Dumbbell className="h-3.5 w-3.5" /> Fitness Profile &amp; Metrics
+                      </span>
+                      {profile?.experience_level && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                          {profile.experience_level}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats pills */}
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {profile?.height_cm != null && (
+                        <div className="rounded-lg bg-background/80 p-2 text-center border border-border/40">
+                          <p className="text-[10px] uppercase text-muted-foreground font-medium">Height</p>
+                          <p className="text-xs font-bold text-foreground">{profile.height_cm} cm</p>
+                        </div>
+                      )}
+                      {profile?.weight_kg != null && (
+                        <div className="rounded-lg bg-background/80 p-2 text-center border border-border/40">
+                          <p className="text-[10px] uppercase text-muted-foreground font-medium">Weight</p>
+                          <p className="text-xs font-bold text-foreground">{profile.weight_kg} kg</p>
+                        </div>
+                      )}
+                      {profile?.skeletal_muscle_kg != null && (
+                        <div className="rounded-lg bg-background/80 p-2 text-center border border-border/40">
+                          <p className="text-[10px] uppercase text-muted-foreground font-medium">Skeletal Muscle</p>
+                          <p className="text-xs font-bold text-foreground">{profile.skeletal_muscle_kg} kg</p>
+                        </div>
+                      )}
+                      {profile?.body_fat_percent != null && (
+                        <div className="rounded-lg bg-background/80 p-2 text-center border border-border/40">
+                          <p className="text-[10px] uppercase text-muted-foreground font-medium">Body Fat</p>
+                          <p className="text-xs font-bold text-foreground">{profile.body_fat_percent}%</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Goal tags & SBD PRs */}
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                      {profile?.goal && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          <Target className="h-3 w-3" /> Goal: #{profile.goal}
+                        </span>
+                      )}
+                      {profile?.personal_records && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          <Trophy className="h-3 w-3" /> PRs: {profile.personal_records}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -597,11 +677,101 @@ function ProfilePage() {
               >
                 <Clapperboard className="h-4 w-4" /> Shorts ({shortPosts.length})
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("transformations")}
+                className={`flex items-center gap-2 border-t-2 py-3 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                  activeTab === "transformations"
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Activity className="h-4 w-4 text-primary" /> Body Checks ({transformationsQ.data?.length ?? 0})
+              </button>
             </div>
           </div>
 
-          {/* Posts Grid */}
-          {postsQ.isLoading ? (
+          {/* Posts / Shorts / Transformation Grid */}
+          {activeTab === "transformations" ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-bold uppercase tracking-tight">Body Transformation Grid</h3>
+                  <p className="text-xs text-muted-foreground">Chronological body checks &amp; progress timeline</p>
+                </div>
+                {userId && (
+                  <Button
+                    size="sm"
+                    onClick={() => setLogTransformationOpen(true)}
+                    className="gap-1.5 bg-primary font-semibold text-primary-foreground"
+                  >
+                    <Plus className="h-4 w-4" /> Log Body Check
+                  </Button>
+                )}
+              </div>
+
+              {transformationsQ.isLoading ? (
+                <div className="flex justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : !transformationsQ.data || transformationsQ.data.length === 0 ? (
+                <div className="mx-auto my-8 max-w-sm rounded-2xl border border-dashed border-border p-8 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Activity className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold uppercase tracking-tight">No Progress Logged Yet</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Log your weekly or monthly body check photos to track visual progress over time.
+                  </p>
+                  <Button
+                    onClick={() => setLogTransformationOpen(true)}
+                    className="mt-5 gap-1.5 font-semibold"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" /> Log First Progress Photo
+                  </Button>
+                </div>
+              ) : (
+                /* 10.2 Chronological 3-Column Visual Grid */
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  {transformationsQ.data.map((item) => {
+                    const dateStr = new Date(item.captured_on || item.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                    return (
+                      <div
+                        key={item.id}
+                        className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-black shadow-sm"
+                      >
+                        <LazyImage
+                          src={item.thumbnail_url || item.media_url}
+                          alt={item.notes || "Body transformation check"}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        {/* View angle badge top-left */}
+                        <span className="absolute top-2 left-2 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-md border border-white/10">
+                          {item.view_angle}
+                        </span>
+                        {/* Weight/BodyFat top-right */}
+                        {(item.weight_kg || item.body_fat_percent) && (
+                          <span className="absolute top-2 right-2 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow">
+                            {item.weight_kg ? `${item.weight_kg}kg` : ""} {item.body_fat_percent ? `${item.body_fat_percent}%` : ""}
+                          </span>
+                        )}
+                        {/* Programmatically stamped creation date bottom-left */}
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-2 py-0.5 text-[10px] font-mono font-medium text-white backdrop-blur-md border border-white/10">
+                          <Calendar className="h-3 w-3 text-primary" />
+                          <span>{dateStr}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : postsQ.isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -767,6 +937,21 @@ function ProfilePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Log Body Check / Transformation Dialog */}
+      {userId && (
+        <Dialog open={logTransformationOpen} onOpenChange={setLogTransformationOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display uppercase">Log Body Check</DialogTitle>
+              <DialogDescription>
+                Upload your progress photo or video to track body transformations over time.
+              </DialogDescription>
+            </DialogHeader>
+            <TransformationComposer userId={userId} />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Create Post Dialog */}
       <CreatePostDialog
