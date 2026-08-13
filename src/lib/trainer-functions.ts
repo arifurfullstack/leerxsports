@@ -95,18 +95,28 @@ export type DiscoveryPost = Post & {
   };
 };
 
-async function decoratePosts<T extends { media_url: string; thumbnail_url: string | null }>(
+async function decoratePosts<
+  T extends { trainer_id?: string; is_premium?: boolean; media_url: string; thumbnail_url: string | null }
+>(
   supabase: ReturnType<typeof getPublicSupabase>,
   posts: T[],
+  currentUserId?: string | null,
+  subscribedTrainerIds?: Set<string>,
 ): Promise<T[]> {
-  // Never sign URLs for premium content on the public path — those are
-  // gated server-side via getPremiumPostUrls after subscription check.
+  const canAccess = (p: T) => {
+    if (!p.is_premium) return true;
+    if (currentUserId && p.trainer_id && currentUserId === p.trainer_id) return true;
+    if (subscribedTrainerIds && p.trainer_id && subscribedTrainerIds.has(p.trainer_id)) return true;
+    return false;
+  };
+
   const paths = posts
     .flatMap((p) => [
-      (p as { is_premium?: boolean }).is_premium ? null : p.media_url,
-      (p as { is_premium?: boolean }).is_premium ? null : p.thumbnail_url,
+      canAccess(p) ? p.media_url : null,
+      canAccess(p) ? p.thumbnail_url : null,
     ])
     .filter((p): p is string => !!p && !p.startsWith("http"));
+
   const signedMap = new Map<string, string>();
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
@@ -116,8 +126,10 @@ async function decoratePosts<T extends { media_url: string; thumbnail_url: strin
       if (s.path && s.signedUrl) signedMap.set(s.path, s.signedUrl);
     }
   }
+
   return posts.map((p) => {
-    if ((p as { is_premium?: boolean }).is_premium) {
+    const hasAccess = canAccess(p);
+    if (p.is_premium && !hasAccess) {
       return { ...p, media_url: "", thumbnail_url: null };
     }
     return {
@@ -262,7 +274,24 @@ async function fetchDiscovery(
       }
     }
 
-    const signed = await decoratePosts(supabase, filtered);
+    let currentUserId: string | null = null;
+    const subscribedTrainerIds = new Set<string>();
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        currentUserId = authData.user.id;
+        const { data: subRows } = await supabase
+          .from("subscriptions")
+          .select("trainer_id")
+          .eq("subscriber_id", currentUserId)
+          .eq("status", "active");
+        for (const s of subRows ?? []) {
+          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+        }
+      }
+    } catch {}
+
+    const signed = await decoratePosts(supabase, filtered, currentUserId, subscribedTrainerIds);
     return signed.map((p) => {
       const pr = profileMap.get(p.trainer_id);
       return {
@@ -759,23 +788,45 @@ export const getPostDetail = createServerFn({ method: "GET" })
     const profile = profRes.data;
     if (!profile) return null;
 
-    const [signed] = await decoratePosts(supabase, [
-      {
-        id: post.id,
-        trainer_id: post.trainer_id,
-        kind: post.kind as "feed" | "short",
-        is_premium: post.is_premium,
-        caption: post.caption,
-        media_url: post.media_url,
-        thumbnail_url: post.thumbnail_url,
-        duration_seconds: post.duration_seconds,
-        respect_count: post.respect_count ?? 0,
-        save_count: post.save_count ?? 0,
-        view_count: post.view_count ?? 0,
-        comment_count: post.comment_count ?? 0,
-        created_at: post.created_at,
-      },
-    ]);
+    let currentUserId: string | null = null;
+    const subscribedTrainerIds = new Set<string>();
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        currentUserId = authData.user.id;
+        const { data: subRows } = await supabase
+          .from("subscriptions")
+          .select("trainer_id")
+          .eq("subscriber_id", currentUserId)
+          .eq("status", "active");
+        for (const s of subRows ?? []) {
+          if (s.trainer_id) subscribedTrainerIds.add(s.trainer_id);
+        }
+      }
+    } catch {}
+
+    const [signed] = await decoratePosts(
+      supabase,
+      [
+        {
+          id: post.id,
+          trainer_id: post.trainer_id,
+          kind: post.kind as "feed" | "short",
+          is_premium: post.is_premium,
+          caption: post.caption,
+          media_url: post.media_url,
+          thumbnail_url: post.thumbnail_url,
+          duration_seconds: post.duration_seconds,
+          respect_count: post.respect_count ?? 0,
+          save_count: post.save_count ?? 0,
+          view_count: post.view_count ?? 0,
+          comment_count: post.comment_count ?? 0,
+          created_at: post.created_at,
+        },
+      ],
+      currentUserId,
+      subscribedTrainerIds,
+    );
 
     return {
       ...(signed as Post),

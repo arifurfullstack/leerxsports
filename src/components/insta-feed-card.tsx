@@ -472,7 +472,7 @@ export function InstaFeedCard({
             controls
             className="h-full w-full rounded-none ring-0"
           />
-        ) : thumb || post.is_premium ? (
+        ) : thumb || post.media_url ? (
           <button
             type="button"
             onClick={handleMediaClick}
@@ -480,7 +480,7 @@ export function InstaFeedCard({
             aria-label="Open post"
           >
             <ResponsiveImage
-              src={thumb || undefined}
+              src={thumb || post.media_url || undefined}
               variant="thumb"
               seed={post.id}
               sizes="(min-width: 640px) 560px, 100vw"
@@ -489,7 +489,7 @@ export function InstaFeedCard({
               fetchPriority={priority ? "high" : "auto"}
               className={cn(
                 "h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-[1.02]",
-                post.is_premium && "locked-blur",
+                post.is_premium && (!thumb && !post.media_url) && "locked-blur",
               )}
             />
           </button>
@@ -497,7 +497,7 @@ export function InstaFeedCard({
           <div className="h-full w-full bg-gradient-to-br from-primary/25 via-card to-accent/25" />
         )}
 
-        {post.is_premium ? (
+        {post.is_premium && (!thumb && !post.media_url) ? (
           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="relative flex items-center justify-center">
               <span className="absolute h-14 w-14 rounded-full border border-primary/50 bg-primary/20 animate-lock-ring" />
@@ -511,6 +511,11 @@ export function InstaFeedCard({
               Premium
             </span>
           </div>
+        ) : post.is_premium ? (
+          <span className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-primary/50 bg-black/70 px-2.5 py-0.5 font-display text-[9px] uppercase tracking-widest text-primary shadow-md backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Premium
+          </span>
         ) : null}
 
         {/* Double-tap heart burst */}

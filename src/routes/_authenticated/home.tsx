@@ -33,6 +33,7 @@ import {
   BadgeCheck,
   Zap,
   Lock,
+  Sparkles,
   RefreshCw,
   ChevronRight,
   ChevronLeft,
@@ -2017,7 +2018,7 @@ function PostTile({
           fit="cover"
           className={cn(
             "absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105",
-            post.is_premium && "locked-blur opacity-60",
+            post.is_premium && !src && "locked-blur opacity-60",
           )}
         />
         {isShort && (
@@ -2025,7 +2026,7 @@ function PostTile({
             <Film className="h-3 w-3" /> Reel
           </span>
         )}
-        {post.is_premium && (
+        {post.is_premium && !src ? (
           <>
             {/* Dark scrim so the lock reads clearly over any image */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black/75" />
@@ -2056,19 +2057,12 @@ function PostTile({
                 </span>
               </div>
             </div>
-            {/* Top-left premium chip */}
-            <span
-              className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ring-1"
-              style={{
-                backgroundColor: "color-mix(in oklch, var(--premium) 90%, transparent)",
-                color: "var(--premium-foreground)",
-                boxShadow: "0 0 0 1px color-mix(in oklch, var(--premium) 60%, transparent)",
-              }}
-            >
-              <Zap className="h-3 w-3" /> Locked
-            </span>
           </>
-        )}
+        ) : post.is_premium ? (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-primary backdrop-blur">
+            <Sparkles className="h-3 w-3" /> Premium
+          </span>
+        ) : null}
         {/* Bottom overlay */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2">
           <div className="flex items-center gap-1.5">
