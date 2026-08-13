@@ -318,20 +318,14 @@ function HomePage() {
 
 function FloatingCreateFAB({ onCreate }: { onCreate?: () => void }) {
   return (
-    <div className="fixed bottom-20 right-5 z-50 md:bottom-8 md:right-8 group">
-      {/* Glowing background ring */}
-      <div className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 opacity-60 blur-lg transition-all duration-300 group-hover:opacity-100 group-hover:blur-xl animate-pulse" />
-      
+    <div className="fixed bottom-20 right-5 z-50 md:hidden">
       <button
         type="button"
         onClick={onCreate}
-        aria-label="Create Post or Log Transformation"
-        className="relative flex items-center gap-2.5 rounded-full border border-red-400/40 bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-[0_0_35px_rgba(239,68,68,0.75)] transition-all duration-300 hover:scale-110 active:scale-95 hover:shadow-[0_0_45px_rgba(239,68,68,0.95)]"
+        aria-label="Create Post"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/40 border border-white/20 transition-all duration-200 hover:scale-105 active:scale-95"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white shadow-inner transition-transform group-hover:rotate-90">
-          <Plus className="h-4 w-4 stroke-[3]" />
-        </span>
-        <span className="hidden sm:inline font-display">CREATE</span>
+        <Plus className="h-6 w-6 stroke-[2.5]" />
       </button>
     </div>
   );
@@ -811,7 +805,7 @@ function LeftSidebar({
         role="group"
         aria-label="Quick actions"
         className={cn(
-          "sticky bottom-0 z-20 mt-auto pt-2 pb-1 backdrop-blur-2xl bg-black/90 border-t border-red-500/20 rounded-b-3xl",
+          "sticky bottom-0 z-20 mt-auto pt-3 pb-1 backdrop-blur-xl bg-card/90 border-t border-border/40 rounded-b-3xl",
           rail ? "flex flex-col items-center gap-2" : "flex flex-col gap-2"
         )}
       >
@@ -826,11 +820,11 @@ function LeftSidebar({
                 }}
                 aria-label="Create"
                 className={cn(
-                  "relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_0_25px_rgba(239,68,68,0.7)] transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_35px_rgba(239,68,68,0.9)] border border-red-500/40",
+                  "grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95",
                   focusRing,
                 )}
               >
-                <Plus aria-hidden="true" className="h-6 w-6 stroke-[3] text-white" />
+                <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.5]" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Create</TooltipContent>
@@ -843,13 +837,11 @@ function LeftSidebar({
               onCreate?.();
             }}
             className={cn(
-              "group relative flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 px-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_0_30px_rgba(239,68,68,0.7)] transition-all duration-300 hover:scale-[1.03] active:scale-95 hover:shadow-[0_0_40px_rgba(239,68,68,0.9)] border border-red-400/40",
+              "inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-xs font-extrabold uppercase tracking-[0.18em] text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:scale-[1.02] active:scale-95 hover:bg-primary/90",
               focusRing,
             )}
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-xl bg-white/20 text-white shadow-inner transition-transform group-hover:rotate-90">
-              <Plus aria-hidden="true" className="h-4 w-4 stroke-[3]" />
-            </span>
+            <Plus aria-hidden="true" className="h-4 w-4 stroke-[2.5]" />
             <span>Create</span>
           </button>
         )}
