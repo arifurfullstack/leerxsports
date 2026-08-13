@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { sanitizeText } from "@/lib/text-moderation";
 
 export type CommunityKind = "question" | "flex";
 export type CommunitySort = "new" | "top" | "trending";
@@ -235,13 +236,16 @@ export const createCommunityPost = createServerFn({ method: "POST" })
       }
     }
 
+    const cleanTitle = sanitizeText(data.title);
+    const cleanBody = sanitizeText(data.body);
+
     const { data: row, error } = await supabase
       .from("community_posts")
       .insert({
         author_id: userId,
         kind: data.kind,
-        title: data.title,
-        body: data.body,
+        title: cleanTitle,
+        body: cleanBody,
         hashtags: data.hashtags,
         media: data.media,
         target_trainer_id: data.targetTrainerId ?? null,
@@ -422,19 +426,21 @@ export const addCommunityComment = createServerFn({ method: "POST" })
     }
 
     // ── Insert comment ────────────────────────────────────────────────────
-    const { data: row, error } = await supabase
+    const cleanCommentBody = sanitizeText(data.body);
+
+    const { data: inserted, error: insertErr } = await supabase
       .from("community_comments")
       .insert({
         post_id: data.postId,
         author_id: userId,
         parent_id: data.parentId ?? null,
-        body: data.body,
+        body: cleanCommentBody,
         media_urls: data.mediaUrls,
         is_private: data.isPrivate,
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (insertErr) throw new Error(insertErr.message);
 
     // ── Advance coaching lifecycle status ─────────────────────────────────
     if (isCoachingThread) {
@@ -458,7 +464,7 @@ export const addCommunityComment = createServerFn({ method: "POST" })
       }
     }
 
-    return { id: row.id };
+    return { id: inserted.id };
   });
 
 

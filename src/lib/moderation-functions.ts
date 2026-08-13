@@ -46,11 +46,56 @@ export const submitReport = createServerFn({ method: "POST" })
     });
     if (error) {
       if (error.code === "23505") {
-        return { ok: true, duplicate: true as const };
+        return { ok: true, duplicate: true as const, autoHidden: false };
       }
       throw new Error(error.message);
     }
-    return { ok: true, duplicate: false as const };
+
+    // 13.2 Report Threshold Evaluation & Auto-Hide
+    // Serious flags (nudity, abuse, self_harm) hide immediately at 1 report.
+    // General flags (spam, misinformation, etc.) hide at 3 reports.
+    let autoHidden = false;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      const { count } = await supabaseAdmin
+        .from("reports")
+        .select("id", { count: "exact", head: true })
+        .eq("target_type", data.target_type)
+        .eq("target_id", data.target_id);
+
+      const isSeriousFlag = data.reason === "nudity" || data.reason === "abuse" || data.reason === "self_harm";
+      const threshold = isSeriousFlag ? 1 : 3;
+
+      if ((count ?? 1) >= threshold) {
+        autoHidden = true;
+
+        if (data.target_type === "post" || data.target_type === "short") {
+          await supabaseAdmin.from("posts").update({ is_hidden: true }).eq("id", data.target_id);
+        } else if (data.target_type === "transformation") {
+          await supabaseAdmin.from("transformation_posts").update({ is_hidden: true }).eq("id", data.target_id);
+        } else if (data.target_type === "community_post") {
+          await supabaseAdmin.from("community_posts").update({ status: "hidden" }).eq("id", data.target_id);
+        } else if (data.target_type === "community_comment") {
+          await supabaseAdmin.from("community_comments").update({ status: "hidden" }).eq("id", data.target_id);
+        } else if (data.target_type === "comment") {
+          await supabaseAdmin.from("comments").update({ status: "hidden" }).eq("id", data.target_id);
+        }
+
+        // Log system moderation action
+        await supabaseAdmin.from("moderation_actions").insert({
+          actor_id: context.userId,
+          target_type: data.target_type,
+          target_id: data.target_id,
+          action: "hide",
+          reason: `System Auto-Hide: Report threshold reached (${count ?? 1} report(s), reason: ${data.reason})`,
+        });
+      }
+    } catch (autoErr) {
+      console.error("Auto-hide threshold evaluation error:", autoErr);
+    }
+
+    return { ok: true, duplicate: false as const, autoHidden };
   });
 
 export type ReportRow = {

@@ -415,6 +415,8 @@ export const listCommentsPage = createServerFn({ method: "POST" })
     };
   });
 
+import { sanitizeText } from "@/lib/text-moderation";
+
 export const addComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) =>
@@ -428,13 +430,14 @@ export const addComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const cleanBody = sanitizeText(data.body);
     const { data: row, error } = await supabase
       .from("comments")
       .insert({
         post_id: data.postId,
         parent_id: data.parentId ?? null,
         author_id: userId,
-        body: data.body,
+        body: cleanBody,
       })
       .select("id, post_id, author_id, parent_id, body, status, created_at")
       .single();
