@@ -22,7 +22,6 @@ import {
   LineChart,
   Tag,
   ChevronDown,
-  Sparkles,
   LayoutDashboard,
   Wallet,
 } from "lucide-react";
@@ -114,7 +113,7 @@ export function Navbar() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const checkAdmin = useServerFn(isAdmin);
   const getWallet = useServerFn(getUserWalletBalance);
-  const { mode, switchMode } = useProfileMode();
+  const { mode } = useProfileMode();
 
   const pathname = useRouter().state.location.pathname;
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
@@ -290,9 +289,8 @@ export function Navbar() {
   };
 
   const isTrainer = !!trainerStatusQuery.data?.isApproved;
-  // For trainers: respect mode switcher (trainer or creator). For non-trainers: always athlete.
-  const isCreatorMode = isTrainer ? mode === "creator" : false;
-  const primary = getPrimaryLinks(!!user, isCreatorMode);
+  // Trainers are always in creator mode — no switching needed.
+  const primary = getPrimaryLinks(!!user, isTrainer);
   const secondary = getSecondaryLinks(!!user);
   const initials = initialsFrom(user);
   const displayName =
@@ -401,72 +399,39 @@ export function Navbar() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
+                  {/* ── Profile header ── */}
                   <DropdownMenuLabel className="flex items-center gap-3 py-2">
                     <UserAvatar src={avatarUrl} name={displayName || initials} size="md" className="h-9 w-9" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`inline-block h-2 w-2 rounded-full ${
-                          trainerStatusQuery.data?.isPending
-                            ? "bg-amber-400 animate-pulse"
-                            : isCreatorMode
-                              ? "bg-amber-500 animate-pulse"
-                              : isTrainer
-                                ? "bg-blue-500"
-                                : "bg-emerald-500"
-                        }`} />
-                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {trainerStatusQuery.data?.isPending
-                            ? "Trainer Application Pending"
-                            : isTrainer
-                              ? isCreatorMode ? "Creator Mode" : "Trainer Mode"
-                              : "Athlete Profile"}
-                        </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {isTrainer ? (
+                          <span className="inline-flex items-center gap-1 rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-500">
+                            <Dumbbell className="h-2.5 w-2.5" /> Trainer
+                          </span>
+                        ) : trainerStatusQuery.data?.isPending ? (
+                          <span className="inline-flex items-center gap-1 rounded-sm bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-400">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" /> Pending Review
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500">
+                            <UserIcon className="h-2.5 w-2.5" /> Athlete
+                          </span>
+                        )}
                       </div>
                     </div>
                   </DropdownMenuLabel>
 
-                  {/* Mode Switcher — only for approved trainers: Trainer ↔ Creator */}
-                  {isTrainer && (
-                    <div className="mx-2 my-1 rounded-lg border border-border/60 bg-muted/40 p-1">
-                      <p className="mb-1 px-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Switch View</p>
-                      <div className="grid grid-cols-2 gap-1 rounded-md border border-hairline bg-background/80 p-0.5">
-                        <button
-                          type="button"
-                          onClick={() => switchMode("normal")}
-                          className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                            !isCreatorMode
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Dumbbell className="h-3 w-3" /> Trainer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => switchMode("creator")}
-                          className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                            isCreatorMode
-                              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-sm"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Sparkles className="h-3 w-3" /> Creator
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Trainees: no switcher, role is fixed as Athlete */}
-
                   <DropdownMenuSeparator />
 
+                  {/* ── Account (common for all) ── */}
                   <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                     Account
                   </DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link to={isCreatorMode ? "/creator/dashboard" : "/dashboard"} className="flex w-full items-center font-semibold text-foreground">
-                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary" /> {isCreatorMode ? "Creator Studio" : "Athlete Dashboard"}
+                    <Link to={isTrainer ? "/creator/dashboard" : "/dashboard"} className="flex w-full items-center font-semibold text-foreground">
+                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary" />
+                      {isTrainer ? "Creator Studio" : "My Dashboard"}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -498,7 +463,8 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
 
-                  {isCreatorMode ? (
+                  {/* ── Trainer: Creator Studio section ── */}
+                  {isTrainer ? (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-amber-500">
@@ -516,6 +482,7 @@ export function Navbar() {
                       </DropdownMenuItem>
                     </>
                   ) : (
+                    /* ── Trainee: Content section ── */
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
