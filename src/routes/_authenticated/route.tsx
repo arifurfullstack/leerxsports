@@ -45,6 +45,20 @@ export const Route = createFileRoute("/_authenticated")({
       });
     }
 
+    if (!isAdmin) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      if (!profile?.onboarding_completed && location.pathname !== "/onboarding") {
+        throw redirect({
+          to: "/onboarding",
+        });
+      }
+    }
+
     return { user: data.user, isAdmin };
   },
   component: () => <Outlet />,
