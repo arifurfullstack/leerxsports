@@ -278,14 +278,24 @@ export const addCommunityComment = createServerFn({ method: "POST" })
           .maybeSingle();
 
         if (authorRole) {
-          // Parent is a trainer's top-level comment — only post owner can reply
+          // Parent is a trainer's top-level comment
           const { data: postRow, error: postErr } = await supabase
             .from("community_posts")
             .select("author_id")
             .eq("id", data.postId)
             .single();
           if (postErr) throw new Error(postErr.message);
-          if (postRow.author_id !== userId) {
+          
+          const isPostOwner = postRow.author_id === userId;
+          const isCommentAuthor = parentComment.author_id === userId;
+          
+          const { data: adminRole } = await supabase.rpc("has_role", {
+            _user_id: userId,
+            _role: "admin",
+          });
+          const isAdmin = !!adminRole;
+
+          if (!isPostOwner && !isCommentAuthor && !isAdmin) {
             throw new Error(
               "Only the post author can reply to a trainer's comment."
             );

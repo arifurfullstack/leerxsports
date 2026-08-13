@@ -2222,7 +2222,7 @@ function CommentsDialog({
                     sortedComments
                       .filter((c) => !c.parent_id)
                       .map((c) => {
-              const trainerLink = c.author?.is_trainer && c.author.username;
+              const trainerLink = !!c.author?.is_trainer;
                       const cName =
                 c.author?.display_name ?? c.author?.username ?? "user";
               const nameNode = (
@@ -2237,7 +2237,8 @@ function CommentsDialog({
               // PRD: Only post owner can reply to trainer top-level comments
               const isTrainerComment = !!c.author?.is_trainer;
               const isPostOwner = currentUserId === post.author_id;
-              const showReplyButton = signedIn && (!isTrainerComment || isPostOwner);
+              const isCommentAuthor = currentUserId === c.author_id;
+              const showReplyButton = signedIn && (!isTrainerComment || isPostOwner || isCommentAuthor);
 
               // Get replies for this comment
               const replies = sortedComments.filter((r) => r.parent_id === c.id);
@@ -2262,7 +2263,7 @@ function CommentsDialog({
                     {trainerLink ? (
                       <Link
                         to="/trainers/$username"
-                        params={{ username: c.author!.username! }}
+                        params={{ username: c.author!.username ?? c.author!.user_id }}
                         className="hover:underline"
                       >
                         {nameNode}
@@ -2302,7 +2303,7 @@ function CommentsDialog({
                 {replies.length > 0 && (
                   <div className="ml-8 space-y-2 border-l-2 border-border/50 pl-3">
                     {replies.map((r) => {
-                      const rTrainerLink = r.author?.is_trainer && r.author.username;
+                      const rTrainerLink = !!r.author?.is_trainer;
                       const rName = r.author?.display_name ?? r.author?.username ?? "user";
                       const rNameNode = (
                         <span className="inline-flex items-center gap-1 font-medium">
@@ -2332,7 +2333,7 @@ function CommentsDialog({
                               {rTrainerLink ? (
                                 <Link
                                   to="/trainers/$username"
-                                  params={{ username: r.author!.username! }}
+                                  params={{ username: r.author!.username ?? r.author!.user_id }}
                                   className="hover:underline"
                                 >
                                   {rNameNode}
