@@ -14,7 +14,7 @@ export type QADispatch = {
   followup_question?: string | null;
   followup_answer?: string | null;
   price: number;
-  status: "pending" | "coached" | "followup_pending" | "completed" | "expired" | "refunded";
+  status: "pending" | "coached" | "followup_pending" | "completed" | "expired" | "refunded" | "disputing";
   answered_at: string | null;
   expires_at: string;
   created_at: string;

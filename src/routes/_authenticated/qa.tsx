@@ -9,6 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SLACountdown from "@/components/sla-countdown";
 import { TranslateToggle } from "@/components/translate-toggle";
+import { CoachingDisputeModal } from "@/components/coaching-dispute-modal";
+import { CompletionTipModal } from "@/components/completion-tip-modal";
+import { AlertTriangle, Heart } from "lucide-react";
 import {
   answerQADispatch,
   submitQAFollowup,
@@ -229,6 +232,8 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
 function SentCard({ d, onFollowupSent }: { d: QADispatch; onFollowupSent: () => void }) {
   const followupFn = useServerFn(submitQAFollowup);
   const [followupText, setFollowupText] = useState("");
+  const [showDispute, setShowDispute] = useState(false);
+  const [showTip, setShowTip] = useState(false);
   const to = d.creator?.display_name ?? d.creator?.username ?? "creator";
 
   const followupMut = useMutation({
@@ -299,11 +304,54 @@ function SentCard({ d, onFollowupSent }: { d: QADispatch; onFollowupSent: () => 
         </div>
       )}
 
-      {d.status === "completed" && (
-        <div className="mt-4 rounded-md border border-white/10 bg-black/40 p-3 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          🔒 Thread Locked · Coaching Session Completed
+      {d.status === "disputing" && (
+        <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-center text-xs font-bold uppercase tracking-widest text-amber-500">
+          ⚡ Thread Under Admin Dispute Review
         </div>
       )}
+
+      {d.status === "completed" && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-black/40 p-3">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            🔒 Thread Locked · Coaching Session Completed
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-500/50 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 text-xs gap-1"
+            onClick={() => setShowTip(true)}
+          >
+            <Heart className="h-3.5 w-3.5 fill-current" /> Send Tip
+          </Button>
+        </div>
+      )}
+
+      {d.status !== "disputing" && d.status !== "completed" && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs text-muted-foreground hover:text-amber-500 gap-1"
+            onClick={() => setShowDispute(true)}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" /> Dispute Coaching
+          </Button>
+        </div>
+      )}
+
+      <CoachingDisputeModal
+        open={showDispute}
+        onOpenChange={setShowDispute}
+        threadId={d.id}
+        onSuccess={onFollowupSent}
+      />
+
+      <CompletionTipModal
+        open={showTip}
+        onOpenChange={setShowTip}
+        trainerName={to}
+        threadId={d.id}
+      />
     </article>
   );
 }

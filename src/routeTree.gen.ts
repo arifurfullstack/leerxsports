@@ -70,6 +70,7 @@ import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin/moderation'
 import { Route as AuthenticatedAdminLanguagesRouteImport } from './routes/_authenticated/admin/languages'
 import { Route as AuthenticatedAdminEarningsRouteImport } from './routes/_authenticated/admin/earnings'
+import { Route as AuthenticatedAdminDisputesRouteImport } from './routes/_authenticated/admin/disputes'
 import { Route as AuthenticatedAdminDemoRouteImport } from './routes/_authenticated/admin/demo'
 import { Route as AuthenticatedAdminCountriesRouteImport } from './routes/_authenticated/admin/countries'
 import { Route as AuthenticatedAdminCommunityRouteImport } from './routes/_authenticated/admin/community'
@@ -408,6 +409,12 @@ const AuthenticatedAdminEarningsRoute =
     path: '/earnings',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminDisputesRoute =
+  AuthenticatedAdminDisputesRouteImport.update({
+    id: '/disputes',
+    path: '/disputes',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDemoRoute = AuthenticatedAdminDemoRouteImport.update({
   id: '/demo',
   path: '/demo',
@@ -500,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/admin/demo': typeof AuthenticatedAdminDemoRoute
+  '/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
@@ -570,6 +578,7 @@ export interface FileRoutesByTo {
   '/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/admin/demo': typeof AuthenticatedAdminDemoRoute
+  '/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
@@ -643,6 +652,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/community': typeof AuthenticatedAdminCommunityRoute
   '/_authenticated/admin/countries': typeof AuthenticatedAdminCountriesRoute
   '/_authenticated/admin/demo': typeof AuthenticatedAdminDemoRoute
+  '/_authenticated/admin/disputes': typeof AuthenticatedAdminDisputesRoute
   '/_authenticated/admin/earnings': typeof AuthenticatedAdminEarningsRoute
   '/_authenticated/admin/languages': typeof AuthenticatedAdminLanguagesRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
@@ -716,6 +726,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/countries'
     | '/admin/demo'
+    | '/admin/disputes'
     | '/admin/earnings'
     | '/admin/languages'
     | '/admin/moderation'
@@ -786,6 +797,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/countries'
     | '/admin/demo'
+    | '/admin/disputes'
     | '/admin/earnings'
     | '/admin/languages'
     | '/admin/moderation'
@@ -858,6 +870,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/community'
     | '/_authenticated/admin/countries'
     | '/_authenticated/admin/demo'
+    | '/_authenticated/admin/disputes'
     | '/_authenticated/admin/earnings'
     | '/_authenticated/admin/languages'
     | '/_authenticated/admin/moderation'
@@ -1346,6 +1359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEarningsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/disputes': {
+      id: '/_authenticated/admin/disputes'
+      path: '/disputes'
+      fullPath: '/admin/disputes'
+      preLoaderRoute: typeof AuthenticatedAdminDisputesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/demo': {
       id: '/_authenticated/admin/demo'
       path: '/demo'
@@ -1420,6 +1440,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCommunityRoute: typeof AuthenticatedAdminCommunityRoute
   AuthenticatedAdminCountriesRoute: typeof AuthenticatedAdminCountriesRoute
   AuthenticatedAdminDemoRoute: typeof AuthenticatedAdminDemoRoute
+  AuthenticatedAdminDisputesRoute: typeof AuthenticatedAdminDisputesRoute
   AuthenticatedAdminEarningsRoute: typeof AuthenticatedAdminEarningsRoute
   AuthenticatedAdminLanguagesRoute: typeof AuthenticatedAdminLanguagesRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
@@ -1457,6 +1478,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCommunityRoute: AuthenticatedAdminCommunityRoute,
     AuthenticatedAdminCountriesRoute: AuthenticatedAdminCountriesRoute,
     AuthenticatedAdminDemoRoute: AuthenticatedAdminDemoRoute,
+    AuthenticatedAdminDisputesRoute: AuthenticatedAdminDisputesRoute,
     AuthenticatedAdminEarningsRoute: AuthenticatedAdminEarningsRoute,
     AuthenticatedAdminLanguagesRoute: AuthenticatedAdminLanguagesRoute,
     AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
