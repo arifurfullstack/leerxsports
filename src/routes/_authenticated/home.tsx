@@ -322,10 +322,14 @@ function FloatingCreateFAB({ onCreate }: { onCreate?: () => void }) {
       <button
         type="button"
         onClick={onCreate}
-        aria-label="Create Post"
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/40 border border-white/20 transition-all duration-200 hover:scale-105 active:scale-95"
+        aria-label="Create Post, Reel or Workout Log"
+        className="group relative flex items-center gap-2 rounded-full border border-primary/40 bg-gradient-to-r from-primary via-primary/90 to-rose-600 px-4.5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-2xl shadow-primary/40 transition-all duration-300 hover:scale-105 active:scale-95"
       >
-        <Plus className="h-6 w-6 stroke-[2.5]" />
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white shadow-inner group-hover:rotate-90 transition-transform">
+          <Plus className="h-4 w-4 stroke-[3]" />
+        </span>
+        <span className="font-display">CREATE</span>
+        <Sparkles className="h-3.5 w-3.5 text-amber-300 fill-amber-300 animate-pulse" />
       </button>
     </div>
   );
@@ -805,7 +809,7 @@ function LeftSidebar({
         role="group"
         aria-label="Quick actions"
         className={cn(
-          "sticky bottom-0 z-20 mt-auto pt-3 pb-1 backdrop-blur-xl bg-card/90 border-t border-border/40 rounded-b-3xl",
+          "sticky bottom-0 z-20 mt-auto pt-3 pb-1 backdrop-blur-xl bg-card/95 border-t border-border/60 rounded-b-3xl space-y-2",
           rail ? "flex flex-col items-center gap-2" : "flex flex-col gap-2"
         )}
       >
@@ -818,16 +822,24 @@ function LeftSidebar({
                   onNavigate?.();
                   onCreate?.();
                 }}
-                aria-label="Create"
+                aria-label="Create Post, Reel or Progress Log"
                 className={cn(
-                  "grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95",
+                  "relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-tr from-primary via-primary/90 to-rose-600 text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-110 active:scale-95 border border-white/20 group",
                   focusRing,
                 )}
               >
-                <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.5]" />
+                <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.5] transition-transform group-hover:rotate-90" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black shadow-sm">
+                  <Sparkles className="h-2.5 w-2.5 fill-black text-black" />
+                </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Create</TooltipContent>
+            <TooltipContent side="right" className="space-y-0.5">
+              <p className="text-xs font-bold flex items-center gap-1 text-primary">
+                <Sparkles className="h-3 w-3 text-amber-400 fill-amber-400" /> Create Content
+              </p>
+              <p className="text-[11px] text-muted-foreground">Share Post, Short Reel or Log Workout</p>
+            </TooltipContent>
           </Tooltip>
         ) : (
           <button
@@ -837,12 +849,40 @@ function LeftSidebar({
               onCreate?.();
             }}
             className={cn(
-              "inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-xs font-extrabold uppercase tracking-[0.18em] text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:scale-[1.02] active:scale-95 hover:bg-primary/90",
+              "group relative flex w-full flex-col gap-1.5 rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/20 via-card to-card p-3 text-left shadow-lg shadow-primary/10 transition-all duration-300 hover:border-primary/70 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]",
               focusRing,
             )}
           >
-            <Plus aria-hidden="true" className="h-4 w-4 stroke-[2.5]" />
-            <span>Create</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:scale-110 transition-transform">
+                  <Plus className="h-4 w-4 stroke-[3]" />
+                </span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-foreground">
+                  Create Content
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-400 shadow-sm">
+                <Sparkles className="h-2.5 w-2.5 fill-amber-400" /> PRO
+              </span>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-tight pl-1">
+              Share posts, short reels, or track your transformation progress.
+            </p>
+
+            {/* Micro action tags */}
+            <div className="flex items-center gap-1.5 pt-1 text-[10px] font-bold text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-1.5 py-0.5 border border-border/50 group-hover:text-primary transition-colors">
+                <Newspaper className="h-3 w-3" /> Post
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-1.5 py-0.5 border border-border/50 group-hover:text-rose-400 transition-colors">
+                <Film className="h-3 w-3" /> Reel
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-1.5 py-0.5 border border-border/50 group-hover:text-amber-400 transition-colors">
+                <Dumbbell className="h-3 w-3" /> Log
+              </span>
+            </div>
           </button>
         )}
       </div>
