@@ -58,6 +58,46 @@ export const sendQADispatch = createServerFn({ method: "POST" })
     const platformFee = Math.round(gross * bps) / 10000;
     const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
 
+    // Check trainee wallet balance
+    const { data: walletRow, error: wErr } = await (supabaseAdmin as any)
+      .from("user_wallets")
+      .select("balance, currency")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (wErr) throw new Error(wErr.message);
+
+    const currentBalance = Number(walletRow?.balance ?? 0);
+    if (currentBalance < gross) {
+      throw new Error(
+        `Insufficient wallet balance ($${currentBalance.toFixed(2)} available, $${gross}.00 required). Please top up your wallet.`,
+      );
+    }
+
+    const newBalance = Math.round((currentBalance - gross) * 100) / 100;
+
+    // Deduct $300 from trainee wallet
+    const { error: updWalletErr } = await (supabaseAdmin as any)
+      .from("user_wallets")
+      .upsert(
+        {
+          user_id: userId,
+          balance: newBalance,
+          currency: walletRow?.currency ?? currency,
+        },
+        { onConflict: "user_id" },
+      );
+    if (updWalletErr) throw new Error(updWalletErr.message);
+
+    // Insert wallet entry for trainee purchase
+    await (supabaseAdmin as any).from("wallet_entries").insert({
+      user_id: userId,
+      kind: "purchase",
+      amount: -gross,
+      balance_after: newBalance,
+      currency: walletRow?.currency ?? currency,
+      description: `Paid Q&A Dispatch ($${gross})`,
+    });
+
     const { data: tx, error: txErr } = await supabaseAdmin
       .from("transactions")
       .insert({
@@ -169,6 +209,17 @@ export const answerQADispatch = createServerFn({ method: "POST" })
         .from("trainer_balances")
         .insert({ trainer_id: userId, available_amount: trainerAmount, currency });
     }
+
+    // Also credit creator's user_wallets balance
+    const { creditCreatorWallet } = await import("@/lib/wallet-functions");
+    await creditCreatorWallet(
+      supabaseAdmin,
+      userId,
+      trainerAmount,
+      currency,
+      row.transaction_id ?? undefined,
+      "Earned Paid Q&A response",
+    );
 
     return { ok: true, status: nextStatus };
   });

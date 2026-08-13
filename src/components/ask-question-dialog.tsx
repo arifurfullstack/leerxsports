@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -29,10 +29,13 @@ export function AskQuestionDialog({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const send = useServerFn(sendQADispatch);
+  const queryClient = useQueryClient();
   const mut = useMutation({
     mutationFn: (question: string) =>
       send({ data: { creatorId, question } }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["qa-dispatches"] });
       toast.success(`Question sent to ${creatorName}. You'll be notified when they answer.`);
       setQ("");
       setOpen(false);
