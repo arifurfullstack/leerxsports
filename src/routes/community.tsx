@@ -90,6 +90,7 @@ import {
 } from "@/lib/moderation-functions";
 import { UserAvatar } from "@/components/user-avatar";
 import { TrainerReplyBox } from "@/components/trainer-reply-box";
+import { FrameAnalysisPlayer } from "@/components/frame-analysis-player";
 
 type Filter = { kind: CommunityKind | "all" | "saved"; sort: CommunitySort };
 
@@ -2319,15 +2320,25 @@ function CommentsDialog({
                     )}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
-                  {/* Inline media for coaching video responses */}
+                  {/* Inline media for coaching video responses with frame-by-frame analysis */}
                   {c.media_urls && c.media_urls.length > 0 && (
-                    <div className="mt-2 overflow-hidden rounded-lg border border-border">
+                    <div className="mt-2 overflow-hidden rounded-lg">
                       {/\.(mp4|webm|mov)/i.test(c.media_urls[0]) ? (
-                        <video
+                        <FrameAnalysisPlayer
                           src={c.media_urls[0]}
-                          controls
-                          playsInline
-                          className="max-h-72 w-full object-contain bg-black"
+                          title={`${cName}'s Coaching Feedback`}
+                          markers={[
+                            {
+                              time: 1.5,
+                              title: "Form & Alignment Check",
+                              note: "Observe posture, spine alignment, and movement setup.",
+                            },
+                            {
+                              time: 3.5,
+                              title: "Descriptive Movement Breakdown",
+                              note: "Check range of motion and joint angle at peak extension.",
+                            },
+                          ]}
                         />
                       ) : (
                         <img
