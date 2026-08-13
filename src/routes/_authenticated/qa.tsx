@@ -93,7 +93,10 @@ function QAInbox() {
 
         <TabsContent value="received" className="mt-6 space-y-4">
           {received.isLoading && <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />}
-          {received.data?.length === 0 && (
+          {received.isError && (
+            <EmptyState text={`Error loading received questions: ${(received.error as Error)?.message}`} />
+          )}
+          {!received.isLoading && !received.isError && (received.data ?? []).length === 0 && (
             <EmptyState text="No coaching dispatches yet. Share your profile to get inbound subscribers." />
           )}
           {received.data?.map((d) => (
@@ -103,7 +106,10 @@ function QAInbox() {
 
         <TabsContent value="sent" className="mt-6 space-y-4">
           {sent.isLoading && <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />}
-          {sent.data?.length === 0 && (
+          {sent.isError && (
+            <EmptyState text={`Error loading sent questions: ${(sent.error as Error)?.message}`} />
+          )}
+          {!sent.isLoading && !sent.isError && (sent.data ?? []).length === 0 && (
             <EmptyState text="You haven't requested coaching yet. Find a creator and hit Ask · $300 on their profile." />
           )}
           {sent.data?.map((d) => (

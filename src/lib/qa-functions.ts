@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { optionalSupabaseAuth, requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const QA_PRICE = 300;
 
@@ -275,13 +275,15 @@ export const submitQAFollowup = createServerFn({ method: "POST" })
 
 /** List dispatches where the caller is fan or creator. */
 export const listMyQADispatches = createServerFn({ method: "POST" })
-  .middleware([attachSupabaseAuth, requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, optionalSupabaseAuth])
   .validator((input: any) => {
     const payload = input?.data ?? input ?? {};
     return z.object({ role: z.enum(["fan", "creator", "all"]).default("all") }).parse(payload);
   })
   .handler(async ({ data, context }): Promise<QADispatch[]> => {
     const { userId } = context;
+    if (!userId) return [];
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin
       .from("qa_dispatches")
