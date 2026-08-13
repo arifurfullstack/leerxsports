@@ -116,6 +116,8 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          is_private: boolean
+          media_urls: string[]
           parent_id: string | null
           post_id: string
           status: Database["public"]["Enums"]["comment_status"]
@@ -126,6 +128,8 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          is_private?: boolean
+          media_urls?: string[]
           parent_id?: string | null
           post_id: string
           status?: Database["public"]["Enums"]["comment_status"]
@@ -136,6 +140,8 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          is_private?: boolean
+          media_urls?: string[]
           parent_id?: string | null
           post_id?: string
           status?: Database["public"]["Enums"]["comment_status"]

@@ -33,6 +33,8 @@ export type CommunityComment = {
   author_id: string;
   parent_id: string | null;
   body: string;
+  media_urls: string[];
+  is_private: boolean;
   created_at: string;
   author: {
     username: string | null;
@@ -139,16 +141,23 @@ export const listCommunityPosts = createServerFn({ method: "POST" })
   });
 
 export const getCommunityPost = createServerFn({ method: "POST" })
-  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        callerId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }): Promise<{
-    post: CommunityPost;
+    post: CommunityPost & { target_trainer_id: string | null };
     comments: CommunityComment[];
   } | null> => {
     const supabase = publicClient();
     const { data: row, error } = await supabase
       .from("community_posts")
       .select(
-        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, created_at",
+        "id, author_id, kind, title, body, media, hashtags, respect_count, comment_count, trainer_answered, created_at, target_trainer_id",
       )
       .eq("id", data.id)
       .eq("status", "visible")
@@ -156,21 +165,37 @@ export const getCommunityPost = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) return null;
 
+    // Fetch all comments — we filter private ones below
     const { data: comments, error: cErr } = await supabase
       .from("community_comments")
-      .select("id, post_id, author_id, parent_id, body, created_at")
+      .select("id, post_id, author_id, parent_id, body, media_urls, is_private, created_at")
       .eq("post_id", data.id)
       .eq("status", "visible")
       .order("created_at", { ascending: true });
     if (cErr) throw new Error(cErr.message);
 
-    const ids = [row.author_id, ...(comments ?? []).map((c) => c.author_id)];
+    // Private comments are visible only to: post author, target trainer, caller who is admin
+    // We do a server-side filter based on callerId
+    const callerId = data.callerId ?? null;
+    const visibleComments = (comments ?? []).filter((c) => {
+      if (!c.is_private) return true;
+      if (!callerId) return false;
+      return (
+        callerId === row.author_id ||
+        callerId === row.target_trainer_id ||
+        callerId === c.author_id
+      );
+    });
+
+    const ids = [row.author_id, ...visibleComments.map((c) => c.author_id)];
     const authors = await hydrateAuthors(supabase, ids);
 
     return {
       post: { ...row, author: authors.get(row.author_id) ?? null },
-      comments: (comments ?? []).map<CommunityComment>((c) => ({
+      comments: visibleComments.map<CommunityComment>((c) => ({
         ...c,
+        media_urls: c.media_urls ?? [],
+        is_private: c.is_private ?? false,
         author: authors.get(c.author_id) ?? null,
       })),
     };
@@ -268,13 +293,36 @@ export const addCommunityComment = createServerFn({ method: "POST" })
     z
       .object({
         postId: z.string().uuid(),
-        body: z.string().trim().min(1).max(2000),
+        body: z.string().trim().min(1).max(4000),
         parentId: z.string().uuid().optional(),
+        mediaUrls: z.array(z.string().url()).max(3).default([]),
+        isPrivate: z.boolean().default(false),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Fetch the post to resolve ownership + target trainer
+    const { data: postRow, error: postErr } = await supabase
+      .from("community_posts")
+      .select("author_id, target_trainer_id")
+      .eq("id", data.postId)
+      .single();
+    if (postErr) throw new Error(postErr.message);
+
+    const isTargetTrainer = postRow.target_trainer_id === userId;
+    const isPostOwner = postRow.author_id === userId;
+
+    // Only the target trainer can mark a reply as private
+    if (data.isPrivate && !isTargetTrainer) {
+      throw new Error("Only the coaching trainer can post a private response.");
+    }
+
+    // Only trainer can attach media to a reply (rich response)
+    if (data.mediaUrls.length > 0 && !isTargetTrainer) {
+      throw new Error("Only the coaching trainer can attach video responses.");
+    }
 
     // PRD: Only post owner can reply to a trainer's top-level comment
     if (data.parentId) {
@@ -297,16 +345,8 @@ export const addCommunityComment = createServerFn({ method: "POST" })
 
         if (authorRole) {
           // Parent is a trainer's top-level comment
-          const { data: postRow, error: postErr } = await supabase
-            .from("community_posts")
-            .select("author_id")
-            .eq("id", data.postId)
-            .single();
-          if (postErr) throw new Error(postErr.message);
-          
-          const isPostOwner = postRow.author_id === userId;
           const isCommentAuthor = parentComment.author_id === userId;
-          
+
           const { data: adminRole } = await supabase.rpc("has_role", {
             _user_id: userId,
             _role: "admin",
@@ -322,6 +362,9 @@ export const addCommunityComment = createServerFn({ method: "POST" })
       }
     }
 
+    // If the trainer is posting a top-level reply, mark the post as trainer_answered
+    const shouldMarkAnswered = isTargetTrainer && !data.parentId;
+
     const { data: row, error } = await supabase
       .from("community_comments")
       .insert({
@@ -329,10 +372,21 @@ export const addCommunityComment = createServerFn({ method: "POST" })
         author_id: userId,
         parent_id: data.parentId ?? null,
         body: data.body,
+        media_urls: data.mediaUrls,
+        is_private: data.isPrivate,
       })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+
+    // Mark post as trainer_answered when trainer gives first top-level reply
+    if (shouldMarkAnswered) {
+      await supabase
+        .from("community_posts")
+        .update({ trainer_answered: true })
+        .eq("id", data.postId);
+    }
+
     return { id: row.id };
   });
 

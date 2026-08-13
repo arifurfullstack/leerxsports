@@ -1046,14 +1046,12 @@ function TrainerProfileInner({
                   <UnlockCheckoutDialog
                     trainerId={t.user_id}
                     creatorName={t.display_name ?? t.username ?? "Creator"}
-                    price={t.subscription_price}
+                    subscriptionPrice={t.subscription_price}
                     avatarUrl={t.avatar_url ?? undefined}
-                    premiumCount={premiumCount}
-                    features={[
-                      "Premium feed and shorts",
-                      "Subscriber coaching",
-                      "Cancel future renewal",
-                    ]}
+                    monetizationEnabled={t.monetization_enabled}
+                    hasEnoughPublicPosts={hasEnoughPublicPosts}
+                    publicFeedCount={publicFeedCount}
+                    minPublicPostsRequired={MIN_PUBLIC_POSTS}
                     triggerLabel="Subscribe Now"
                     triggerClassName="w-full sm:w-auto bg-premium font-semibold uppercase tracking-widest text-white hover:bg-premium/90"
                   />
@@ -1069,7 +1067,7 @@ function TrainerProfileInner({
           post={activePost}
           open={!!activePost}
           onOpenChange={(o) => !o && setActivePost(null)}
-          lockedMediaUrl={
+          unlockedUrl={
             activePost.is_premium
               ? unlocked[activePost.id]?.media_url ??
                 unlocked[activePost.id]?.thumbnail_url ??

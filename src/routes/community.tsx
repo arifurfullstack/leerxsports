@@ -16,6 +16,7 @@ import {
   Dumbbell,
   HelpCircle,
   Loader2,
+  Lock,
   MessageSquare,
   Plus,
   Search,
@@ -88,6 +89,7 @@ import {
   type ReportReason,
 } from "@/lib/moderation-functions";
 import { UserAvatar } from "@/components/user-avatar";
+import { TrainerReplyBox } from "@/components/trainer-reply-box";
 
 type Filter = { kind: CommunityKind | "all" | "saved"; sort: CommunitySort };
 
@@ -1920,10 +1922,10 @@ function CommentsDialog({
 
   // Lazily load full post + comments only when opened
   const detailQ = useQuery({
-    queryKey: ["community-post", post.id],
+    queryKey: ["community-post", post.id, currentUserId],
     queryFn: async () => {
       const { getCommunityPost } = await import("@/lib/community-functions");
-      return getCommunityPost({ data: { id: post.id } });
+      return getCommunityPost({ data: { id: post.id, callerId: currentUserId ?? undefined } });
     },
     enabled: open,
   });
@@ -2215,38 +2217,53 @@ function CommentsDialog({
                       ))}
                     </div>
                   ) : sortedComments.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-border py-10 text-center">
-                      <MessageSquare className="mx-auto h-6 w-6 text-muted-foreground" />
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        No comments yet. Be the first to reply.
-                      </p>
-                    </div>
-                  ) : (
-                    sortedComments
-                      .filter((c) => !c.parent_id)
-                      .map((c) => {
-              const trainerLink = !!c.author?.is_trainer;
-                      const cName =
-                c.author?.display_name ?? c.author?.username ?? "user";
-              const nameNode = (
-                <span className="inline-flex items-center gap-1 font-medium">
-                  {cName}
-                  {c.author?.is_trainer && (
-                    <BadgeCheck className="h-3 w-3 text-primary" />
-                  )}
-                </span>
-              );
+                <div className="rounded-lg border border-dashed border-border py-10 text-center">
+                  <MessageSquare className="mx-auto h-6 w-6 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No comments yet. Be the first to reply.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Trainer rich-media reply box — shown to the coaching trainer only */}
+                  {currentUserId &&
+                    detail?.post?.target_trainer_id === currentUserId && (
+                      <div className="mb-4">
+                        <TrainerReplyBox
+                          postId={post.id}
+                          trainerId={currentUserId}
+                          onSuccess={() => {
+                            qc.invalidateQueries({ queryKey: ["community-post", post.id, currentUserId] });
+                            qc.invalidateQueries({ queryKey: ["community"] });
+                          }}
+                        />
+                      </div>
+                    )}
 
-              // PRD: Only post owner can reply to trainer top-level comments
-              const isTrainerComment = !!c.author?.is_trainer;
-              const isPostOwner = currentUserId === post.author_id;
-              const isCommentAuthor = currentUserId === c.author_id;
-              const showReplyButton = signedIn && (!isTrainerComment || isPostOwner || isCommentAuthor);
+                  {sortedComments
+                    .filter((c) => !c.parent_id)
+                    .map((c) => {
+                      const trainerLink = !!c.author?.is_trainer;
+                      const cName = c.author?.display_name ?? c.author?.username ?? "user";
+                      const nameNode = (
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          {cName}
+                          {c.author?.is_trainer && (
+                            <BadgeCheck className="h-3 w-3 text-primary" />
+                          )}
+                        </span>
+                      );
 
-              // Get replies for this comment
-              const replies = sortedComments.filter((r) => r.parent_id === c.id);
+                      // PRD: Only post owner can reply to trainer top-level comments
+                      const isTrainerComment = !!c.author?.is_trainer;
+                      const isPostOwner = currentUserId === post.author_id;
+                      const isCommentAuthor = currentUserId === c.author_id;
+                      const showReplyButton = signedIn && (!isTrainerComment || isPostOwner || isCommentAuthor);
 
-              return (
+                      // Get replies for this comment
+                      const replies = sortedComments.filter((r) => r.parent_id === c.id);
+
+                      return (
                 <div key={c.id} className="space-y-2">
                 <div
                   className={`flex gap-3 rounded-md border p-3 text-sm ${
@@ -2262,11 +2279,11 @@ function CommentsDialog({
                     isTrainer={c.author?.is_trainer}
                   />
                   <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 text-xs">
+                  <p className="flex flex-wrap items-center gap-1 text-xs">
                     {trainerLink ? (
                       <Link
                         to="/trainers/$username"
-                        params={{ username: c.author!.username ?? c.author!.user_id }}
+                        params={{ username: c.author!.username ?? c.author_id }}
                         className="hover:underline"
                       >
                         {nameNode}
@@ -2277,8 +2294,33 @@ function CommentsDialog({
                     <span className="text-muted-foreground">
                       · {new Date(c.created_at).toLocaleDateString()}
                     </span>
+                    {c.is_private && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        <Lock className="h-2.5 w-2.5" />
+                        Private
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
+                  {/* Inline media for coaching video responses */}
+                  {c.media_urls && c.media_urls.length > 0 && (
+                    <div className="mt-2 overflow-hidden rounded-lg border border-border">
+                      {/\.(mp4|webm|mov)/i.test(c.media_urls[0]) ? (
+                        <video
+                          src={c.media_urls[0]}
+                          controls
+                          playsInline
+                          className="max-h-72 w-full object-contain bg-black"
+                        />
+                      ) : (
+                        <img
+                          src={c.media_urls[0]}
+                          alt="Coaching media"
+                          className="max-h-72 w-full object-contain"
+                        />
+                      )}
+                    </div>
+                  )}
                   {showReplyButton && (
                     <button
                       type="button"
@@ -2336,7 +2378,7 @@ function CommentsDialog({
                               {rTrainerLink ? (
                                 <Link
                                   to="/trainers/$username"
-                                  params={{ username: r.author!.username ?? r.author!.user_id }}
+                                  params={{ username: r.author!.username ?? r.author_id }}
                                   className="hover:underline"
                                 >
                                   {rNameNode}
@@ -2357,7 +2399,8 @@ function CommentsDialog({
                 )}
                 </div>
               );
-            })
+            })}
+            </>
           )}
                 </div>
               </section>
