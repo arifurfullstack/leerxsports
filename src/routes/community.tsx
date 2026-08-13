@@ -713,7 +713,7 @@ function CommunityPage() {
         </aside>
       </div>
 
-      <ComposerDialog open={composerOpen} onOpenChange={setComposerOpen} />
+      <ComposeCommunityDialog open={composerOpen} onOpenChange={setComposerOpen} />
     </main>
   );
 }
@@ -1245,12 +1245,14 @@ function ReportPostDialog({
   );
 }
 
-function ComposerDialog({
+export function ComposeCommunityDialog({
   open,
   onOpenChange,
+  targetTrainerId,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  targetTrainerId?: string;
 }) {
   const qc = useQueryClient();
   // (SortableAttachment defined below file scope)
@@ -1462,6 +1464,7 @@ function ComposerDialog({
           body: body.trim(),
           hashtags: tags,
           media: mediaUrls,
+          targetTrainerId,
         },
       });
     },

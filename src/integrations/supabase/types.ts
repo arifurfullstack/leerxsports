@@ -171,6 +171,7 @@ export type Database = {
           media: string[]
           respect_count: number
           status: Database["public"]["Enums"]["community_status"]
+          target_trainer_id: string | null
           title: string
           trainer_answered: boolean
           updated_at: string
@@ -187,6 +188,7 @@ export type Database = {
           media?: string[]
           respect_count?: number
           status?: Database["public"]["Enums"]["community_status"]
+          target_trainer_id?: string | null
           title: string
           trainer_answered?: boolean
           updated_at?: string
@@ -203,6 +205,7 @@ export type Database = {
           media?: string[]
           respect_count?: number
           status?: Database["public"]["Enums"]["community_status"]
+          target_trainer_id?: string | null
           title?: string
           trainer_answered?: boolean
           updated_at?: string

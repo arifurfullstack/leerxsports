@@ -182,6 +182,7 @@ const createPostInput = z.object({
   body: z.string().trim().max(4000).default(""),
   hashtags: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
   media: z.array(z.string().url()).max(6).default([]),
+  targetTrainerId: z.string().uuid().optional(),
 });
 
 export const createCommunityPost = createServerFn({ method: "POST" })
@@ -189,6 +190,22 @@ export const createCommunityPost = createServerFn({ method: "POST" })
   .validator((input) => createPostInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    if (data.targetTrainerId) {
+      // Enforce subscriber-only rule for targeted coaching questions
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("subscriber_id", userId)
+        .eq("trainer_id", data.targetTrainerId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (!sub) {
+        throw new Error("You must have an active subscription to this trainer to submit a question.");
+      }
+    }
+
     const { data: row, error } = await supabase
       .from("community_posts")
       .insert({
@@ -198,6 +215,7 @@ export const createCommunityPost = createServerFn({ method: "POST" })
         body: data.body,
         hashtags: data.hashtags,
         media: data.media,
+        target_trainer_id: data.targetTrainerId ?? null,
       })
       .select("id")
       .single();

@@ -80,6 +80,8 @@ export type TrainerCommunityPost = {
   comment_count: number;
   trainer_answered: boolean;
   created_at: string;
+  author_id: string;
+  target_trainer_id: string | null;
 };
 
 export type DiscoveryPost = Post & {
@@ -671,13 +673,13 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       };
     });
 
-    // Community threads authored by this trainer.
+    // Community threads authored by this trainer or targeted at this trainer.
     const { data: comm, error: cmErr } = await supabase
       .from("community_posts")
       .select(
-        "id, kind, title, body, hashtags, respect_count, comment_count, trainer_answered, created_at",
+        "id, kind, title, body, hashtags, respect_count, comment_count, trainer_answered, created_at, target_trainer_id, author_id",
       )
-      .eq("author_id", profile.user_id)
+      .or(`author_id.eq.${profile.user_id},target_trainer_id.eq.${profile.user_id}`)
       .eq("status", "visible")
       .order("created_at", { ascending: false })
       .limit(24);
@@ -692,6 +694,8 @@ export const getTrainerByUsername = createServerFn({ method: "GET" })
       comment_count: c.comment_count ?? 0,
       trainer_answered: c.trainer_answered ?? false,
       created_at: c.created_at,
+      author_id: c.author_id,
+      target_trainer_id: c.target_trainer_id,
     }));
 
     return {

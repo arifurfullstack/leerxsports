@@ -94,6 +94,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PostTile } from "@/components/post-tile";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
 import { ReportDialog } from "@/components/report-dialog";
+import { ComposeCommunityDialog } from "@/routes/community";
 import { FollowListDialog, type FollowListKind } from "@/components/follow-list-dialog";
 import { TabPanel, TabGridSkeleton } from "@/components/tab-panel";
 import {
@@ -495,6 +496,7 @@ function TrainerProfileInner({
   };
 
   const [activePost, setActivePost] = useState<Post | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -516,15 +518,15 @@ function TrainerProfileInner({
       /* user cancelled */
     }
   };
-  type TabValue = "feed" | "shorts" | "community";
-  const TAB_VALUES: TabValue[] = ["feed", "shorts", "community"];
+  type TabValue = "feed" | "shorts" | "coaching";
+  const TAB_VALUES: TabValue[] = ["feed", "shorts", "coaching"];
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const tab: TabValue = (TAB_VALUES as string[]).includes(search.tab)
     ? (search.tab as TabValue)
     : "feed";
   const setTab = (v: TabValue) => {
-    navigate({
+    router.navigate({
       search: (prev: { tab: string }) => ({ ...prev, tab: v }),
       replace: true,
       resetScroll: false,
@@ -978,7 +980,7 @@ function TrainerProfileInner({
             <TabsTrigger value="shorts" className="font-display uppercase tracking-widest text-xs">
               Shorts
             </TabsTrigger>
-            <TabsTrigger value="community" className="font-display uppercase tracking-widest text-xs">
+            <TabsTrigger value="coaching" className="font-display uppercase tracking-widest text-xs">
               Coaching
             </TabsTrigger>
           </TabsList>
@@ -1012,12 +1014,51 @@ function TrainerProfileInner({
             </TabPanel>
           </TabsContent>
 
-          <TabsContent value="community" className="mt-6">
-            <TabPanel tabKey={`community-${tab === "community"}`}>
+          <TabsContent value="coaching" className="mt-6">
+            <TabPanel tabKey={`coaching-${tab === "coaching"}`}>
+              {signedIn && info?.isSubscribed && (
+                <div className="mb-6 flex items-center justify-between">
+                  <h3 className="font-display text-lg uppercase tracking-tight text-foreground">
+                    Coaching Threads
+                  </h3>
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-premium uppercase tracking-widest text-white shadow-md transition-transform hover:scale-105 active:scale-95"
+                    onClick={() => setComposerOpen(true)}
+                  >
+                    Submit Question
+                  </Button>
+                </div>
+              )}
+              
               <CommunityList
                 posts={t.community_posts}
                 trainerName={t.display_name ?? t.username ?? "Trainer"}
               />
+              
+              {!info?.isSubscribed && t.monetization_enabled && hasEnoughPublicPosts && (
+                <div className="mt-6 rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+                  <Lock className="mx-auto h-6 w-6 text-muted-foreground mb-3" />
+                  <h3 className="font-display text-lg uppercase tracking-tight text-foreground">Subscribe to Unlock Coaching</h3>
+                  <p className="mt-2 text-sm text-muted-foreground mb-4">
+                    Get private workout feedback and direct Q&A access with {t.display_name ?? t.username}.
+                  </p>
+                  <UnlockCheckoutDialog
+                    trainerId={t.user_id}
+                    creatorName={t.display_name ?? t.username ?? "Creator"}
+                    price={t.subscription_price}
+                    avatarUrl={t.avatar_url ?? undefined}
+                    premiumCount={premiumCount}
+                    features={[
+                      "Premium feed and shorts",
+                      "Subscriber coaching",
+                      "Cancel future renewal",
+                    ]}
+                    triggerLabel="Subscribe Now"
+                    triggerClassName="w-full sm:w-auto bg-premium font-semibold uppercase tracking-widest text-white hover:bg-premium/90"
+                  />
+                </div>
+              )}
             </TabPanel>
           </TabsContent>
         </Tabs>
@@ -1028,7 +1069,7 @@ function TrainerProfileInner({
           post={activePost}
           open={!!activePost}
           onOpenChange={(o) => !o && setActivePost(null)}
-          unlockedUrl={
+          lockedMediaUrl={
             activePost.is_premium
               ? unlocked[activePost.id]?.media_url ??
                 unlocked[activePost.id]?.thumbnail_url ??
@@ -1039,6 +1080,13 @@ function TrainerProfileInner({
           isSignedIn={signedIn}
         />
       )}
+      
+      <ComposeCommunityDialog
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        targetTrainerId={t.user_id}
+      />
+      
       <FollowListDialog
         open={followListKind !== null}
         onOpenChange={(o) => !o && setFollowListKind(null)}
