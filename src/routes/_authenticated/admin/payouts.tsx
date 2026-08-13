@@ -4,10 +4,11 @@ import { AdminManagementTable } from "@/components/admin-management-table";
 type Row = {
   id: string;
   trainer_id: string;
-  amount: number | null;
-  currency: string | null;
-  status: string | null;
-  method: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  method: string;
+  requested_at: string;
   created_at: string;
 };
 
@@ -18,34 +19,49 @@ export const Route = createFileRoute("/_authenticated/admin/payouts")({
       title="Payouts"
       subtitle="Trainer payout requests and their status."
       table="payouts"
-      select="id, trainer_id, amount, currency, status, method, created_at"
-      searchColumn="trainer_id"
+      select="id, trainer_id, amount, currency, status, method, requested_at, created_at"
+      orderBy="requested_at"
+      searchColumn="status"
       filters={[
         {
           column: "status",
           label: "Status",
           options: [
-            { label: "Pending", value: "pending" },
+            { label: "Requested", value: "requested" },
             { label: "Approved", value: "approved" },
             { label: "Paid", value: "paid" },
             { label: "Rejected", value: "rejected" },
+            { label: "Cancelled", value: "cancelled" },
+          ],
+        },
+        {
+          column: "method",
+          label: "Method",
+          options: [
+            { label: "Stripe", value: "stripe" },
+            { label: "Bank", value: "bank" },
+            { label: "PayPal", value: "paypal" },
+            { label: "Other", value: "other" },
           ],
         },
       ]}
       columns={[
-        { key: "trainer_id", label: "Trainer" },
+        {
+          key: "trainer_id",
+          label: "Trainer",
+          render: (r) => r.trainer_id.slice(0, 8) + "…",
+        },
         {
           key: "amount",
           label: "Amount",
-          render: (r) =>
-            r.amount != null ? `${r.amount} ${r.currency ?? ""}` : "—",
+          render: (r) => `$${Number(r.amount).toFixed(2)} ${r.currency}`,
         },
-        { key: "method", label: "Method", render: (r) => r.method ?? "—" },
-        { key: "status", label: "Status", render: (r) => r.status ?? "—" },
+        { key: "method", label: "Method" },
+        { key: "status", label: "Status" },
         {
-          key: "created_at",
-          label: "Created",
-          render: (r) => new Date(r.created_at).toLocaleDateString(),
+          key: "requested_at",
+          label: "Requested",
+          render: (r) => new Date(r.requested_at).toLocaleDateString(),
         },
       ]}
     />

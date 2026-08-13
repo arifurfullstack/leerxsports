@@ -5,12 +5,14 @@ import { adminUpdateRow } from "@/lib/admin-management-functions";
 
 type Row = {
   id: string;
-  user_id: string | null;
+  payer_id: string | null;
   trainer_id: string | null;
-  kind: string | null;
-  status: string | null;
-  amount_cents: number | null;
-  currency: string | null;
+  kind: string;
+  status: string;
+  gross: number;
+  platform_fee: number;
+  trainer_amount: number;
+  currency: string;
   created_at: string;
 };
 
@@ -21,7 +23,7 @@ function TxPage() {
       title="Transactions"
       subtitle="Payments, tips, and payouts. Mark refunded to reverse a payment."
       table="transactions"
-      select="id, user_id, trainer_id, kind, status, amount_cents, currency, created_at"
+      select="id, payer_id, trainer_id, kind, status, gross, platform_fee, trainer_amount, currency, created_at"
       searchColumn="kind"
       allowDelete={false}
       filters={[
@@ -33,6 +35,7 @@ function TxPage() {
             { label: "Pending", value: "pending" },
             { label: "Refunded", value: "refunded" },
             { label: "Failed", value: "failed" },
+            { label: "Frozen", value: "frozen" },
           ],
         },
         {
@@ -41,8 +44,8 @@ function TxPage() {
           options: [
             { label: "Subscription", value: "subscription" },
             { label: "Tip", value: "tip" },
-            { label: "Coaching", value: "coaching" },
-            { label: "Payout", value: "payout" },
+            { label: "Refund", value: "refund" },
+            { label: "Adjustment", value: "adjustment" },
           ],
         },
       ]}
@@ -62,15 +65,17 @@ function TxPage() {
         },
       ]}
       columns={[
-        { key: "kind", label: "Kind", render: (r) => r.kind ?? "—" },
-        { key: "status", label: "Status", render: (r) => r.status ?? "—" },
+        { key: "kind", label: "Kind", render: (r) => r.kind },
+        { key: "status", label: "Status" },
         {
-          key: "amount_cents",
-          label: "Amount",
-          render: (r) =>
-            r.amount_cents != null
-              ? `${(r.amount_cents / 100).toFixed(2)} ${r.currency ?? ""}`
-              : "—",
+          key: "gross",
+          label: "Gross",
+          render: (r) => `$${Number(r.gross).toFixed(2)} ${r.currency}`,
+        },
+        {
+          key: "trainer_amount",
+          label: "Trainer Gets",
+          render: (r) => `$${Number(r.trainer_amount).toFixed(2)}`,
         },
         {
           key: "created_at",
