@@ -101,8 +101,10 @@ export function AdminManagementTable<T extends { id?: string; is_demo?: boolean 
 
   async function handleDelete(row: T) {
     if (!confirm("Delete this row? This cannot be undone.")) return;
+    const rowId = row.id ?? (row as any).trainer_id;
+    if (!rowId) return;
     try {
-      await deleteFn({ data: { table, id: row.id } });
+      await deleteFn({ data: { table, id: String(rowId) } });
       toast.success("Deleted");
       refetch();
     } catch (e) {
@@ -112,12 +114,14 @@ export function AdminManagementTable<T extends { id?: string; is_demo?: boolean 
 
   async function handleToggle(row: T) {
     if (!hideToggleColumn) return;
+    const rowId = row.id ?? (row as any).trainer_id;
+    if (!rowId) return;
     const cur = (row as any)[hideToggleColumn.column];
     const next =
       cur === hideToggleColumn.on ? hideToggleColumn.off : hideToggleColumn.on;
     try {
       await updateFn({
-        data: { table, id: row.id, patch: { [hideToggleColumn.column]: next } },
+        data: { table, id: String(rowId), patch: { [hideToggleColumn.column]: next } },
       });
       toast.success("Updated");
       refetch();

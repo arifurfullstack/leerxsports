@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminManagementTable } from "@/components/admin-management-table";
 
 type Row = {
+  id?: string;
   trainer_id: string;
   available_amount: number;
   pending_amount: number;
