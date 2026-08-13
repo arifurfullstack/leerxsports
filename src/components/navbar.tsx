@@ -290,7 +290,8 @@ export function Navbar() {
   };
 
   const isTrainer = !!trainerStatusQuery.data?.isApproved;
-  const isCreatorMode = isTrainer || mode === "creator";
+  // For trainers: respect mode switcher (trainer or creator). For non-trainers: always athlete.
+  const isCreatorMode = isTrainer ? mode === "creator" : false;
   const primary = getPrimaryLinks(!!user, isCreatorMode);
   const secondary = getSecondaryLinks(!!user);
   const initials = initialsFrom(user);
@@ -405,34 +406,47 @@ export function Navbar() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`inline-block h-2 w-2 rounded-full ${trainerStatusQuery.data?.isPending ? "bg-amber-500 animate-pulse" : isCreatorMode ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
+                        <span className={`inline-block h-2 w-2 rounded-full ${
+                          trainerStatusQuery.data?.isPending
+                            ? "bg-amber-400 animate-pulse"
+                            : isCreatorMode
+                              ? "bg-amber-500 animate-pulse"
+                              : isTrainer
+                                ? "bg-blue-500"
+                                : "bg-emerald-500"
+                        }`} />
                         <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {isTrainer ? "Trainer Profile" : trainerStatusQuery.data?.isPending ? "Trainer Application Pending" : mode === "creator" ? "Creator Profile" : "Athlete Profile"}
+                          {trainerStatusQuery.data?.isPending
+                            ? "Trainer Application Pending"
+                            : isTrainer
+                              ? isCreatorMode ? "Creator Mode" : "Trainer Mode"
+                              : "Athlete Profile"}
                         </p>
                       </div>
                     </div>
                   </DropdownMenuLabel>
 
-                  {/* Mode Switcher Segmented Control — only for non-trainers */}
-                  {!isTrainer && (
+                  {/* Mode Switcher — only for approved trainers: Trainer ↔ Creator */}
+                  {isTrainer && (
                     <div className="mx-2 my-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+                      <p className="mb-1 px-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Switch View</p>
                       <div className="grid grid-cols-2 gap-1 rounded-md border border-hairline bg-background/80 p-0.5">
                         <button
                           type="button"
                           onClick={() => switchMode("normal")}
                           className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                            mode === "normal"
-                              ? "bg-primary text-primary-foreground shadow-sm"
+                            !isCreatorMode
+                              ? "bg-blue-600 text-white shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <UserIcon className="h-3 w-3" /> Athlete
+                          <Dumbbell className="h-3 w-3" /> Trainer
                         </button>
                         <button
                           type="button"
                           onClick={() => switchMode("creator")}
                           className={`flex items-center justify-center gap-1 rounded py-1 text-xs font-semibold transition-all ${
-                            mode === "creator"
+                            isCreatorMode
                               ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
@@ -442,6 +456,8 @@ export function Navbar() {
                       </div>
                     </div>
                   )}
+
+                  {/* Trainees: no switcher, role is fixed as Athlete */}
 
                   <DropdownMenuSeparator />
 
@@ -482,7 +498,24 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
 
-                  {mode === "normal" ? (
+                  {isCreatorMode ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-amber-500">
+                        Creator Studio
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to="/creator/dashboard" className="flex w-full items-center">
+                          <LineChart className="mr-2 h-4 w-4 text-amber-500" /> Earnings &amp; Payouts
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/qa" className="flex w-full items-center">
+                          <HelpCircle className="mr-2 h-4 w-4 text-premium" /> Q&amp;A Inbox
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -496,18 +529,6 @@ export function Navbar() {
                       <DropdownMenuItem asChild>
                         <Link to="/qa" className="flex w-full items-center">
                           <HelpCircle className="mr-2 h-4 w-4 text-premium" /> Paid Q&amp;A Inbox
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-amber-500">
-                        Creator Studio
-                      </DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link to="/creator/dashboard" className="flex w-full items-center">
-                          <LineChart className="mr-2 h-4 w-4 text-amber-500" /> Earnings &amp; Payouts
                         </Link>
                       </DropdownMenuItem>
                     </>
