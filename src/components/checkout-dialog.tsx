@@ -38,7 +38,7 @@ const PLANS: PlanOption[] = [
     title: "Creator Subscription",
     tagline: "Choose a trainer to unlock their complete premium experience.",
     amount: 15,
-    cadence: "typical monthly price",
+    cadence: "set by creator ($5–$50/mo)",
     features: ["Premium feed and shorts", "Subscriber coaching", "Cancel future renewal"],
   },
   {
@@ -127,7 +127,7 @@ export function CheckoutDialog({
             >
               <span className="block text-sm font-semibold">{option.title}</span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                From ${option.amount.toFixed(2)}
+                {option.id === "subscription" ? "$5.00 – $50.00/mo" : `From $${option.amount.toFixed(2)}`}
               </span>
             </button>
           ))}
@@ -140,7 +140,9 @@ export function CheckoutDialog({
               <p className="mt-1 max-w-md text-sm text-muted-foreground">{plan.tagline}</p>
             </div>
             <div className="text-right">
-              <p className="font-display text-3xl">${plan.amount.toFixed(2)}</p>
+              <p className="font-display text-3xl">
+                {plan.id === "subscription" && !assumptions ? "$5–$50" : `$${plan.amount.toFixed(2)}`}
+              </p>
               <p className="text-xs text-muted-foreground">{plan.cadence}</p>
             </div>
           </div>
