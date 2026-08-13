@@ -32,6 +32,8 @@ import { toggleFollow, getFollowingIds } from "@/lib/subscription-functions";
 import { toggleSave } from "@/lib/engagement-functions";
 import { openAuthGate } from "@/lib/auth-gate";
 import { ResponsiveImage } from "@/components/responsive-image";
+import { NewContentBadge } from "@/components/new-content-badge";
+import { markPostAsSeen } from "@/lib/fresh-content-tracker";
 import { SignInBanner } from "@/components/sign-in-banner";
 import { Button } from "@/components/ui/button";
 import {
@@ -507,6 +509,7 @@ function ExploreTile({
     <Link
       to="/trainers/$username"
       params={{ username: post.trainer.username ?? post.trainer.user_id }}
+      onClick={() => markPostAsSeen(post.id)}
       className="group relative block overflow-hidden rounded-lg border border-border bg-card"
     >
       <div className="relative aspect-square w-full bg-muted">
@@ -530,8 +533,11 @@ function ExploreTile({
           </div>
         )}
 
+        {/* Fresh Content Neon Indicator */}
+        <NewContentBadge postId={post.id} createdAt={post.created_at} className="absolute left-2 top-2 z-10" />
+
         {isShort && (
-          <div className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white backdrop-blur">
+          <div className="absolute left-2 bottom-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white backdrop-blur">
             Reel
           </div>
         )}

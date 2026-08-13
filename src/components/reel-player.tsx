@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "@tanstack/react-router";
 
+import { markPostAsSeen } from "@/lib/fresh-content-tracker";
+
 export interface ReelItem {
   id: string;
   media_url: string;
@@ -152,12 +154,15 @@ export function ReelPlayer({
     setProgress(0);
     setDuration(0);
     setHoverProgress(null);
+    if (reel?.id) {
+      markPostAsSeen(reel.id);
+    }
     const v = videoRef.current;
     if (v) {
       v.currentTime = 0;
       v.play().catch(() => {});
     }
-  }, [index, open]);
+  }, [index, open, reel?.id]);
 
   // Play/pause sync
   useEffect(() => {

@@ -29,6 +29,8 @@ import { ResponsiveImage } from "@/components/responsive-image";
 import { VideoPlayer } from "@/components/video-player";
 import { ShareSheet } from "@/components/share-sheet";
 import { TranslateToggle } from "@/components/translate-toggle";
+import { NewContentBadge, NewContentAvatarRing } from "@/components/new-content-badge";
+import { markPostAsSeen } from "@/lib/fresh-content-tracker";
 import type { getDiscoveryFeed } from "@/lib/trainer-functions";
 
 type FeedPost = Awaited<ReturnType<typeof getDiscoveryFeed>>[number];
@@ -370,25 +372,25 @@ export function InstaFeedCard({
         <Link
           to="/trainers/$username"
           params={{ username: trainerHref }}
-          className="relative shrink-0"
           aria-label={`View ${displayName}'s profile`}
+          className="shrink-0"
+          onClick={() => markPostAsSeen(post.id)}
         >
-          <span className="absolute -inset-[2px] rounded-full bg-gradient-to-tr from-primary via-accent to-primary opacity-90" />
-          <span className="relative block h-10 w-10 overflow-hidden rounded-full bg-muted ring-2 ring-background">
-            {post.trainer.avatar_url ? (
-              <img
-                src={post.trainer.avatar_url}
-                alt=""
-                loading="lazy"
-                width={40}
-                height={40}
-                decoding="async"
-                className="h-full w-full object-cover object-center [aspect-ratio:1/1]"
-              />
-            ) : (
-              <div className="h-full w-full bg-gradient-to-br from-primary/40 to-accent/40" />
-            )}
-          </span>
+          <NewContentAvatarRing postId={post.id} createdAt={post.created_at}>
+            <span className="relative flex h-9 w-9 overflow-hidden rounded-full border border-hairline bg-muted">
+              {post.trainer.avatar_url ? (
+                <img
+                  src={post.trainer.avatar_url}
+                  alt={displayName}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover object-center [aspect-ratio:1/1]"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/40 to-accent/40" />
+              )}
+            </span>
+          </NewContentAvatarRing>
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -409,6 +411,7 @@ export function InstaFeedCard({
             <span className="text-xs text-muted-foreground">
               {formatRelative(post.created_at)}
             </span>
+            <NewContentBadge postId={post.id} createdAt={post.created_at} />
           </div>
           {post.trainer.display_name && handle ? (
             <p className="truncate text-xs text-muted-foreground">
