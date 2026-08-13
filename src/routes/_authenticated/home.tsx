@@ -753,16 +753,16 @@ function LeftSidebar({
                         : "gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold",
                       active
                         ? rail
-                          ? "bg-primary/15 text-primary"
-                          : "bg-primary/10 text-primary"
-                        : "text-foreground/75 hover:bg-muted/60 hover:text-foreground",
+                          ? "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_15px_-3px_rgba(239,68,68,0.4)]"
+                          : "bg-gradient-to-r from-red-600/20 via-red-600/10 to-transparent border-l-2 border-red-500 text-red-400 font-extrabold shadow-[0_0_20px_-5px_rgba(239,68,68,0.25)]"
+                        : "text-foreground/75 hover:bg-neutral-900/60 hover:text-foreground hover:translate-x-0.5 transition-all",
                     )}
                   >
                     {active && (
                       <span
                         aria-hidden="true"
                         className={cn(
-                          "absolute rounded-full bg-primary shadow-[0_0_12px_2px_hsl(var(--primary)/0.5)]",
+                          "absolute rounded-full bg-red-500 shadow-[0_0_12px_2px_rgba(239,68,68,0.8)]",
                           rail ? "left-0 top-1/2 h-6 w-[3px] -translate-y-1/2" : "left-0 top-1/2 h-6 w-[3px] -translate-x-1 -translate-y-1/2",
                         )}
                       />
