@@ -7,9 +7,9 @@ type Row = {
   id: string;
   subscriber_id: string;
   trainer_id: string;
-  status: string | null;
-  price_cents: number | null;
-  current_period_end: string | null;
+  status: string;
+  price: number;
+  current_period_end: string;
   created_at: string;
 };
 
@@ -20,7 +20,7 @@ function SubsPage() {
       title="Subscriptions"
       subtitle="Trainee→trainer subscription state. Cancel to end access immediately."
       table="subscriptions"
-      select="id, subscriber_id, trainer_id, status, price_cents, current_period_end, created_at"
+      select="id, subscriber_id, trainer_id, status, price, current_period_end, created_at"
       searchColumn="status"
       allowDelete={false}
       filters={[
@@ -31,6 +31,7 @@ function SubsPage() {
             { label: "Active", value: "active" },
             { label: "Canceled", value: "canceled" },
             { label: "Past due", value: "past_due" },
+            { label: "Expired", value: "expired" },
           ],
         },
       ]}
@@ -50,16 +51,15 @@ function SubsPage() {
         },
       ]}
       columns={[
-        { key: "status", label: "Status", render: (r) => r.status ?? "—" },
+        { key: "status", label: "Status" },
         {
-          key: "price_cents",
+          key: "price",
           label: "Price",
-          render: (r) =>
-            r.price_cents != null ? `$${(r.price_cents / 100).toFixed(2)}` : "—",
+          render: (r) => `$${Number(r.price).toFixed(2)}/mo`,
         },
         {
           key: "current_period_end",
-          label: "Period end",
+          label: "Period End",
           render: (r) =>
             r.current_period_end
               ? new Date(r.current_period_end).toLocaleDateString()

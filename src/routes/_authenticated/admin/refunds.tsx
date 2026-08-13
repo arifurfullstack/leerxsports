@@ -3,11 +3,11 @@ import { AdminManagementTable } from "@/components/admin-management-table";
 
 type Row = {
   id: string;
-  user_id: string | null;
-  amount: number | null;
-  currency: string | null;
-  status: string | null;
-  kind: string | null;
+  payer_id: string | null;
+  gross: number;
+  currency: string;
+  status: string;
+  kind: string;
   created_at: string;
 };
 
@@ -18,28 +18,31 @@ export const Route = createFileRoute("/_authenticated/admin/refunds")({
       title="Refunds"
       subtitle="Transactions with a refunded status."
       table="transactions"
-      select="id, user_id, amount, currency, status, kind, created_at"
-      searchColumn="user_id"
+      select="id, payer_id, gross, currency, status, kind, created_at"
+      searchColumn="kind"
       filters={[
         {
           column: "status",
           label: "Status",
           options: [
             { label: "Refunded", value: "refunded" },
-            { label: "Partially refunded", value: "partial_refund" },
+            { label: "Succeeded", value: "succeeded" },
           ],
         },
       ]}
       columns={[
-        { key: "user_id", label: "User", render: (r) => r.user_id ?? "—" },
         {
-          key: "amount",
-          label: "Amount",
-          render: (r) =>
-            r.amount != null ? `${r.amount} ${r.currency ?? ""}` : "—",
+          key: "payer_id",
+          label: "Payer",
+          render: (r) => (r.payer_id ? r.payer_id.slice(0, 8) + "…" : "—"),
         },
-        { key: "kind", label: "Kind", render: (r) => r.kind ?? "—" },
-        { key: "status", label: "Status", render: (r) => r.status ?? "—" },
+        {
+          key: "gross",
+          label: "Amount",
+          render: (r) => `$${Number(r.gross).toFixed(2)} ${r.currency}`,
+        },
+        { key: "kind", label: "Kind", render: (r) => r.kind },
+        { key: "status", label: "Status", render: (r) => r.status },
         {
           key: "created_at",
           label: "Created",

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 
 async function requireAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
@@ -23,7 +24,7 @@ export type UserRow = {
 };
 
 export const adminSearchUsers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { query: string }) => ({ query: (d?.query ?? "").trim() }))
   .handler(async ({ data, context }): Promise<UserRow[]> => {
     await requireAdmin(context);
@@ -129,7 +130,7 @@ export const adminSearchUsers = createServerFn({ method: "POST" })
   });
 
 export const adminPromoteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { userId: string }) => {
     if (!d?.userId) throw new Error("userId required");
     return { userId: d.userId };
@@ -148,7 +149,7 @@ export const adminPromoteUser = createServerFn({ method: "POST" })
   });
 
 export const adminListAdmins = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }): Promise<UserRow[]> => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -212,7 +213,7 @@ export function assertCannotDemoteSelf(
 }
 
 export const adminDemoteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { userId: string }) => {
     if (!d?.userId) throw new Error("userId required");
     return { userId: d.userId };
@@ -248,7 +249,7 @@ export type AdminEditUserInput = {
 const ALLOWED_ROLES = new Set(["admin", "trainer", "trainee", "moderator"]);
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: AdminEditUserInput) => {
     if (!d?.userId) throw new Error("userId required");
     if (d.email && !/^\S+@\S+\.\S+$/.test(d.email)) throw new Error("Invalid email");
@@ -339,7 +340,7 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { userId: string }) => {
     if (!d?.userId) throw new Error("userId required");
     return { userId: d.userId };
@@ -381,7 +382,7 @@ function randomPassword(len = 14) {
 }
 
 export const adminBulkUserAction = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((d: { userIds: string[]; action: BulkAction; role?: string }) => {
     if (!Array.isArray(d?.userIds) || d.userIds.length === 0) {
       throw new Error("Select at least one user");

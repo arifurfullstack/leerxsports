@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-bearer";
 
 export const REPORT_TARGETS = [
   "post",
@@ -121,7 +122,7 @@ async function requireAdmin(context: { supabase: any; userId: string }) {
 }
 
 export const adminListReports = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }): Promise<ReportRow[]> => {
     await requireAdmin(context);
     const { data, error } = await context.supabase
@@ -136,7 +137,7 @@ export const adminListReports = createServerFn({ method: "GET" })
   });
 
 export const adminHideTarget = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input) =>
     z
       .object({
@@ -164,7 +165,7 @@ export const adminHideTarget = createServerFn({ method: "POST" })
       } else {
         await supabaseAdmin
           .from("posts")
-          .update({ is_hidden: setState === true })
+          .update({ is_published: setState !== true })
           .eq("id", data.target_id);
       }
     } else if (data.target_type === "transformation") {
@@ -173,7 +174,7 @@ export const adminHideTarget = createServerFn({ method: "POST" })
       } else {
         await supabaseAdmin
           .from("transformation_posts")
-          .update({ is_hidden: setState === true })
+          .update({ visibility: setState ? "private" : "public" })
           .eq("id", data.target_id);
       }
     } else if (data.target_type === "community_post") {
@@ -226,7 +227,7 @@ export const adminHideTarget = createServerFn({ method: "POST" })
   });
 
 export const adminResolveReport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input) =>
     z
       .object({
@@ -254,7 +255,7 @@ export const adminResolveReport = createServerFn({ method: "POST" })
 
 /** Trainer strike: hidden yellow card. Auto-triggers ban prompt at 3 active. */
 export const adminIssueStrike = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input) =>
     z
       .object({
@@ -291,7 +292,7 @@ export const adminIssueStrike = createServerFn({ method: "POST" })
   });
 
 export const adminListStrikes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { data, error } = await context.supabase
@@ -304,7 +305,7 @@ export const adminListStrikes = createServerFn({ method: "GET" })
   });
 
 export const adminRevokeStrike = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
