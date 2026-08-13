@@ -73,6 +73,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { TranslateToggle } from "@/components/translate-toggle";
 import {
   addCommunityComment,
   createCommunityPost,
@@ -2124,9 +2125,12 @@ function CommentsDialog({
                 {post.title}
               </h2>
               {post.body && (
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-                  {post.body}
-                </p>
+                <>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                    {post.body}
+                  </p>
+                  <TranslateToggle text={post.body} />
+                </>
               )}
               {post.hashtags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
@@ -2320,6 +2324,7 @@ function CommentsDialog({
                     )}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
+                  <TranslateToggle text={c.body} />
                   {/* Inline media for coaching video responses with frame-by-frame analysis */}
                   {c.media_urls && c.media_urls.length > 0 && (
                     <div className="mt-2 overflow-hidden rounded-lg">

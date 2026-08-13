@@ -28,6 +28,7 @@ import {
 import { ResponsiveImage } from "@/components/responsive-image";
 import { VideoPlayer } from "@/components/video-player";
 import { ShareSheet } from "@/components/share-sheet";
+import { TranslateToggle } from "@/components/translate-toggle";
 import type { getDiscoveryFeed } from "@/lib/trainer-functions";
 
 type FeedPost = Awaited<ReturnType<typeof getDiscoveryFeed>>[number];
@@ -625,6 +626,7 @@ export function InstaFeedCard({
                 more
               </button>
             ) : null}
+            <TranslateToggle text={caption} />
           </p>
         ) : null}
         {(post.comment_count ?? 0) > 0 ? (

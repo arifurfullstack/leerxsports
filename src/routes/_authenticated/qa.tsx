@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SLACountdown from "@/components/sla-countdown";
+import { TranslateToggle } from "@/components/translate-toggle";
 import {
   answerQADispatch,
   submitQAFollowup,
@@ -164,11 +165,13 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
         <Meta d={d} />
       </div>
       <p className="whitespace-pre-wrap text-sm">{d.question}</p>
+      <TranslateToggle text={d.question} />
       
       {d.answer && (
         <div className="mt-4 rounded-md border-l-2 border-premium bg-muted/30 p-3 text-sm">
           <div className="mb-1 text-xs uppercase tracking-widest text-premium">Your Primary Feedback</div>
           <p className="whitespace-pre-wrap">{d.answer}</p>
+          <TranslateToggle text={d.answer} />
         </div>
       )}
 
@@ -178,6 +181,7 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
             Trainee Follow-Up Question (Final Reply Allowed)
           </div>
           <p className="whitespace-pre-wrap">{d.followup_question}</p>
+          <TranslateToggle text={d.followup_question} />
         </div>
       )}
 
@@ -187,6 +191,7 @@ function ReceivedCard({ d, onAnswered }: { d: QADispatch; onAnswered: () => void
             Your Final Response
           </div>
           <p className="whitespace-pre-wrap">{d.followup_answer}</p>
+          <TranslateToggle text={d.followup_answer} />
         </div>
       )}
 
@@ -243,11 +248,13 @@ function SentCard({ d, onFollowupSent }: { d: QADispatch; onFollowupSent: () => 
         <Meta d={d} />
       </div>
       <p className="whitespace-pre-wrap text-sm">{d.question}</p>
+      <TranslateToggle text={d.question} />
       
       {d.answer && (
         <div className="mt-4 rounded-md border-l-2 border-premium bg-muted/30 p-3 text-sm">
           <div className="mb-1 text-xs uppercase tracking-widest text-premium">Trainer Feedback</div>
           <p className="whitespace-pre-wrap">{d.answer}</p>
+          <TranslateToggle text={d.answer} />
         </div>
       )}
 

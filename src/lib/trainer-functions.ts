@@ -393,7 +393,7 @@ export const listTrainers = createServerFn({ method: "GET" }).handler(
 
     const { data: profiles, error: pErr } = await supabase
       .from("profiles")
-      .select("user_id, username, display_name, avatar_url, cover_url, country, bio")
+      .select("user_id, username, display_name, avatar_url, cover_url, country, bio, native_language, additional_languages")
       .in("user_id", trainerIds);
     if (pErr) throw new Error(pErr.message);
 
@@ -407,6 +407,8 @@ export const listTrainers = createServerFn({ method: "GET" }).handler(
         avatar_url: p?.avatar_url ?? null,
         cover_url: p?.cover_url ?? null,
         country: p?.country ?? null,
+        native_language: p?.native_language ?? null,
+        additional_languages: p?.additional_languages ?? [],
         bio: p?.bio ?? null,
         specialties: t.specialties ?? [],
         subscription_price: Number(t.subscription_price ?? 0),
