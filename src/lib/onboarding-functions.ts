@@ -97,15 +97,26 @@ export const getOnboardingState = createServerFn({ method: "GET" })
       .filter((r): r is { success: true; data: AppRole } => r.success)
       .map((r) => r.data);
 
+    const profileData = profileRes.data ?? null;
+
     return {
       userId,
       roles,
       isAdmin: roles.includes("admin"),
       isTrainer: roles.includes("trainer"),
       isTrainee: roles.includes("trainee") || roles.includes("user"),
-      profile: profileRes.data ?? null,
+      profile: profileData ?? {
+        username: null,
+        display_name: null,
+        full_name: null,
+        avatar_url: null,
+        avatar_urls: null,
+        country: null,
+        native_language: null,
+        onboarding_completed: false,
+      },
       userMetadata: userRes.data?.user?.user_metadata ?? null,
-      onboardingCompleted: !!profileRes.data?.onboarding_completed,
+      onboardingCompleted: !!profileData?.onboarding_completed,
       trainerApplication: appRes.data ?? null,
     };
   });

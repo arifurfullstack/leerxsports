@@ -196,16 +196,16 @@ function OnboardingPage() {
   const { data: state } = useSuspenseQuery(onboardingQuery);
   const search = useSearch({ from: "/_authenticated/onboarding" });
   const resume = !!search.resume;
-  const profileIncomplete = !state.profile?.username || !state.profile?.display_name;
+  const profileIncomplete = !state?.profile?.username || !state?.profile?.display_name;
 
   const logResume = useServerFn(logOnboardingResumed);
   const loggedRef = useRef(false);
   useEffect(() => {
-    if (loggedRef.current) return;
+    if (loggedRef.current || !state) return;
     // Only log a genuine resume: user has been through onboarding before
     // (onboarding_completed) or explicitly clicked a resume entry point.
     const isResume =
-      resume || (state.onboardingCompleted && profileIncomplete);
+      resume || (state?.onboardingCompleted && profileIncomplete);
     if (!isResume) return;
     loggedRef.current = true;
     const source = search.source
@@ -215,10 +215,10 @@ function OnboardingPage() {
         : "profile_incomplete";
     // Fire-and-forget; don't block UI on logging.
     logResume({ data: { source } }).catch(() => { /* ignore */ });
-  }, [resume, profileIncomplete, state.onboardingCompleted, search.source, logResume]);
+  }, [resume, profileIncomplete, state?.onboardingCompleted, search.source, logResume, state]);
 
-  const selectedRole = state.userMetadata?.selected_role;
-  const initialStep: Step = state.trainerApplication
+  const selectedRole = state?.userMetadata?.selected_role;
+  const initialStep: Step = state?.trainerApplication
     ? "pending"
     : selectedRole === "trainer"
       ? "trainer"
@@ -227,7 +227,7 @@ function OnboardingPage() {
         : "role";
   const [step, setStep] = useState<Step>(initialStep);
 
-  if (state.onboardingCompleted && !state.trainerApplication && !resume && !profileIncomplete) {
+  if (state?.onboardingCompleted && !state?.trainerApplication && !resume && !profileIncomplete) {
     // Already onboarded as trainee — nudge to dashboard
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
@@ -254,7 +254,7 @@ function OnboardingPage() {
     <div className="min-h-[calc(100vh-4rem)] bg-background py-12">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <OnboardingStepper current={stepperCurrent} kind={stepperKind} />
-        {(resume || profileIncomplete) && step === "role" && !state.trainerApplication && (
+        {(resume || profileIncomplete) && step === "role" && !state?.trainerApplication && (
           <div className="mb-6 rounded-lg border border-primary/40 bg-primary/5 p-4 text-sm">
             <p className="font-display uppercase tracking-widest text-xs text-primary">Resume onboarding</p>
             <p className="mt-1 text-muted-foreground">
@@ -263,16 +263,16 @@ function OnboardingPage() {
           </div>
         )}
         {step === "role" && <RoleStep onPick={setStep} />}
-        {step === "trainee" && <TraineeForm onBack={() => setStep("role")} profile={state.profile} />}
+        {step === "trainee" && <TraineeForm onBack={() => setStep("role")} profile={state?.profile} />}
         {step === "trainer" && (
           <TrainerForm
             onBack={() => setStep("role")}
             onSubmitted={() => setStep("pending")}
-            profile={state.profile}
-            prior={state.trainerApplication}
+            profile={state?.profile}
+            prior={state?.trainerApplication}
           />
         )}
-        {step === "pending" && <PendingApplication application={state.trainerApplication} />}
+        {step === "pending" && <PendingApplication application={state?.trainerApplication} />}
       </div>
     </div>
   );
