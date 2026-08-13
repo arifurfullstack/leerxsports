@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -592,9 +593,14 @@ export function AuthForm({
               </Select>
             </div>
 
-            <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-sm mt-4">
-              <input type="checkbox" required checked={traineeData.agreement_accepted} onChange={(e) => setTraineeData({...traineeData, agreement_accepted: e.target.checked})} className="mt-1 h-4 w-4 accent-[var(--sport)]" />
-              <span className="text-xs">
+            <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-[#1a1a1a]/60 backdrop-blur-md p-4 text-sm mt-4 cursor-pointer hover:border-white/20 transition-all group">
+              <Checkbox
+                id="agreement_accepted"
+                checked={traineeData.agreement_accepted}
+                onCheckedChange={(checked) => setTraineeData({ ...traineeData, agreement_accepted: checked === true })}
+                className="mt-0.5"
+              />
+              <span className="text-xs text-white/80 group-hover:text-white transition-colors leading-relaxed select-none">
                 I accept the LEER Sports Trainee Agreement, including community rules, content policy, and payment terms.
               </span>
             </label>
