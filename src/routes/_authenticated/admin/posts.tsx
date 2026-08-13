@@ -3,13 +3,14 @@ import { AdminManagementTable } from "@/components/admin-management-table";
 
 type Row = {
   id: string;
-  author_id: string;
+  trainer_id: string;
   caption: string | null;
-  is_hidden: boolean | null;
-  respect_count: number | null;
-  comment_count: number | null;
+  kind: string;
+  is_premium: boolean;
+  is_published: boolean;
+  respect_count: number;
+  view_count: number;
   created_at: string;
-  is_demo: boolean | null;
 };
 
 export const Route = createFileRoute("/_authenticated/admin/posts")({
@@ -19,27 +20,41 @@ export const Route = createFileRoute("/_authenticated/admin/posts")({
       title="Posts"
       subtitle="Feed posts across the platform. Hide or delete abusive content."
       table="posts"
-      select="id, author_id, caption, is_hidden, respect_count, comment_count, created_at, is_demo"
+      select="id, trainer_id, caption, kind, is_premium, is_published, respect_count, view_count, created_at"
       searchColumn="caption"
-      hideToggleColumn={{ column: "is_hidden", on: true, off: false }}
+      hideToggleColumn={{ column: "is_published", on: false, off: true, label: "Unpublish" }}
       filters={[
         {
-          column: "is_hidden",
-          label: "Visibility",
+          column: "kind",
+          label: "Type",
           options: [
-            { label: "Visible", value: "false" },
-            { label: "Hidden", value: "true" },
+            { label: "Feed", value: "feed" },
+            { label: "Short", value: "short" },
+          ],
+        },
+        {
+          column: "is_premium",
+          label: "Access",
+          options: [
+            { label: "Free", value: "false" },
+            { label: "Premium", value: "true" },
           ],
         },
       ]}
       columns={[
         { key: "caption", label: "Caption", render: (r) => r.caption ?? "—" },
+        { key: "kind", label: "Type", render: (r) => r.kind.toUpperCase() },
         { key: "respect_count", label: "Respects" },
-        { key: "comment_count", label: "Comments" },
+        { key: "view_count", label: "Views" },
         {
-          key: "is_hidden",
+          key: "is_premium",
+          label: "Access",
+          render: (r) => (r.is_premium ? "Premium" : "Free"),
+        },
+        {
+          key: "is_published",
           label: "Status",
-          render: (r) => (r.is_hidden ? "Hidden" : "Visible"),
+          render: (r) => (r.is_published ? "Published" : "Hidden"),
         },
         {
           key: "created_at",
