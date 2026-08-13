@@ -84,7 +84,7 @@ export const Route = createFileRoute("/u/$username")({
     }
   },
   head: ({ loaderData }) => {
-    const name = loaderData?.display_name ?? loaderData?.username ?? "Athlete";
+    const name = loaderData?.display_name ?? loaderData?.username ?? "Trainee";
     const desc = loaderData?.bio?.slice(0, 155) ??
       `${name}'s LEER Sports fitness journey and body transformation log.`;
     const og = loaderData?.avatar_url ?? loaderData?.cover_url ?? undefined;
@@ -322,7 +322,7 @@ function TraineePage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-                      <Flame className="h-3 w-3" /> Athlete
+                      <Flame className="h-3 w-3" /> Trainee
                     </span>
                     {p.experience_level && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">

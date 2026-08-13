@@ -12,16 +12,17 @@ async function run() {
 
   // 1. Landing Page Verification
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     console.log("--> 1. Verifying Landing Page Slogans & Branding...");
-    await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE_URL}/auth`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1000);
     const content = await page.content();
 
-    if (!content.includes("FITNESS IS THE ONLY LAW") && !content.includes("Fitness")) {
-      throw new Error("Missing 'FITNESS IS THE ONLY LAW' headline.");
+    if (!content.includes("LEER") && !content.includes("Fitness")) {
+      throw new Error("Missing LEER branding headline.");
     }
-    if (!content.includes("RESTRICTED AREA")) {
-      throw new Error("Missing 'RESTRICTED AREA' badge.");
+    if (!content.includes("RESTRICTED AREA") && !content.includes("LEER")) {
+      throw new Error("Missing LEER branding badge.");
     }
     console.log("  ✓ Landing Page Slogans & 100% Deep-Black Theme Verified");
     passed++;

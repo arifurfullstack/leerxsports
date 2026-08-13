@@ -528,8 +528,8 @@ function TrainerProfileInner({
     ? (search.tab as TabValue)
     : "feed";
   const setTab = (v: TabValue) => {
-    router.navigate({
-      search: (prev: { tab: string }) => ({ ...prev, tab: v }),
+    void navigate({
+      search: (prev) => ({ ...prev, tab: v }),
       replace: true,
       resetScroll: false,
     });

@@ -87,7 +87,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 const AVATAR_SIGNED_TTL = 60 * 60 * 24 * 365 * 5; // ~5 years
 
 function ProfilePage() {
-  const { mode, switchMode } = useProfileMode();
+  const { mode, switchMode, isCreator } = useProfileMode();
   const qc = useQueryClient();
   const getFn = useServerFn(getSettings);
   const saveFn = useServerFn(updateProfileSettings);
@@ -124,7 +124,9 @@ function ProfilePage() {
     preferred_language: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const fetchTransformations = useServerFn(listMyTransformations);
@@ -133,6 +135,7 @@ function ProfilePage() {
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"posts" | "shorts" | "transformations">("posts");
+  const coverFileRef = useRef<HTMLInputElement>(null);
 
   const transformationsQ = useQuery({
     queryKey: ["my-transformations"],
@@ -151,7 +154,63 @@ function ProfilePage() {
       preferred_language: profile.preferred_language ?? "",
     });
     setAvatarUrl(profile.avatar_url ?? null);
+    setCoverUrl((profile as any)?.cover_url ?? null);
   }, [profile]);
+
+  async function handleCoverPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file for your cover banner");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Cover banner image must be under 10MB");
+      return;
+    }
+
+    setUploadingCover(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/cover_${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+
+      await saveFn({ data: { cover_url: publicUrl } });
+      setCoverUrl(publicUrl);
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      qc.invalidateQueries({ queryKey: ["navbar-user"] });
+      toast.success("Profile cover banner updated successfully 📸");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload cover banner");
+    } finally {
+      setUploadingCover(false);
+    }
+  }
+
+  async function handleRemoveCover() {
+    setUploadingCover(true);
+    try {
+      await saveFn({ data: { cover_url: null } });
+      setCoverUrl(null);
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      qc.invalidateQueries({ queryKey: ["navbar-user"] });
+      toast.success("Cover banner removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove cover banner");
+    } finally {
+      setUploadingCover(false);
+    }
+  }
 
   // Fetch follow counts
   const countsQ = useQuery({
@@ -351,7 +410,69 @@ function ProfilePage() {
 
   return (
     <main className="min-h-dvh bg-background pb-16">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+        {/* ── Dynamic Responsive Cover Banner Hero ── */}
+        <div className="relative mb-6 overflow-hidden rounded-3xl border border-hairline/80 bg-black/60 shadow-2xl transition-all">
+          <div className="relative h-44 sm:h-60 md:h-72 w-full overflow-hidden bg-gradient-to-r from-neutral-950 via-zinc-900 to-black">
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt="Profile Cover Banner"
+                className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/15 via-primary/10 to-transparent flex items-center justify-center">
+                <div className="text-center opacity-35 select-none">
+                  <p className="font-display text-2xl font-extrabold uppercase tracking-[0.4em] text-foreground sm:text-4xl">LEER SPORTS</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">PRO FITNESS NETWORK</p>
+                </div>
+              </div>
+            )}
+
+            {/* Subtle Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+            {/* Cover Action Toolbar Buttons */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <input
+                ref={coverFileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverPick}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => coverFileRef.current?.click()}
+                disabled={uploadingCover}
+                className="gap-1.5 rounded-xl border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-black/80 hover:scale-105 active:scale-95 shadow-lg"
+              >
+                {uploadingCover ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5 text-amber-400" />
+                )}
+                {coverUrl ? "Change Cover" : "Add Cover Banner"}
+              </Button>
+
+              {coverUrl && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleRemoveCover}
+                  disabled={uploadingCover}
+                  className="h-8 w-8 rounded-xl p-0 border border-white/20 bg-black/60 text-white backdrop-blur-md transition-all hover:bg-red-600/90 hover:scale-105 active:scale-95 shadow-lg"
+                  title="Remove Cover Banner"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Instagram Profile Header */}
         <header className="mb-8 border-b border-hairline pb-8 sm:mb-12 sm:pb-12">
           {/* Desktop & Tablet Layout (sm+) */}
@@ -395,29 +516,29 @@ function ProfilePage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 ml-auto">
-                  {/* Profile Mode Switcher Toolbar Button */}
-                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+                  {/* Profile Mode Switcher Toolbar Button (Visible for all users) */}
+                  <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-neutral-900/80 p-1 shadow-sm">
                     <button
                       type="button"
                       onClick={() => switchMode("normal")}
-                      className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                         mode === "normal"
                           ? "bg-primary text-primary-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <UserIcon className="h-3.5 w-3.5" /> Athlete
+                      <UserIcon className="h-3.5 w-3.5" /> Trainee View
                     </button>
                     <button
                       type="button"
                       onClick={() => switchMode("creator")}
-                      className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                         mode === "creator"
                           ? "bg-amber-500 text-black font-bold shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <Sparkles className="h-3.5 w-3.5" /> Creator
+                      <Sparkles className="h-3.5 w-3.5" /> Trainer Studio
                     </button>
                   </div>
 

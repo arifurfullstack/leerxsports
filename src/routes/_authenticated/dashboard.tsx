@@ -40,6 +40,10 @@ import {
   Rocket,
   ShieldCheck,
   Sparkles,
+  Tag,
+  Globe,
+  Shield,
+  AlertCircle,
 } from "lucide-react";
 import { useProfileMode } from "@/lib/profile-mode-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,7 +100,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function DashboardPage() {
   const { data: state } = useSuspenseQuery(onboardingStateQuery);
-  const { mode, switchMode } = useProfileMode();
+  const { mode, switchMode, isCreator } = useProfileMode();
 
   const profileIncomplete = !state.profile?.username || !state.profile?.display_name;
   const greeting = getGreeting();
@@ -196,29 +200,29 @@ function DashboardPage() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {/* Profile Mode Switcher Toolbar Button */}
-                <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+                {/* Profile Mode Switcher Toolbar Button (Visible for all users) */}
+                <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-neutral-900/80 p-1 shadow-sm">
                   <button
                     type="button"
                     onClick={() => switchMode("normal")}
-                    className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                       mode === "normal"
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <User className="h-3.5 w-3.5" /> Athlete
+                    <User className="h-3.5 w-3.5" /> Trainee View
                   </button>
                   <button
                     type="button"
                     onClick={() => switchMode("creator")}
-                    className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                       mode === "creator"
                         ? "bg-amber-500 text-black font-bold shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Creator
+                    <Sparkles className="h-3.5 w-3.5" /> Trainer Studio
                   </button>
                 </div>
 
@@ -655,13 +659,40 @@ function QuickAction({
   );
 }
 
+const GOAL_CHIPS = [
+  "Hypertrophy & Muscle Gain",
+  "Cut to 10-12% Body Fat",
+  "Build Overall Strength",
+  "Marathon & Endurance",
+  "Body Recomp & Toning",
+];
+
+const PR_TEMPLATES = [
+  "Bench 100kg",
+  "Squat 140kg",
+  "Deadlift 180kg",
+  "Overhead Press 60kg",
+  "5k Run 22:30",
+];
+
+const BIO_PROMPTS = [
+  "Fitness enthusiast on a journey to peak performance.",
+  "Training hard, eating clean, and tracking real transformation.",
+  "Focused on strength gains, progressive overload & consistency.",
+];
+
 function ProfileSettingsCard() {
   const { data: state } = useSuspenseQuery(onboardingStateQuery);
-  const [bio, setBio] = useState<string>(state.profile?.display_name ? "" : "");
-  const [goal, setGoal] = useState("");
-  const [prs, setPrs] = useState("");
-  const [profileVis, setProfileVis] = useState<"public" | "subscribers" | "private">("public");
-  const [txVis, setTxVis] = useState<"public" | "subscribers" | "private">("public");
+  const p = state.profile as any;
+  const [bio, setBio] = useState<string>(p?.bio ?? "");
+  const [goal, setGoal] = useState<string>(p?.goal ?? "");
+  const [prs, setPrs] = useState<string>(p?.personal_records ?? "");
+  const [profileVis, setProfileVis] = useState<"public" | "subscribers" | "private">(
+    (state.profile as any)?.profile_visibility ?? "public"
+  );
+  const [txVis, setTxVis] = useState<"public" | "subscribers" | "private">(
+    (state.profile as any)?.transformation_visibility ?? "public"
+  );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const qc = useQueryClient();
@@ -682,87 +713,236 @@ function ProfileSettingsCard() {
       setSaved(true);
       setError(null);
       qc.invalidateQueries({ queryKey: ["onboarding-state"] });
+      toast.success("Profile & privacy settings updated! ✨");
       setTimeout(() => setSaved(false), 2500);
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => {
+      setError(e.message);
+      toast.error(e.message);
+    },
   });
 
+  const appendPr = (item: string) => {
+    setPrs((prev) => {
+      if (!prev.trim()) return item;
+      if (prev.includes(item)) return prev;
+      return `${prev.trim()}\n${item}`;
+    });
+  };
+
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
-          <ShieldCheck className="h-4 w-4" />
+    <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-black/80 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_0_50px_-20px_rgba(245,158,11,0.25)] space-y-6 transition-all duration-500">
+      {/* Decorative ambient background glows */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+
+      {/* Header */}
+      <div className="relative flex items-center justify-between border-b border-hairline/60 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500/20 via-rose-500/15 to-purple-600/20 border border-amber-500/30 text-amber-400 shadow-md">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-bold uppercase tracking-widest text-foreground">Profile &amp; Privacy</h2>
+            <p className="text-xs text-muted-foreground">Manage your bio, goals, PRs, and default visibility rules.</p>
+          </div>
         </div>
-        <h2 className="font-display text-lg uppercase tracking-widest">Profile & Privacy</h2>
       </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <Label htmlFor="bio">Bio</Label>
+
+      <div className="relative space-y-6">
+        {/* Bio Section with Prompts */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-amber-400" /> Bio &amp; Introduction
+            </Label>
+            <span className="text-[10px] font-medium text-muted-foreground">{bio.length}/500</span>
+          </div>
           <Textarea
             id="bio"
             rows={2}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            className="mt-1"
-            placeholder="Tell the community about yourself"
+            maxLength={500}
+            className="rounded-2xl border-border/80 bg-neutral-900/80 p-3.5 text-xs text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 shadow-inner"
+            placeholder="Tell the community about yourself, your training style, and background..."
           />
+          {/* Bio Quick Prompts */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+              <Sparkles className="h-3 w-3" /> Bio Ideas:
+            </span>
+            {BIO_PROMPTS.map((prompt, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setBio(prompt)}
+                className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 text-[10px] font-medium text-muted-foreground transition-all duration-200 hover:border-amber-500/60 hover:bg-amber-500/15 hover:text-amber-300 hover:scale-105 active:scale-95 truncate max-w-[240px] sm:max-w-none shadow-sm"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="goal">Current goal</Label>
+
+        {/* Current Goal Section with Chips */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="goal" className="text-xs font-bold uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5 text-primary" /> Current Fitness Goal
+            </Label>
+            <span className="text-[10px] font-medium text-muted-foreground">e.g. Cut, Bulk, Recomp</span>
+          </div>
           <Input
             id="goal"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            className="mt-1"
+            className="h-11 rounded-2xl border-border/80 bg-neutral-900/80 px-4 text-xs font-medium text-foreground transition-all duration-300 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 shadow-inner"
             placeholder="e.g. Cut to 12% body fat by June"
           />
+          {/* Goal Quick Chips */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1">
+              <Tag className="h-3 w-3" /> Popular Goals:
+            </span>
+            {GOAL_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setGoal(chip)}
+                className={`rounded-xl border px-3 py-1 text-[10px] font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${
+                  goal === chip
+                    ? "border-primary bg-primary text-primary-foreground shadow-[0_0_15px_-3px_var(--primary)]"
+                    : "border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-foreground"
+                }`}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="prs">Personal records</Label>
+
+        {/* Personal Records Section with Templates */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="prs" className="text-xs font-bold uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Personal Records (PRs)
+            </Label>
+            <span className="text-[10px] font-medium text-muted-foreground">SBD &amp; Key Lifts</span>
+          </div>
           <Textarea
             id="prs"
             rows={3}
             value={prs}
             onChange={(e) => setPrs(e.target.value)}
-            className="mt-1"
-            placeholder={"Bench 100kg\nSquat 140kg\nDeadlift 180kg"}
+            className="rounded-2xl border-border/80 bg-neutral-900/80 p-3.5 text-xs font-mono text-foreground transition-all duration-300 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 shadow-inner"
+            placeholder="Bench 100kg&#10;Squat 140kg&#10;Deadlift 180kg"
           />
+          {/* PR Quick Template Chips */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+              <Tag className="h-3 w-3" /> Insert Template:
+            </span>
+            {PR_TEMPLATES.map((tmpl) => (
+              <button
+                key={tmpl}
+                type="button"
+                onClick={() => appendPr(tmpl)}
+                className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 text-[10px] font-medium text-muted-foreground transition-all duration-200 hover:border-amber-500/60 hover:bg-amber-500/15 hover:text-amber-300 hover:scale-105 active:scale-95 shadow-sm"
+              >
+                + {tmpl}
+              </button>
+            ))}
+          </div>
         </div>
-        <div>
-          <Label>Profile visibility</Label>
-          <select
-            value={profileVis}
-            onChange={(e) => setProfileVis(e.target.value as typeof profileVis)}
-            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+
+        {/* Visibility Pill Selectors */}
+        <div className="grid gap-5 sm:grid-cols-2 pt-2">
+          <div className="space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5 text-sky-400" /> Profile Visibility
+            </Label>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { value: "public", label: "Public", desc: "Visible to all members & guests", icon: Globe },
+                { value: "subscribers", label: "Subscribers Only", desc: "Visible only to active subscribers", icon: Lock },
+                { value: "private", label: "Private", desc: "Visible only to you", icon: Shield },
+              ].map((v) => {
+                const Icon = v.icon;
+                return (
+                  <button
+                    key={v.value}
+                    type="button"
+                    onClick={() => setProfileVis(v.value as any)}
+                    className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
+                      profileVis === v.value
+                        ? "border-sky-400/60 bg-gradient-to-r from-sky-500/20 via-sky-500/10 to-transparent text-sky-300 shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)]"
+                        : "border-border/60 bg-neutral-900/60 text-muted-foreground hover:border-border hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold">{v.label}</p>
+                      <p className="text-[10px] opacity-80">{v.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-amber-400" /> Transformation Visibility
+            </Label>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { value: "public", label: "Public", desc: "Visible on community feed", icon: Globe },
+                { value: "subscribers", label: "Trainer Only", desc: "Visible to your trainer for coaching", icon: Lock },
+                { value: "private", label: "Private", desc: "Saved privately in your vault", icon: Shield },
+              ].map((v) => {
+                const Icon = v.icon;
+                return (
+                  <button
+                    key={v.value}
+                    type="button"
+                    onClick={() => setTxVis(v.value as any)}
+                    className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
+                      txVis === v.value
+                        ? "border-amber-400/60 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent text-amber-300 shadow-[0_0_20px_-5px_rgba(245,158,11,0.3)]"
+                        : "border-border/60 bg-neutral-900/60 text-muted-foreground hover:border-border hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold">{v.label}</p>
+                      <p className="text-[10px] opacity-80">{v.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 rounded-2xl border border-destructive/50 bg-destructive/10 p-3.5 text-xs text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-hairline/60">
+          {saved && <span className="text-xs font-bold text-emerald-400 animate-pulse">✓ Changes Saved Successfully</span>}
+          <Button
+            size="sm"
+            onClick={() => save.mutate()}
+            disabled={save.isPending}
+            className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-7 py-2.5 font-bold uppercase tracking-wider text-black shadow-[0_0_25px_-5px_rgba(245,158,11,0.5)] transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_35px_-5px_rgba(245,158,11,0.7)] disabled:opacity-50"
           >
-            <option value="public">Public</option>
-            <option value="subscribers">Subscribers only</option>
-            <option value="private">Private</option>
-          </select>
+            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+          </Button>
         </div>
-        <div>
-          <Label>Transformation visibility</Label>
-          <select
-            value={txVis}
-            onChange={(e) => setTxVis(e.target.value as typeof txVis)}
-            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="public">Public</option>
-            <option value="subscribers">Subscribers only</option>
-            <option value="private">Private</option>
-          </select>
-        </div>
-      </div>
-      {error && (
-        <p className="mt-3 rounded border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive">
-          {error}
-        </p>
-      )}
-      <div className="mt-4 flex items-center justify-end gap-3">
-        {saved && <span className="text-xs text-primary">Saved</span>}
-        <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-          Save Changes
-        </Button>
       </div>
     </div>
   );
@@ -1349,23 +1529,35 @@ function OnboardingProgressCard() {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery(onboardingProgressQuery);
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
-          <ClipboardList className="h-4 w-4" />
+    <section className="relative overflow-hidden rounded-3xl border border-red-500/30 bg-black/90 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_0_50px_-20px_rgba(239,68,68,0.3)] space-y-6 transition-all duration-500">
+      {/* Decorative Gymshark red ambient background glows */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-600/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-rose-600/10 blur-3xl" />
+
+      {/* Header */}
+      <div className="relative flex items-center justify-between border-b border-hairline/60 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-red-600/30 via-rose-500/20 to-orange-500/20 border border-red-500/40 text-red-400 shadow-[0_0_20px_-3px_rgba(239,68,68,0.4)]">
+            <ClipboardList className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+              Onboarding Progress <span className="rounded-md bg-red-600/20 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/30">GYMSHARK STYLE</span>
+            </h2>
+            <p className="text-xs text-muted-foreground">Complete your profile setup to unlock full platform features &amp; trainer tools.</p>
+          </div>
         </div>
-        <h2 className="font-display text-lg uppercase tracking-widest">Onboarding progress</h2>
       </div>
 
       {isLoading ? (
-        <div className="mt-4 space-y-3" aria-busy="true">
-          <Skeleton className="h-3 w-full rounded-full" />
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="mt-4 space-y-4" aria-busy="true">
+          <Skeleton className="h-4 w-full rounded-full" />
+          <div className="grid gap-3 sm:grid-cols-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 rounded-md" />
+              <Skeleton key={i} className="h-12 rounded-2xl" />
             ))}
           </div>
-          <Skeleton className="h-24 rounded-md" />
+          <Skeleton className="h-28 rounded-2xl" />
         </div>
       ) : isError ? (
         <ErrorState
@@ -1375,78 +1567,136 @@ function OnboardingProgressCard() {
           retrying={isFetching}
         />
       ) : data ? (
-        <div className="mt-4 space-y-5">
-          <div>
-            <div className="flex items-baseline justify-between">
-              <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-                {data.completedCount} of {data.totalSteps} complete
-              </p>
-              <p className="font-display text-sm text-primary">{data.percent}%</p>
+        <div className="relative space-y-6">
+          {/* Progress Bar & Header Stats */}
+          <div className="space-y-2.5 rounded-2xl border border-red-500/30 bg-neutral-900/80 p-4 shadow-inner">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-widest text-foreground">
+                  {data.completedCount} of {data.totalSteps} Steps Complete
+                </span>
+              </div>
+              <span className="font-display text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-orange-400">
+                {data.percent}%
+              </span>
             </div>
-            <Progress value={data.percent} className="mt-2 h-2" />
-            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+
+            {/* Gymshark Crimson Red Glowing Progress Bar */}
+            <div className="relative h-3.5 w-full overflow-hidden rounded-full bg-neutral-950 p-0.5 border border-red-500/30">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-600 via-rose-500 to-orange-500 transition-all duration-700 ease-out shadow-[0_0_20px_rgba(239,68,68,0.75)]"
+                style={{ width: `${data.percent}%` }}
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
               <span
-                className={`rounded-full border px-2 py-0.5 ${
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1 transition-all ${
                   data.onboardingCompleted
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border"
+                    ? "border-red-500/60 bg-red-600/20 text-red-300 shadow-[0_0_15px_-3px_rgba(239,68,68,0.4)]"
+                    : "border-orange-500/60 bg-orange-500/20 text-orange-300 shadow-[0_0_15px_-3px_rgba(249,115,22,0.4)]"
                 }`}
               >
-                Profile: {data.onboardingCompleted ? "Complete" : "In progress"}
+                {data.onboardingCompleted ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-red-400" /> Profile Setup Complete
+                  </>
+                ) : (
+                  <>
+                    <Circle className="h-3.5 w-3.5 text-orange-400" /> Setup In Progress
+                  </>
+                )}
               </span>
+
               {data.trainerApplicationStatus && (
-                <span className="rounded-full border border-border px-2 py-0.5">
-                  Trainer app: {data.trainerApplicationStatus}
+                <span className="flex items-center gap-1.5 rounded-xl border border-red-500/50 bg-red-600/15 px-3 py-1 text-red-300 shadow-[0_0_15px_-3px_rgba(239,68,68,0.3)]">
+                  <BadgeCheck className="h-3.5 w-3.5 text-red-400" /> Trainer App: {data.trainerApplicationStatus}
                 </span>
               )}
             </div>
           </div>
 
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {data.steps.map((s) => (
-              <li
-                key={s.id}
-                className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                  s.done
-                    ? "border-primary/30 bg-primary/5 text-foreground"
-                    : "border-border bg-background text-muted-foreground"
-                }`}
-              >
-                {s.done ? (
-                  <Check className="h-4 w-4 text-primary" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-                <span>{s.label}</span>
-              </li>
-            ))}
-          </ul>
+          {/* Gymshark Red Checklist Steps Grid */}
+          <div>
+            <Label className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5 mb-3">
+              <Sparkles className="h-3.5 w-3.5 text-red-500" /> Gymshark Checklist Steps
+            </Label>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {data.steps.map((s) => (
+                <li
+                  key={s.id}
+                  className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition-all duration-300 hover:scale-[1.02] ${
+                    s.done
+                      ? "border-red-500/60 bg-gradient-to-r from-red-600/25 via-rose-500/15 to-neutral-900/80 text-red-200 shadow-[0_0_25px_-5px_rgba(239,68,68,0.35)]"
+                      : "border-neutral-800 bg-neutral-900/60 text-muted-foreground shadow-sm hover:border-neutral-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-transform duration-300 ${
+                        s.done
+                          ? "border-red-500 bg-red-600/30 text-white shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+                          : "border-neutral-700 bg-neutral-800 text-muted-foreground"
+                      }`}
+                    >
+                      {s.done ? <Check className="h-4 w-4 stroke-[3]" /> : <Circle className="h-4 w-4" />}
+                    </div>
+                    <span className={`text-xs font-bold truncate ${s.done ? "text-foreground" : "text-muted-foreground"}`}>
+                      {s.label}
+                    </span>
+                  </div>
 
+                  {!s.done && (
+                    <Link
+                      to="/onboarding"
+                      search={{ resume: true, source: "dashboard_step" }}
+                      className="shrink-0 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all hover:scale-105 hover:from-red-500 hover:to-rose-500"
+                    >
+                      Complete &rarr;
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Gymshark Banner */}
           {!data.onboardingCompleted && (
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between rounded-2xl border border-red-500/50 bg-gradient-to-r from-red-600/20 via-rose-600/10 to-transparent p-4 shadow-[0_0_30px_-5px_rgba(239,68,68,0.25)]">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-red-400">Incomplete Onboarding Steps</p>
+                <p className="text-[11px] text-muted-foreground">Finish your setup to unlock all pro capabilities.</p>
+              </div>
               <Link to="/onboarding" search={{ resume: true, source: "dashboard_banner" }}>
-                <Button size="sm">Resume onboarding</Button>
+                <Button size="sm" className="rounded-xl bg-gradient-to-r from-red-600 to-rose-600 font-black uppercase tracking-wider text-white hover:from-red-500 hover:to-rose-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]">
+                  Resume Onboarding
+                </Button>
               </Link>
             </div>
           )}
 
-          <div>
-            <h3 className="font-display text-sm uppercase tracking-widest">Recent activity</h3>
+          {/* Gymshark Activity Section */}
+          <div className="space-y-3 pt-2">
+            <h3 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <ClipboardList className="h-3.5 w-3.5 text-red-500" /> Recent Onboarding Activity
+            </h3>
             {data.events.length === 0 ? (
-              <p className="mt-2 rounded-md border border-dashed border-border/70 p-4 text-center text-xs text-muted-foreground">
-                No onboarding activity yet.
+              <p className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/40 p-4 text-center text-xs text-muted-foreground">
+                No onboarding activity logged yet.
               </p>
             ) : (
-              <ul className="mt-2 divide-y divide-border rounded-md border border-border text-sm">
+              <ul className="divide-y divide-neutral-800/80 rounded-2xl border border-neutral-800 bg-neutral-900/60 text-xs">
                 {data.events.map((e) => (
-                  <li key={e.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                  <li key={e.id} className="flex items-center justify-between gap-3 p-3.5 hover:bg-neutral-900/90 transition-colors">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{formatAction(e.action)}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {formatMeta(e.metadata)}
-                      </p>
+                      <p className="truncate font-bold text-foreground">{formatAction(e.action)}</p>
+                      {formatMeta(e.metadata) && (
+                        <p className="truncate text-[11px] text-muted-foreground mt-0.5">
+                          {formatMeta(e.metadata)}
+                        </p>
+                      )}
                     </div>
-                    <time className="shrink-0 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <time className="shrink-0 text-[10px] uppercase font-medium text-muted-foreground">
                       {new Date(e.created_at).toLocaleString()}
                     </time>
                   </li>

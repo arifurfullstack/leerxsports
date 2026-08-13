@@ -55,6 +55,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (!profile?.onboarding_completed && location.pathname !== "/onboarding") {
         throw redirect({
           to: "/onboarding",
+          search: { resume: undefined, source: undefined },
         });
       }
     }

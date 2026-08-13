@@ -15,6 +15,7 @@ const profileUpdateSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-z0-9_]+$/i, "Letters, numbers, and underscores only").optional(),
   avatar_url: z.string().url().nullable().optional(),
   avatar_urls: avatarUrlsSchema.optional(),
+  cover_url: z.string().url().nullable().optional(),
   bio: z.string().max(1000).nullable().optional(),
   country: z.string().max(80).nullable().optional(),
   native_language: z.string().max(20).nullable().optional(),
@@ -29,7 +30,7 @@ export const getSettings = createServerFn({ method: "GET" })
     const { data: profile, error: pErr } = await context.supabase
       .from("profiles")
       .select(
-        "user_id, username, display_name, avatar_url, avatar_urls, bio, country, native_language, preferred_language, profile_visibility, transformation_visibility, additional_languages, height_cm, weight_kg, skeletal_muscle_kg, body_fat_percent, personal_records, goal, experience_level, injuries",
+        "user_id, username, display_name, avatar_url, avatar_urls, cover_url, bio, country, native_language, preferred_language, profile_visibility, transformation_visibility, additional_languages, height_cm, weight_kg, skeletal_muscle_kg, body_fat_percent, personal_records, goal, experience_level, injuries",
       )
       .eq("user_id", context.userId)
       .maybeSingle();

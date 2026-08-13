@@ -84,7 +84,7 @@ function getSecondaryLinks(authed: boolean): NavLink[] {
   if (authed) {
     links.push(
       { to: "/library",           label: "Library",  icon: BookMarked, accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
-      { to: "/qa",                label: "Paid Q&A", icon: HelpCircle, accent: "text-premium",       hover: "hover:bg-premium/10 hover:text-premium" },
+      { to: "/qa",                label: "Coaching & Q&A", icon: HelpCircle, accent: "text-premium",       hover: "hover:bg-premium/10 hover:text-premium" },
       { to: "/creator/dashboard", label: "Earnings", icon: LineChart,  accent: "text-foreground/60", hover: "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0" },
     );
   }
@@ -422,7 +422,7 @@ export function Navbar() {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-500">
-                            <UserIcon className="h-2.5 w-2.5" /> Athlete
+                            <UserIcon className="h-2.5 w-2.5" /> Trainee
                           </span>
                         )}
                       </div>

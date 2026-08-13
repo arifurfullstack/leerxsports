@@ -139,7 +139,7 @@ function CreatorDashboard() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <User className="h-3.5 w-3.5" /> Athlete View
+              <User className="h-3.5 w-3.5" /> Trainee View
             </button>
             <button
               type="button"
@@ -150,7 +150,7 @@ function CreatorDashboard() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5" /> Creator Studio
+              <Sparkles className="h-3.5 w-3.5" /> Trainer Studio
             </button>
           </div>
 

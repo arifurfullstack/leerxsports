@@ -97,7 +97,10 @@ function AppCard({ app }: { app: App }) {
   const review = useMutation({
     mutationFn: (decision: Decision) =>
       reviewFn({ data: { applicationId: app.id, decision, notes: notes || null } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-trainer-apps"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-trainer-apps"] });
+      qc.invalidateQueries({ queryKey: ["navbar-trainer-status"] });
+    },
   });
 
   const statusColor =

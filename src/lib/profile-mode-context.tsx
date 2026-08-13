@@ -64,11 +64,6 @@ export function ProfileModeProvider({ children }: { children: ReactNode }) {
   const switchMode = async (targetMode: ProfileMode): Promise<{ success: boolean; requiresOnboarding?: boolean }> => {
     if (targetMode === mode) return { success: true };
 
-    if (targetMode === "creator" && !isCreator) {
-      setBecomeCreatorOpen(true);
-      return { success: false, requiresOnboarding: true };
-    }
-
     setMode(targetMode);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, targetMode);
@@ -77,10 +72,15 @@ export function ProfileModeProvider({ children }: { children: ReactNode }) {
     }
 
     if (targetMode === "creator") {
-      toast.success("Switched to Creator Studio Profile ⚡");
-      router.navigate({ to: "/creator/dashboard" });
+      if (isCreator) {
+        toast.success("Switched to Trainer Studio ⚡");
+        router.navigate({ to: "/creator/dashboard" });
+      } else {
+        toast.success("Switched to Trainer Mode — complete your application ⚡");
+        router.navigate({ to: "/onboarding", search: { resume: true, source: "mode_switcher" } });
+      }
     } else {
-      toast.success("Switched to Athlete / Normal Profile 🏃");
+      toast.success("Switched to Trainee Profile 🏃");
       router.navigate({ to: "/dashboard" });
     }
 
