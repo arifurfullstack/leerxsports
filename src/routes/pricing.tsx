@@ -71,23 +71,23 @@ function PricingPage() {
         <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground backdrop-blur">
           <Tag className="h-3.5 w-3.5" /> Pricing
         </span>
-        <h1 className="mt-6 font-serif text-4xl leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
+        <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-6xl md:text-7xl">
           Pay only for what
           <br />
-          you <span className="italic text-primary">actually</span> want.
+          you <span className="italic text-primary font-bold">actually</span> want.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
-          Subscribe to a creator for their full library, unlock a single post, or send a paid question. No bundles, no lock-in, no course catalogs.
+          Subscribe to a creator for their full library, or send a priority paid question. Direct creator access with zero hidden fees.
         </p>
 
         {/* Billing toggle */}
-        <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface/60 p-1 backdrop-blur">
+        <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface/60 p-1 backdrop-blur shadow-inner shadow-black/40">
           <button
             type="button"
             onClick={() => setBilling("monthly")}
             className={
-              "rounded-full px-4 py-1.5 text-sm font-medium transition " +
-              (!annual ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")
+              "rounded-full px-5 py-2 text-sm font-medium transition duration-200 " +
+              (!annual ? "bg-foreground text-background shadow-md" : "text-muted-foreground hover:text-foreground")
             }
           >
             Monthly
@@ -96,15 +96,15 @@ function PricingPage() {
             type="button"
             onClick={() => setBilling("annual")}
             className={
-              "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition " +
-              (annual ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")
+              "inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition duration-200 " +
+              (annual ? "bg-foreground text-background shadow-md" : "text-muted-foreground hover:text-foreground")
             }
           >
             Annual
             <span
               className={
-                "rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest " +
-                (annual ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary")
+                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest transition " +
+                (annual ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary")
               }
             >
               -20%
@@ -114,48 +114,31 @@ function PricingPage() {
 
         {/* Trust bar */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> Encrypted checkout</span>
-          <span className="inline-flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5 text-primary" /> No hidden fees</span>
-          <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Cancel anytime</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/40 border border-border/40 px-3 py-1 backdrop-blur"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> Encrypted checkout</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/40 border border-border/40 px-3 py-1 backdrop-blur"><Wallet className="h-3.5 w-3.5 text-primary" /> No hidden fees</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/40 border border-border/40 px-3 py-1 backdrop-blur"><Clock className="h-3.5 w-3.5 text-primary" /> Cancel anytime</span>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => openCheckout("subscription")}
-            className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/25 transition hover:opacity-90"
+            className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition duration-200 hover:opacity-90 hover:shadow-primary/40 active:scale-[0.98]"
           >
             Start checkout <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </button>
           <a
             href="#compare"
-            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-5 py-3 text-sm font-medium transition hover:bg-foreground/5"
+            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-6 py-3.5 text-sm font-semibold transition duration-200 hover:bg-foreground/5 hover:border-border"
           >
             Compare plans
           </a>
         </div>
       </section>
 
-      {/* Three pricing tiers */}
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 pb-8 sm:px-6 sm:grid-cols-2 md:grid-cols-3 md:items-stretch">
-        {/* Unlock */}
-        <PricingCard
-          icon={<Lock className="h-5 w-5" />}
-          eyebrow="One-off"
-          title="Post Unlock"
-          price="from $1"
-          priceSuffix="/ post"
-          description="Buy access to a single premium post. Yours to view forever."
-          features={[
-            "Instant access after payment",
-            "Full-resolution photo or video",
-            "Kept in your Library",
-            "No recurring charges",
-          ]}
-          cta={{ label: "Buy an unlock", onClick: () => openCheckout("unlock") }}
-        />
-
-        {/* Subscription — featured */}
+      {/* Two core pricing tiers */}
+      <section className="mx-auto grid max-w-4xl gap-6 px-4 pb-12 sm:px-6 sm:grid-cols-2 items-stretch">
+        {/* Creator Subscription — featured */}
         <PricingCard
           featured
           icon={<Crown className="h-5 w-5" />}
@@ -163,36 +146,36 @@ function PricingPage() {
           title="Creator Subscription"
           price={annual ? "$4–$40" : "$5–$50"}
           priceSuffix={annual ? "/ mo, billed yearly" : "/ month"}
-          description="Unlock a creator's entire premium feed for as long as you're subscribed."
+          description="Unlock a creator's entire premium feed, exclusive posts, and shorts for as long as you're subscribed."
           features={[
             "Every current & future premium post",
             "Direct messages (when enabled)",
             "Priority on Q&A dispatches",
-            annual ? "Save 20% vs monthly" : "Cancel anytime",
+            annual ? "Save 20% vs monthly rate" : "Cancel anytime with one click",
           ]}
           cta={{ label: "Subscribe now", onClick: () => openCheckout("subscription") }}
         />
 
-        {/* Q&A */}
+        {/* Paid Q&A Dispatch */}
         <PricingCard
           icon={<MessageCircleQuestion className="h-5 w-5" />}
-          eyebrow="Paid Q&A"
+          eyebrow="Direct Access"
           title="Dispatch"
           price="$300"
           priceSuffix="/ question"
-          description="Send any creator a direct question. If they don't answer in 48 hours, you're refunded."
+          description="Send any creator a direct, priority question. Guaranteed personal answer within 48 hours or full refund."
           features={[
             "Guaranteed personal answer",
             "48-hour response window",
-            "Auto-refund on expiry",
-            "Private between you two",
+            "Automatic refund on expiry",
+            "Private 1-on-1 interaction",
           ]}
           cta={{ label: "Send a dispatch", onClick: () => openCheckout("dispatch") }}
         />
       </section>
 
       {/* Compare */}
-      <section id="compare" className="mx-auto max-w-6xl px-4 pb-4 pt-8 scroll-mt-24 sm:px-6">
+      <section id="compare" className="mx-auto max-w-5xl px-4 pb-4 pt-8 scroll-mt-24 sm:px-6">
         <CompareTable onChoose={openCheckout} />
       </section>
 
@@ -206,18 +189,18 @@ function PricingPage() {
           />
           <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
             <div className="max-w-lg">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-primary">
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                 <Zap className="h-3.5 w-3.5" /> For creators
               </span>
-              <h2 className="mt-4 font-serif text-3xl tracking-tight sm:text-4xl">
+              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
                 Keep the majority of every dollar.
               </h2>
-              <p className="mt-3 text-muted-foreground">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 LEER takes a flat platform fee on unlocks, subscriptions, and Q&A dispatches. Payment processing is passed through at cost with no hidden markup.
               </p>
               <Link
                 to="/trainers"
-                className="group mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90"
+                className="group mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90"
               >
                 Become a creator
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
@@ -245,10 +228,10 @@ function PricingPage() {
               <Star key={i} className="h-4 w-4 fill-current" />
             ))}
           </div>
-          <blockquote className="mt-4 font-serif text-xl leading-snug tracking-tight sm:text-3xl">
-            “Pricing is refreshingly honest. I unlocked one post, loved it, and subscribed the next day with zero upsell games.”
+          <blockquote className="mt-4 text-xl font-semibold leading-relaxed tracking-tight sm:text-2xl text-foreground/95">
+            “Pricing is refreshingly honest. I subscribed to my favorite creator with zero upsell games.”
           </blockquote>
-          <figcaption className="mt-5 text-sm text-muted-foreground">
+          <figcaption className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Alex R. · Member since 2025
           </figcaption>
         </figure>
@@ -256,12 +239,12 @@ function PricingPage() {
 
       {/* FAQ */}
       <section className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
-        <h2 className="text-center font-serif text-3xl tracking-tight sm:text-4xl">Common questions</h2>
+        <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">Common questions</h2>
         <p className="mt-2 text-center text-sm text-muted-foreground">Straightforward answers. If we missed one, ping support.</p>
         <div className="mt-8 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-surface/40 backdrop-blur">
           {FAQ.map((item) => (
             <details key={item.q} className="group px-4 py-5 transition open:bg-background/30 sm:px-6">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-base font-medium [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-base font-semibold [&::-webkit-details-marker]:hidden">
                 <span>{item.q}</span>
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border/60 text-muted-foreground transition group-open:rotate-180 group-open:border-primary/50 group-open:text-primary">
                   <ChevronDown className="h-4 w-4" />
@@ -274,9 +257,9 @@ function PricingPage() {
 
         {/* Final CTA */}
         <div className="mt-12 flex flex-col items-center gap-4 rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-surface/40 to-background/40 p-6 text-center backdrop-blur sm:p-10">
-          <h3 className="font-serif text-3xl tracking-tight sm:text-4xl">Ready when you are.</h3>
+          <h3 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready when you are.</h3>
           <p className="max-w-md text-sm text-muted-foreground">
-            Start with a single unlock or dive into a full subscription. No credit card until checkout.
+            Start with a direct dispatch or dive into a full creator subscription.
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
             <button
@@ -329,25 +312,25 @@ function PricingCard({
   featured?: boolean;
 }) {
   const ctaClass =
-    "group/cta mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition " +
+    "group/cta mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition " +
     (featured
-      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90"
-      : "border border-border/70 bg-background hover:border-foreground/40 hover:bg-foreground/5");
+      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90 active:scale-[0.98]"
+      : "border border-border/70 bg-background hover:border-foreground/40 hover:bg-foreground/5 active:scale-[0.98]");
   return (
     <div
       className={
         "group relative flex flex-col rounded-3xl border p-6 backdrop-blur transition duration-300 hover:-translate-y-1 " +
         (featured
-          ? "border-primary/40 bg-gradient-to-b from-primary/10 to-primary/[0.02] shadow-[0_0_0_1px_color-mix(in_oklch,var(--primary)_30%,transparent),0_30px_60px_-30px_color-mix(in_oklch,var(--primary)_45%,transparent)] md:scale-[1.02]"
+          ? "border-primary/40 bg-gradient-to-b from-primary/10 to-primary/[0.02] shadow-[0_0_0_1px_color-mix(in_oklch,var(--primary)_30%,transparent),0_30px_60px_-30px_color-mix(in_oklch,var(--primary)_45%,transparent)] sm:scale-[1.02]"
           : "border-border/60 bg-surface/40 hover:border-foreground/30 hover:shadow-xl hover:shadow-black/5")
       }
     >
       {featured && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-foreground shadow-lg shadow-primary/30">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-foreground shadow-lg shadow-primary/30">
           {eyebrow}
         </span>
       )}
-      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
         <span
           className={
             "inline-flex h-9 w-9 items-center justify-center rounded-xl transition " +
@@ -360,14 +343,14 @@ function PricingCard({
         </span>
         {!featured && eyebrow}
       </div>
-      <h3 className="mt-5 font-serif text-2xl tracking-tight">{title}</h3>
+      <h3 className="mt-5 text-2xl font-bold tracking-tight text-foreground">{title}</h3>
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="font-serif text-4xl tracking-tight sm:text-5xl">{price}</span>
-        <span className="text-sm text-muted-foreground">{priceSuffix}</span>
+        <span className="text-4xl font-black tracking-tight sm:text-5xl tabular-nums text-foreground">{price}</span>
+        <span className="text-sm font-medium text-muted-foreground">{priceSuffix}</span>
       </div>
       <p className="mt-3 text-sm text-muted-foreground">{description}</p>
       <div className="my-6 h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
-      <ul className="space-y-3 text-sm">
+      <ul className="flex-1 space-y-3 text-sm">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-3">
             <span
@@ -378,7 +361,7 @@ function PricingCard({
             >
               <Check className="h-3 w-3" strokeWidth={3} />
             </span>
-            <span className="leading-snug">{f}</span>
+            <span className="leading-snug text-foreground/90">{f}</span>
           </li>
         ))}
       </ul>
@@ -400,8 +383,8 @@ function PricingCard({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-background/50 p-4 backdrop-blur transition hover:border-primary/40">
-      <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</dt>
-      <dd className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">{value}</dd>
+      <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</dt>
+      <dd className="mt-2 text-3xl font-black tracking-tight sm:text-4xl tabular-nums text-foreground">{value}</dd>
     </div>
   );
 }
@@ -419,7 +402,7 @@ function Cell({ v, highlight }: { v: string | boolean; highlight?: boolean }) {
       </div>
     );
   }
-  return <div className={cls + " text-sm " + (highlight ? "text-foreground" : "text-muted-foreground")}>{v}</div>;
+  return <div className={cls + " text-sm " + (highlight ? "text-foreground font-medium" : "text-muted-foreground")}>{v}</div>;
 }
 
 const PLATFORM_FEE = 0.15;
@@ -530,15 +513,15 @@ function EarningsCalculator({
         style={{ background: "color-mix(in oklch, var(--primary) 30%, transparent)" }}
       />
       <div className="flex flex-col gap-2 text-center sm:text-left">
-        <span className="inline-flex items-center justify-center gap-2 self-center rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-primary sm:self-start">
+        <span className="inline-flex items-center justify-center gap-2 self-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary sm:self-start">
           <Zap className="h-3.5 w-3.5" /> Earnings calculator
         </span>
-        <h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
           Estimate what you'd take home.
         </h2>
         <p className="text-sm text-muted-foreground">
-          Move the sliders to model your creator income across all three revenue streams.
-          Adjust the platform fee below to match your negotiated rate. Everything updates live.
+          Move the sliders to model your creator income across revenue streams.
+          Adjust the platform fee below to match your rate. Everything updates live.
         </p>
       </div>
 
@@ -546,12 +529,12 @@ function EarningsCalculator({
       <div className="mt-6 rounded-2xl border border-border/60 bg-background/30 p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Platform fee
             </div>
             <div className="mt-1 text-sm text-foreground">
-              <span className="font-serif text-2xl tracking-tight text-primary">{feePct}%</span>
-              <span className="ml-2 text-xs text-muted-foreground">
+              <span className="text-2xl font-bold tracking-tight text-primary tabular-nums">{feePct}%</span>
+              <span className="ml-2 text-xs text-muted-foreground font-medium">
                 creators keep {100 - feePct}%
               </span>
             </div>
@@ -566,7 +549,7 @@ function EarningsCalculator({
                   onClick={() => setFeePct(p)}
                   aria-pressed={active}
                   className={
-                    "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition " +
+                    "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition " +
                     (active
                       ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30"
                       : "border-border/60 bg-background/50 text-muted-foreground hover:border-foreground/40 hover:text-foreground")
@@ -588,7 +571,7 @@ function EarningsCalculator({
           aria-label="Platform fee percentage"
           className="mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
         />
-        <div className="mt-1 flex justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
+        <div className="mt-1 flex justify-between text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           <span>0%</span>
           <span>50%</span>
         </div>
@@ -597,7 +580,7 @@ function EarningsCalculator({
       {/* Preset chips */}
       <div className="mt-6 rounded-2xl border border-border/60 bg-background/30 p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Quick presets
           </div>
           <div className="flex flex-wrap gap-2">
@@ -611,7 +594,7 @@ function EarningsCalculator({
                   aria-pressed={active}
                   title={p.hint}
                   className={
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition " +
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition " +
                     (active
                       ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30"
                       : "border-border/60 bg-background/50 text-muted-foreground hover:border-foreground/40 hover:text-foreground")
@@ -644,9 +627,9 @@ function EarningsCalculator({
 
         <div className="flex flex-col justify-between gap-4 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-surface/40 to-background/30 p-5 sm:p-6">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Estimated monthly take-home</div>
-            <div className="mt-2 font-serif text-5xl tracking-tight sm:text-6xl">{fmt(monthly)}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Estimated monthly take-home</div>
+            <div className="mt-2 text-5xl font-black tracking-tight sm:text-6xl tabular-nums text-foreground">{fmt(monthly)}</div>
+            <div className="mt-1 text-xs text-muted-foreground font-medium">
               ≈ {fmt(monthly * 12)} / year · from {fmt(gross)} gross
             </div>
           </div>
@@ -656,11 +639,11 @@ function EarningsCalculator({
             <Breakdown label="Dispatches" value={fmt(qaGross * (1 - fee))} sub={fmt(qaGross) + " gross"} />
           </dl>
           <div className="rounded-xl border border-primary/40 bg-primary/10 p-3">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-primary">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
               <Trophy className="h-3 w-3" /> Best match
             </div>
             <div className="mt-1 text-sm text-foreground">
-              <span className="font-medium">{bestPlan.label}</span> ({fmt(bestPlan.net)}/mo net)
+              <span className="font-semibold">{bestPlan.label}</span> ({fmt(bestPlan.net)}/mo net)
             </div>
             <button
               type="button"
@@ -674,7 +657,7 @@ function EarningsCalculator({
                   feePct,
                 })
               }
-              className="group/cta mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md shadow-primary/25 transition hover:opacity-90"
+              className="group/cta mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition hover:opacity-90"
             >
               Check out with {bestPlan.label}
               <ArrowRight className="h-4 w-4 transition group-hover/cta:translate-x-0.5" />
@@ -800,7 +783,7 @@ function ChartCard({
     <div className="rounded-2xl border border-border/60 bg-background/40 p-4 sm:p-5">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <div>
-          <div className="text-sm font-medium text-foreground">{title}</div>
+          <div className="text-sm font-semibold text-foreground">{title}</div>
           <div className="text-[11px] text-muted-foreground">{subtitle}</div>
         </div>
       </div>
@@ -830,8 +813,8 @@ function Slider({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <label className="text-sm font-medium text-foreground">{label}</label>
-        <span className="font-serif text-lg tracking-tight text-primary">{display}</span>
+        <label className="text-sm font-semibold text-foreground">{label}</label>
+        <span className="text-lg font-bold tracking-tight text-primary tabular-nums">{display}</span>
       </div>
       <input
         type="range"
@@ -843,7 +826,7 @@ function Slider({
         className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
         aria-label={label}
       />
-      <div className="mt-1 flex justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
+      <div className="mt-1 flex justify-between text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         <span>{min}</span>
         <span>{max.toLocaleString()}</span>
       </div>
@@ -854,19 +837,18 @@ function Slider({
 function Breakdown({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-      <div className="mt-1 font-serif text-xl tracking-tight">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-xl font-bold tracking-tight tabular-nums text-foreground">{value}</div>
       <div className="text-[10px] text-muted-foreground/70">{sub}</div>
     </div>
   );
 }
 
-type PlanKey = "unlock" | "sub" | "qa";
+type PlanKey = "sub" | "qa";
 
 const PLAN_META: { key: PlanKey; label: string; id: CheckoutPlanId }[] = [
-  { key: "unlock", label: "Unlock", id: "unlock" },
-  { key: "sub", label: "Subscription", id: "subscription" },
-  { key: "qa", label: "Dispatch", id: "dispatch" },
+  { key: "sub", label: "Creator Subscription", id: "subscription" },
+  { key: "qa", label: "Dispatch (Q&A)", id: "dispatch" },
 ];
 
 function hasFeature(v: string | boolean): boolean {
@@ -942,9 +924,9 @@ function CompareTable({ onChoose }: { onChoose: (plan: CheckoutPlanId) => void }
 
       {/* Table */}
       <div className="overflow-x-auto rounded-3xl border border-border/60 bg-surface/40 backdrop-blur">
-        <div className="min-w-[640px]">
-          <div className="grid grid-cols-4 border-b border-border/60 bg-background/30 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
-            <div className="px-3 pt-7 pb-4 sm:px-5 flex items-end font-semibold">
+        <div className="min-w-[540px]">
+          <div className="grid grid-cols-3 border-b border-border/60 bg-background/30 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
+            <div className="px-4 pt-7 pb-4 sm:px-6 flex items-end font-semibold">
               {selected.size > 0 ? `${activeRows.length} feature${activeRows.length === 1 ? "" : "s"}` : "Compare"}
             </div>
             {PLAN_META.map((p) => {
@@ -954,7 +936,7 @@ function CompareTable({ onChoose }: { onChoose: (plan: CheckoutPlanId) => void }
                 <div
                   key={p.key}
                   className={
-                    "relative px-3 pt-7 pb-4 text-center transition sm:px-5 " +
+                    "relative px-4 pt-7 pb-4 text-center transition sm:px-6 " +
                     (isBest ? "bg-primary/10 text-primary" : "")
                   }
                 >
@@ -979,31 +961,30 @@ function CompareTable({ onChoose }: { onChoose: (plan: CheckoutPlanId) => void }
           <div
             key={row.label}
             className={
-              "grid grid-cols-4 items-center text-sm transition " +
+              "grid grid-cols-3 items-center text-sm transition " +
               (i % 2 ? "bg-background/20" : "bg-transparent")
             }
           >
-            <div className="px-3 py-4 text-sm text-muted-foreground sm:px-5">{row.label}</div>
-            <Cell v={row.unlock} highlight={bestKey === "unlock"} />
+            <div className="px-4 py-4 text-sm text-muted-foreground sm:px-6">{row.label}</div>
             <Cell v={row.sub} highlight={bestKey === "sub"} />
             <Cell v={row.qa} highlight={bestKey === "qa"} />
           </div>
         ))}
 
         {/* Footer CTAs */}
-        <div className="grid grid-cols-4 items-center border-t border-border/60 bg-background/30">
-          <div className="px-3 py-4 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:px-5 sm:text-xs">
+        <div className="grid grid-cols-3 items-center border-t border-border/60 bg-background/30">
+          <div className="px-4 py-4 text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:px-6 sm:text-xs">
             Pick one
           </div>
           {PLAN_META.map((p) => {
             const isBest = p.key === bestKey;
             return (
-              <div key={p.key} className={"px-2 py-3 sm:px-3 " + (isBest ? "bg-primary/[0.06]" : "")}>
+              <div key={p.key} className={"px-3 py-3 sm:px-4 " + (isBest ? "bg-primary/[0.06]" : "")}>
                 <button
                   type="button"
                   onClick={() => onChoose(p.id)}
                   className={
-                    "inline-flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition " +
+                    "inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition " +
                     (isBest
                       ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:opacity-90"
                       : "border border-border/70 bg-background hover:border-foreground/40 hover:bg-foreground/5")
@@ -1021,34 +1002,34 @@ function CompareTable({ onChoose }: { onChoose: (plan: CheckoutPlanId) => void }
   );
 }
 
-const COMPARE: { label: string; unlock: string | boolean; sub: string | boolean; qa: string | boolean }[] = [
-  { label: "Access to a single post", unlock: true, sub: true, qa: false },
-  { label: "Full creator library", unlock: false, sub: true, qa: false },
-  { label: "Direct messaging", unlock: false, sub: true, qa: true },
-  { label: "Personal answer from creator", unlock: false, sub: false, qa: true },
-  { label: "Recurring charge", unlock: "No", sub: "Monthly", qa: "No" },
-  { label: "Refund if unanswered", unlock: "N/A", sub: "N/A", qa: "48 hours" },
+const COMPARE: { label: string; sub: string | boolean; qa: string | boolean }[] = [
+  { label: "Full creator library access", sub: true, qa: false },
+  { label: "Every current & future premium post", sub: true, qa: false },
+  { label: "Direct messaging", sub: true, qa: true },
+  { label: "Personal answer from creator", sub: false, qa: true },
+  { label: "Recurring charge", sub: "Monthly", qa: "No" },
+  { label: "Refund if unanswered", sub: "N/A", qa: "48 hours" },
 ];
 
 const FAQ: { q: string; a: string }[] = [
   {
-    q: "Do I need a subscription to unlock a single post?",
-    a: "No. Every premium post can be bought as a one-off unlock. Subscriptions just include everything a creator posts while you're subscribed.",
+    q: "How does a Creator Subscription work?",
+    a: "Subscribing gives you unlimited access to a creator's entire premium feed, exclusive posts, and shorts for as long as your subscription is active.",
   },
   {
-    q: "What happens if a creator doesn't answer my Q&A?",
-    a: "Your $300 is held, not paid out. If the creator doesn't respond within 48 hours the dispatch expires and you're automatically refunded.",
+    q: "What happens if a creator doesn't answer my Q&A Dispatch?",
+    a: "Your $300 is held safely in escrow. If the creator does not respond within 48 hours, the dispatch expires and your money is automatically 100% refunded.",
   },
   {
     q: "Can I cancel a subscription anytime?",
-    a: "Yes. Cancel from your Library or the creator's profile. You keep access until the end of the current billing period.",
+    a: "Yes. You can cancel with one click from your settings or the creator's profile. You retain full access until the end of your current billing period.",
   },
   {
     q: "How do creators get paid?",
-    a: "Earnings settle to your creator balance and pay out on a weekly cadence once you clear the minimum payout threshold.",
+    a: "Earnings accrue directly to your creator balance and payout weekly once you clear the minimum payout threshold.",
   },
   {
-    q: "Are prices the same for every creator?",
-    a: "No — creators set their own subscription price and per-post unlock price. Q&A dispatches are a flat $300 across the platform.",
+    q: "Are subscription prices set by creators?",
+    a: "Yes — creators set their own subscription pricing between $5 and $50/month. Q&A Dispatches are set to a standard $300 flat rate.",
   },
 ];

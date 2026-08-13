@@ -6,12 +6,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { resolvePostAuthTarget } from "@/lib/auth-intent";
 import { classifyAuthError, friendlyAuthError, PASSWORD_MIN_LENGTH } from "@/lib/password-strength";
 import { SocialButtons } from "@/components/auth/social-buttons";
 import { PasswordRuleHelper } from "@/components/auth/password-rule-helper";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password-dialog";
 import { logAuthEvent, type AuthLogEvent } from "@/lib/auth-log.functions";
+import {
+  COUNTRY_OPTIONS,
+  LANGUAGE_OPTIONS,
+  HEIGHT_OPTIONS,
+  WEIGHT_OPTIONS,
+  GOAL_OPTIONS,
+  EXPERIENCE_LEVEL_OPTIONS,
+} from "@/lib/profile-options";
+export {
+  COUNTRY_OPTIONS,
+  LANGUAGE_OPTIONS,
+  HEIGHT_OPTIONS,
+  WEIGHT_OPTIONS,
+  GOAL_OPTIONS,
+  EXPERIENCE_LEVEL_OPTIONS,
+};
 
 function fireAuthLog(
   event: AuthLogEvent,
@@ -260,6 +283,15 @@ export function AuthForm({
     ? "h-12 rounded-none border border-white/10 bg-white/[0.04] text-sm text-white placeholder:text-white/25 focus-visible:border-sport focus-visible:ring-1 focus-visible:ring-sport/50"
     : undefined;
 
+  const selectTriggerClass = embedded
+    ? "h-12 rounded-none border border-white/10 bg-white/[0.04] text-sm text-white focus:border-sport focus:ring-1 focus:ring-sport/50 w-full cursor-pointer data-[placeholder]:text-white/30 hover:border-white/20"
+    : "h-10 rounded-md border border-white/10 bg-[#1a1a1a] text-sm text-white focus:border-sport focus:ring-1 focus:ring-sport w-full cursor-pointer data-[placeholder]:text-white/40 hover:border-white/20";
+
+  const selectContentClass =
+    "bg-[#1a1a1a] border border-white/10 text-white shadow-2xl backdrop-blur-xl rounded-md p-1 max-h-60 overflow-y-auto z-[100]";
+  const selectItemClass =
+    "cursor-pointer rounded-sm py-2 px-3 text-sm text-white/90 focus:bg-sport/20 focus:text-white transition-colors hover:bg-white/5";
+
   const loadingOverlay = loading ? (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-black/85 backdrop-blur-md p-6 text-center animate-in fade-in duration-200">
       <div className="relative mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sport/20 text-sport ring-2 ring-sport/40">
@@ -447,38 +479,117 @@ export function AuthForm({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="country" className={labelClass}>Country <span className="text-sport">*</span></Label>
-                <Input id="country" required value={traineeData.country} onChange={(e) => setTraineeData({...traineeData, country: e.target.value})} className={inputClass} placeholder="e.g. USA" />
+                <Select
+                  value={traineeData.country || undefined}
+                  onValueChange={(val) => setTraineeData({ ...traineeData, country: val })}
+                >
+                  <SelectTrigger id="country" className={selectTriggerClass}>
+                    <SelectValue placeholder="e.g. USA" />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    {COUNTRY_OPTIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className={selectItemClass}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="native_language" className={labelClass}>Language <span className="text-sport">*</span></Label>
-                <Input id="native_language" required value={traineeData.native_language} onChange={(e) => setTraineeData({...traineeData, native_language: e.target.value})} className={inputClass} placeholder="e.g. English" />
+                <Select
+                  value={traineeData.native_language || undefined}
+                  onValueChange={(val) => setTraineeData({ ...traineeData, native_language: val })}
+                >
+                  <SelectTrigger id="native_language" className={selectTriggerClass}>
+                    <SelectValue placeholder="e.g. English" />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    {LANGUAGE_OPTIONS.map((l) => (
+                      <SelectItem key={l.value} value={l.value} className={selectItemClass}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className={labelClass}>Height (cm)</Label>
-                <Input type="number" step="0.1" value={traineeData.height_cm} onChange={(e) => setTraineeData({...traineeData, height_cm: e.target.value})} className={inputClass} />
+                <Select
+                  value={traineeData.height_cm || undefined}
+                  onValueChange={(val) => setTraineeData({ ...traineeData, height_cm: val })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select height" />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    {HEIGHT_OPTIONS.map((h) => (
+                      <SelectItem key={h.value} value={h.value} className={selectItemClass}>
+                        {h.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className={labelClass}>Weight (kg)</Label>
-                <Input type="number" step="0.1" value={traineeData.weight_kg} onChange={(e) => setTraineeData({...traineeData, weight_kg: e.target.value})} className={inputClass} />
+                <Select
+                  value={traineeData.weight_kg || undefined}
+                  onValueChange={(val) => setTraineeData({ ...traineeData, weight_kg: val })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select weight" />
+                  </SelectTrigger>
+                  <SelectContent className={selectContentClass}>
+                    {WEIGHT_OPTIONS.map((w) => (
+                      <SelectItem key={w.value} value={w.value} className={selectItemClass}>
+                        {w.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-               <Label htmlFor="experience_level" className={labelClass}>Experience Level</Label>
-               <select id="experience_level" value={traineeData.experience_level} onChange={(e) => setTraineeData({...traineeData, experience_level: e.target.value})} className={inputClass || "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"}>
-                 <option value="beginner">Beginner</option>
-                 <option value="intermediate">Intermediate</option>
-                 <option value="advanced">Advanced</option>
-                 <option value="elite">Elite</option>
-               </select>
+              <Label htmlFor="experience_level" className={labelClass}>Experience Level</Label>
+              <Select
+                value={traineeData.experience_level || "beginner"}
+                onValueChange={(val) => setTraineeData({ ...traineeData, experience_level: val })}
+              >
+                <SelectTrigger id="experience_level" className={selectTriggerClass}>
+                  <SelectValue placeholder="Select experience" />
+                </SelectTrigger>
+                <SelectContent className={selectContentClass}>
+                  {EXPERIENCE_LEVEL_OPTIONS.map((exp) => (
+                    <SelectItem key={exp.value} value={exp.value} className={selectItemClass}>
+                      {exp.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="goal" className={labelClass}>Fitness Goal</Label>
-              <Input id="goal" value={traineeData.goal} onChange={(e) => setTraineeData({...traineeData, goal: e.target.value})} placeholder="e.g. hypertrophy, marathon" className={inputClass} />
+              <Select
+                value={traineeData.goal || undefined}
+                onValueChange={(val) => setTraineeData({ ...traineeData, goal: val })}
+              >
+                <SelectTrigger id="goal" className={selectTriggerClass}>
+                  <SelectValue placeholder="e.g. hypertrophy, marathon" />
+                </SelectTrigger>
+                <SelectContent className={selectContentClass}>
+                  {GOAL_OPTIONS.map((g) => (
+                    <SelectItem key={g.value} value={g.value} className={selectItemClass}>
+                      {g.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-sm mt-4">
