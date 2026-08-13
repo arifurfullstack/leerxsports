@@ -139,7 +139,7 @@ export function Navbar() {
     queryKey: ["navbar-trainer-status", user?.id],
     queryFn: async () => {
       if (!user) return { isApproved: false, isPending: false };
-      const [{ data: app }, { data: prof }] = await Promise.all([
+      const [{ data: app }, { data: prof }, { data: role }] = await Promise.all([
         supabase
           .from("trainer_applications")
           .select("status")
@@ -152,8 +152,15 @@ export function Navbar() {
           .select("user_id")
           .eq("user_id", user.id)
           .maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "trainer")
+          .maybeSingle(),
       ]);
-      const isApproved = app?.status === "approved" || !!prof;
+      const hasTrainerRole = !!role;
+      const isApproved = hasTrainerRole || (app?.status === "approved" && !!prof);
       const isPending = app?.status === "pending" && !isApproved;
       return { isApproved, isPending };
     },

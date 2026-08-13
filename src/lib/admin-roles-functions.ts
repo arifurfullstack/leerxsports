@@ -327,12 +327,30 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
           .eq("user_id", data.userId)
           .in("role", toRemove);
         if (dErr) throw new Error(dErr.message);
+
+        if (toRemove.includes("trainer")) {
+          await (supabaseAdmin as any)
+            .from("trainer_profiles")
+            .delete()
+            .eq("user_id", data.userId);
+          await (supabaseAdmin as any)
+            .from("trainer_applications")
+            .update({ status: "rejected" })
+            .eq("user_id", data.userId);
+        }
       }
       if (toAdd.length > 0) {
         const { error: iErr } = await (supabaseAdmin as any)
           .from("user_roles")
           .insert(toAdd.map((role) => ({ user_id: data.userId, role })));
         if (iErr) throw new Error(iErr.message);
+
+        if (toAdd.includes("trainer")) {
+          await (supabaseAdmin as any)
+            .from("trainer_applications")
+            .update({ status: "approved" })
+            .eq("user_id", data.userId);
+        }
       }
     }
 
