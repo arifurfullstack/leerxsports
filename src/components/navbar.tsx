@@ -67,11 +67,15 @@ const BASE_PRIMARY_LINKS: NavLink[] = [
   { to: "/pricing",   label: "Pricing",   icon: Tag,          accent: "text-foreground/60", hover: HOVER },
 ];
 
-function getPrimaryLinks(authed: boolean): NavLink[] {
-  if (!authed) return BASE_PRIMARY_LINKS;
+function getPrimaryLinks(authed: boolean, isCreatorMode: boolean = false): NavLink[] {
+  const base = isCreatorMode
+    ? BASE_PRIMARY_LINKS.filter((l) => l.to !== "/pricing")
+    : BASE_PRIMARY_LINKS;
+
+  if (!authed) return base;
   return [
     { to: "/home", label: "Home", icon: Home, accent: "text-foreground/60", hover: HOVER },
-    ...BASE_PRIMARY_LINKS.filter((l) => l.to !== "/pricing"),
+    ...base,
   ];
 }
 
@@ -276,7 +280,7 @@ export function Navbar() {
     router.navigate({ to: "/", replace: true });
   };
 
-  const primary = getPrimaryLinks(!!user);
+  const primary = getPrimaryLinks(!!user, mode === "creator");
   const secondary = getSecondaryLinks(!!user);
   const initials = initialsFrom(user);
   const displayName =
