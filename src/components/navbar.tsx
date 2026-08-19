@@ -23,7 +23,6 @@ import {
   Tag,
   ChevronDown,
   LayoutDashboard,
-  Wallet,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +31,6 @@ import { Button } from "./ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { isAdmin } from "@/lib/auth-functions";
-import { getUserWalletBalance } from "@/lib/wallet-functions";
 import { NotificationBell } from "./notification-bell";
 import { HeaderSearch } from "./header-search";
 import { UserAvatar } from "./user-avatar";
@@ -112,7 +110,6 @@ export function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const checkAdmin = useServerFn(isAdmin);
-  const getWallet = useServerFn(getUserWalletBalance);
   const { mode } = useProfileMode();
 
   const pathname = useRouter().state.location.pathname;
@@ -129,11 +126,6 @@ export function Navbar() {
 
   if (isAdminRoute) return null;
 
-  const walletQuery = useQuery({
-    queryKey: ["user-wallet"],
-    queryFn: () => getWallet(),
-    enabled: !!user,
-  });
 
   const trainerStatusQuery = useQuery({
     queryKey: ["navbar-trainer-status", user?.id],
@@ -381,18 +373,6 @@ export function Navbar() {
               >
                 <MessageSquare className="h-4 w-4" />
               </Link>
-              <Link
-                to="/wallet"
-                aria-label="Wallet"
-                className="hidden items-center gap-1.5 rounded-sm border border-hairline bg-accent/40 px-2.5 py-1 text-xs font-semibold text-foreground/80 transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-500 sm:flex"
-              >
-                <Wallet className="h-4 w-4 text-emerald-500" />
-                <span>
-                  {walletQuery.data
-                    ? `${walletQuery.data.currency === "USD" ? "$" : ""}${walletQuery.data.balance.toFixed(2)}`
-                    : "Wallet"}
-                </span>
-              </Link>
 
               {/* User avatar dropdown */}
               <DropdownMenu>
@@ -444,19 +424,6 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex w-full items-center">
                       <UserIcon className="mr-2 h-4 w-4 text-premium" /> My Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/wallet" className="flex w-full items-center justify-between">
-                      <div className="flex items-center">
-                        <Wallet className="mr-2 h-4 w-4 text-emerald-500" /> Wallet
-                      </div>
-                      {walletQuery.data && (
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-500">
-                          {walletQuery.data.currency === "USD" ? "$" : ""}
-                          {walletQuery.data.balance.toFixed(2)}
-                        </span>
-                      )}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -655,19 +622,6 @@ export function Navbar() {
                 <Link to="/profile" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
                   <Button variant="outline" size="sm" className="w-full justify-start border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
                     <UserIcon className="mr-2 h-4 w-4 text-premium" /> My Profile
-                  </Button>
-                </Link>
-                <Link to="/wallet" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
-                  <Button variant="outline" size="sm" className="w-full justify-between border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
-                    <span className="flex items-center">
-                      <Wallet className="mr-2 h-4 w-4 text-emerald-500" /> Wallet
-                    </span>
-                    {walletQuery.data && (
-                      <span className="text-xs font-bold text-emerald-500">
-                        {walletQuery.data.currency === "USD" ? "$" : ""}
-                        {walletQuery.data.balance.toFixed(2)}
-                      </span>
-                    )}
                   </Button>
                 </Link>
                 <Link to="/messages" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>

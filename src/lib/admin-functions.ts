@@ -59,7 +59,27 @@ export const adminListTrainerApplications = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+
+    // Enrich with avatar + username from profiles
+    const userIds = (data ?? []).map((a) => a.user_id).filter(Boolean);
+    let profileMap: Record<string, { avatar_url: string | null; username: string | null }> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await context.supabase
+        .from("profiles")
+        .select("user_id, avatar_url, username")
+        .in("user_id", userIds);
+      if (profiles) {
+        for (const p of profiles) {
+          profileMap[p.user_id] = { avatar_url: p.avatar_url, username: p.username };
+        }
+      }
+    }
+
+    return (data ?? []).map((a) => ({
+      ...a,
+      avatar_url: profileMap[a.user_id]?.avatar_url ?? null,
+      username: profileMap[a.user_id]?.username ?? null,
+    }));
   });
 
 export const adminReviewTrainerApplication = createServerFn({ method: "POST" })

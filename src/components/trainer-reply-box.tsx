@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -22,6 +22,27 @@ interface TrainerReplyBoxProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function TrainerReplyBox({ postId, trainerId, coachingStatus, onSuccess }: TrainerReplyBoxProps) {
   const addFn = useServerFn(addCommunityComment);
+
+  // RBAC: Verify the current user holds a verified trainer role before rendering
+  const [isVerifiedTrainer, setIsVerifiedTrainer] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", trainerId)
+        .eq("role", "trainer")
+        .maybeSingle();
+      if (alive) setIsVerifiedTrainer(!!roleRow);
+    })();
+    return () => { alive = false; };
+  }, [trainerId]);
+
+  // Don't render if not a verified trainer (pending trainers see nothing)
+  if (isVerifiedTrainer === false) return null;
+  // Show nothing while checking (avoids flash)
+  if (isVerifiedTrainer === null) return null;
 
   // Form state
   const [body, setBody] = useState("");

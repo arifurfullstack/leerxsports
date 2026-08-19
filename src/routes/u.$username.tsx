@@ -257,227 +257,150 @@ function TraineePage() {
     : 0;
 
   return (
-    <main className="min-h-dvh bg-background">
-      {/* Cover — cinematic parallax feel with grain + dual glow */}
-      <div className="relative isolate">
-        <div
-          className="h-56 w-full bg-gradient-to-br from-primary/25 via-accent/15 to-background sm:h-80 lg:h-[22rem]"
-          style={
-            p.cover_url
-              ? {
-                  backgroundImage: `url(${p.cover_url})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : undefined
-          }
-          aria-hidden="true"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/40 to-background" />
-          <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(55%_55%_at_15%_20%,color-mix(in_oklab,var(--primary)_45%,transparent),transparent_60%),radial-gradient(45%_45%_at_85%_30%,color-mix(in_oklab,var(--accent)_35%,transparent),transparent_60%)]" />
-          <div
-            className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-[0.08]"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Bento hero */}
-        <header className="-mt-24 sm:-mt-32">
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-12">
-            {/* Identity tile */}
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-card/90 p-5 shadow-[0_20px_60px_-30px_color-mix(in_oklab,var(--primary)_60%,transparent)] backdrop-blur-xl sm:p-6 lg:col-span-8">
-              <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-              <div className="pointer-events-none absolute -right-20 bottom-0 h-56 w-56 rounded-full bg-accent/15 blur-3xl" />
-              <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 sm:gap-6">
-                <div className="relative shrink-0">
-                  <div className="absolute inset-0 -m-1.5 rounded-full bg-gradient-to-tr from-primary via-accent to-primary/40 blur-md opacity-80" aria-hidden />
-                  <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-background bg-muted sm:h-32 sm:w-32">
-                    {p.avatar_url ? (
-                      <img
-                        src={p.avatar_url}
-                        alt={`${p.display_name ?? p.username} avatar`}
-                        className="h-full w-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-accent/30 font-display text-3xl uppercase">
-                        {initials}
-                      </div>
-                    )}
+    <main className="min-h-dvh bg-background pb-16 pt-6 sm:pt-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* Instagram-Style Header */}
+        <header className="space-y-5">
+          {/* Top Row: Avatar + Stats */}
+          <div className="flex items-center gap-6 sm:gap-10">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-border bg-card shadow-lg ring-2 ring-primary/20 sm:h-24 sm:w-24 md:h-28 md:w-28">
+                {p.avatar_url ? (
+                  <img
+                    src={p.avatar_url}
+                    alt={`${p.display_name ?? p.username} avatar`}
+                    className="h-full w-full object-cover"
+                    loading="eager"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center font-display text-2xl font-bold uppercase text-muted-foreground sm:text-3xl">
+                    {initials}
                   </div>
-                  <span
-                    className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-lg"
-                    title="LEER athlete"
-                    aria-hidden
-                  >
-                    <BadgeCheck className="h-4 w-4" />
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-                      <Flame className="h-3 w-3" /> Trainee
-                    </span>
-                    {p.experience_level && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
-                        <Zap className="h-3 w-3 text-accent" /> {p.experience_level}
-                      </span>
-                    )}
-                  </div>
-                  <h1 className="mt-2 flex items-center gap-2 bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text font-display text-3xl uppercase tracking-tight text-transparent sm:text-5xl">
-                    <span className="truncate">{p.display_name ?? p.username}</span>
-                    {p.is_verified && (
-                      <VerifiedBadge size="xl" className="text-transparent-none" />
-                    )}
-                  </h1>
-                  <p className="mt-0.5 text-sm text-muted-foreground">@{p.username}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {p.country && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs">
-                        <MapPin className="h-3 w-3 text-primary" /> {p.country}
-                      </span>
-                    )}
-                    {p.native_language && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs">
-                        <Languages className="h-3 w-3 text-primary" />
-                        {[p.native_language, ...(p.additional_languages ?? [])].join(" · ")}
-                      </span>
-                    )}
-                    {p.goal && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs">
-                        <Target className="h-3 w-3 text-primary" /> {p.goal}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {/* Actions */}
-              <div className="relative mt-5 flex flex-wrap items-center gap-2.5 border-t border-border/70 pt-4">
-                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-800 bg-neutral-950/90 p-2 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
-                  {!isOwner && (
-                    <Button
-                      onClick={onFollowClick}
-                      size="default"
-                      disabled={followMut.isPending}
-                      aria-pressed={isFollowing}
-                      aria-label={isFollowing ? "Unfollow this athlete" : "Follow this athlete"}
-                      className={`group relative overflow-hidden rounded-xl px-5 font-bold uppercase tracking-wider transition-all duration-200 ease-out transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
-                        isFollowing
-                          ? "border border-neutral-700 bg-neutral-900/90 text-neutral-200 hover:border-red-500/60 hover:bg-red-950/40 hover:text-rose-300"
-                          : "bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10"
-                      }`}
-                    >
-                      {followMut.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" />
-                      ) : isFollowing ? (
-                        <>
-                          <UserCheck className="mr-2 h-4 w-4 text-emerald-400 transition-transform group-hover:scale-110" />
-                          <span>Following</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="mr-2 h-4 w-4 text-black transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
-                          <span>Follow</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <div className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/80 px-3.5 py-2 text-xs backdrop-blur-md">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-white" />
-                      <span className="font-semibold text-white tabular-nums">
-                        {countsQ.data?.followers ?? 0}
-                      </span>
-                      <span className="text-neutral-400">followers</span>
-                    </span>
-                    <span className="h-3.5 w-px bg-neutral-800" aria-hidden />
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="font-semibold text-white tabular-nums">
-                        {countsQ.data?.following ?? 0}
-                      </span>
-                      <span className="text-neutral-400">following</span>
-                    </span>
-                  </div>
-                  <Button asChild size="default" className="group rounded-xl border border-primary/40 bg-neutral-900 font-bold uppercase tracking-wider text-white gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/20 hover:text-white shadow-lg">
-                    <Link to="/trainers/$username" params={{ username: p.username ?? "" }}>
-                      <Sparkles className="h-4 w-4 text-primary transition-transform group-hover:scale-110" />
-                      Creator Profile <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                  <Button onClick={share} variant="outline" size="default" className="group rounded-xl border border-neutral-800 bg-neutral-900/80 gap-2 px-4 font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md">
-                    <Share2 className="h-4 w-4 text-neutral-400 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12 group-hover:text-white" /> Share profile
-                  </Button>
-                  {isOwner && (
-                    <Button
-                      onClick={() => setEditing(true)}
-                      variant="secondary"
-                      size="default"
-                      className="group rounded-xl border border-neutral-800 bg-neutral-900/80 gap-2 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-600 hover:bg-neutral-800 hover:shadow-md"
-                    >
-                      <Pencil className="h-4 w-4 text-neutral-300 transition-transform group-hover:rotate-12 group-hover:text-white" /> Edit profile
-                    </Button>
-                  )}
-                </div>
-                {p.bio && (
-                  <span className="ml-auto hidden max-w-md truncate text-xs italic text-muted-foreground sm:inline">
-                    "{p.bio.replace(/\s+/g, " ").slice(0, 90)}
-                    {p.bio.length > 90 ? "…" : ""}"
-                  </span>
                 )}
               </div>
             </div>
 
-            {/* Journey tile */}
-            {totalPosts > 0 ? (
-              <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-5 sm:p-6 lg:col-span-4">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/30 blur-3xl" />
-                <div className="relative flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  <CalendarDays className="h-3.5 w-3.5 text-primary" /> Journey
-                </div>
-                <div className="relative mt-4 grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <p className="font-display text-2xl leading-none sm:text-3xl">{totalPosts}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">Entries</p>
-                  </div>
-                  <div className="border-x border-border/60">
-                    <p className="font-display text-2xl leading-none sm:text-3xl">{spanDays}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">Days</p>
-                  </div>
-                  <div>
-                    <p className="font-display text-2xl leading-none sm:text-3xl">
-                      {new Set(p.transformations.map((t: any) => t.view_angle)).size}
-                    </p>
-                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">Angles</p>
-                  </div>
-                </div>
-                <div className="relative mt-4 flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
-                  <Camera className="h-3.5 w-3.5 text-primary" />
-                  <span className="truncate">
-                    Latest capture{" "}
-                    <span className="font-semibold text-foreground">
-                      {new Date(p.transformations[0].captured_on).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </span>
-                </div>
+            {/* Stats Row */}
+            <div className="flex flex-1 items-center justify-around text-center sm:justify-start sm:gap-8">
+              <div>
+                <span className="block font-display text-lg font-bold tabular-nums sm:text-xl">
+                  {totalPosts}
+                </span>
+                <span className="text-xs text-muted-foreground">Entries</span>
               </div>
-            ) : (
-              <div className="relative overflow-hidden rounded-3xl border border-dashed border-border bg-card/60 p-6 lg:col-span-4">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Journey</p>
-                <p className="mt-2 font-display text-lg">No entries yet</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Once entries are logged they'll appear here.
-                </p>
+              <div>
+                <span className="block font-display text-lg font-bold tabular-nums sm:text-xl">
+                  {countsQ.data?.followers ?? 0}
+                </span>
+                <span className="text-xs text-muted-foreground">Followers</span>
               </div>
+              <div>
+                <span className="block font-display text-lg font-bold tabular-nums sm:text-xl">
+                  {countsQ.data?.following ?? 0}
+                </span>
+                <span className="text-xs text-muted-foreground">Following</span>
+              </div>
+              <div>
+                <span className="block font-display text-lg font-bold tabular-nums sm:text-xl text-primary">
+                  {spanDays}
+                </span>
+                <span className="text-xs text-muted-foreground">Days</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Identity & Badges */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                {p.display_name ?? p.username}
+              </h1>
+              {p.is_verified && <VerifiedBadge size="md" />}
+            </div>
+            <p className="text-xs font-medium text-muted-foreground">@{p.username}</p>
+
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                <Flame className="h-3 w-3" /> Trainee
+              </span>
+              {p.experience_level && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Zap className="h-3 w-3 text-accent" /> {p.experience_level}
+                </span>
+              )}
+              {p.country && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+                  <MapPin className="h-3 w-3 text-primary" /> {p.country}
+                </span>
+              )}
+              {p.goal && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+                  <Target className="h-3 w-3 text-primary" /> {p.goal}
+                </span>
+              )}
+            </div>
+
+            {p.bio && (
+              <p className="pt-1 whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
+                {p.bio}
+              </p>
+            )}
+          </div>
+
+          {/* Action buttons row */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {!isOwner && (
+              <Button
+                onClick={onFollowClick}
+                size="sm"
+                disabled={followMut.isPending}
+                className={`rounded-xl px-4 font-bold uppercase tracking-wider text-xs transition-all ${
+                  isFollowing
+                    ? "border border-neutral-700 bg-neutral-900 text-neutral-200 hover:border-red-500/60 hover:bg-red-950/40 hover:text-rose-300"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+              >
+                {followMut.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : isFollowing ? (
+                  <>
+                    <UserCheck className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                    <span>Follow</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            <Button asChild size="sm" variant="outline" className="rounded-xl px-3 text-xs gap-1.5">
+              <Link to="/trainers/$username" params={{ username: p.username ?? "" }}>
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span>Trainer Profile</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+
+            <Button onClick={share} variant="outline" size="sm" className="rounded-xl px-3 text-xs gap-1.5">
+              <Share2 className="h-3.5 w-3.5" />
+              <span>Share</span>
+            </Button>
+
+            {isOwner && (
+              <Button
+                onClick={() => setEditing(true)}
+                size="sm"
+                variant="outline"
+                className="rounded-xl px-3 text-xs gap-1.5"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Edit Profile</span>
+              </Button>
             )}
           </div>
         </header>

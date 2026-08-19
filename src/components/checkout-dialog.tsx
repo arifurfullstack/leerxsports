@@ -37,8 +37,8 @@ const PLANS: PlanOption[] = [
     id: "subscription",
     title: "Creator Subscription",
     tagline: "Choose a trainer to unlock their complete premium experience.",
-    amount: 15,
-    cadence: "set by creator ($5–$50/mo)",
+    amount: 19.99,
+    cadence: "set by creator ($4.99–$499.99/mo)",
     features: ["Premium feed and shorts", "Subscriber coaching", "Cancel future renewal"],
   },
   {
@@ -127,7 +127,7 @@ export function CheckoutDialog({
             >
               <span className="block text-sm font-semibold">{option.title}</span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                {option.id === "subscription" ? "$5.00 – $50.00/mo" : `From $${option.amount.toFixed(2)}`}
+                {option.id === "subscription" ? "$4.99 – $499.99/mo" : `From $${option.amount.toFixed(2)}`}
               </span>
             </button>
           ))}
@@ -141,7 +141,7 @@ export function CheckoutDialog({
             </div>
             <div className="text-right">
               <p className="font-display text-3xl">
-                {plan.id === "subscription" && !assumptions ? "$5–$50" : `$${plan.amount.toFixed(2)}`}
+                {plan.id === "subscription" && !assumptions ? "$4.99–$499.99" : `$${plan.amount.toFixed(2)}`}
               </p>
               <p className="text-xs text-muted-foreground">{plan.cadence}</p>
             </div>
@@ -162,8 +162,8 @@ export function CheckoutDialog({
             Payment methods synchronized with Admin
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            LEER Wallet
-            {(gateways.data ?? []).map((gateway) => ` · ${gateway.displayName}`).join("")}
+            Credit / Debit Card (Stripe)
+            {(gateways.data ?? []).filter((g) => g.provider !== "stripe").map((gateway) => ` · ${gateway.displayName}`).join("")}
             {!gateways.isLoading && (gateways.data?.length ?? 0) === 0
               ? " · no external gateway currently enabled"
               : ""}
@@ -173,7 +173,7 @@ export function CheckoutDialog({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
-            Access is granted only after wallet or provider confirmation.
+            Access is granted immediately after secure provider confirmation.
           </span>
           <Button asChild onClick={() => onOpenChange(false)}>
             <Link to={destination}>

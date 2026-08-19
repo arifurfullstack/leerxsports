@@ -72,14 +72,21 @@ export async function createProviderCheckout(params: {
     if (!secret) throw new Error("Stripe secret key is not configured.");
 
     const { successUrl, cancelUrl } = buildStripeReturnUrls(origin, order.id);
+    const isSubscription = order.kind === "subscription";
 
     const body = new URLSearchParams();
-    body.set("mode", "payment");
+    body.set("mode", isSubscription ? "subscription" : "payment");
     body.set("success_url", successUrl);
     body.set("cancel_url", cancelUrl);
     body.set("client_reference_id", order.id);
     body.set("metadata[payment_order_id]", order.id);
-    body.set("payment_intent_data[metadata][payment_order_id]", order.id);
+    if (isSubscription) {
+      body.set("subscription_data[metadata][payment_order_id]", order.id);
+      body.set("line_items[0][price_data][recurring][interval]", "month");
+      body.set("line_items[0][price_data][recurring][interval_count]", "1");
+    } else {
+      body.set("payment_intent_data[metadata][payment_order_id]", order.id);
+    }
     body.set("line_items[0][quantity]", "1");
     body.set("line_items[0][price_data][currency]", order.currency.toLowerCase());
     body.set("line_items[0][price_data][unit_amount]", String(Math.round(order.amount * 100)));

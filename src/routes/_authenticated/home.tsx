@@ -1782,8 +1782,8 @@ function FeedGrid() {
   const [commentSort, setCommentSort] = useState<"newest" | "oldest">("newest");
 
   const [density, setDensity] = useState<"compact" | "comfortable">(() => {
-    if (typeof window === "undefined") return "comfortable";
-    return (localStorage.getItem("home:feed-density") as "compact" | "comfortable") || "comfortable";
+    if (typeof window === "undefined") return "compact";
+    return (localStorage.getItem("home:feed-density") as "compact" | "comfortable") || "compact";
   });
   useEffect(() => {
     try {

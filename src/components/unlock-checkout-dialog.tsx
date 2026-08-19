@@ -28,7 +28,6 @@ import {
   listCheckoutGateways,
   type CheckoutProvider,
 } from "@/lib/checkout-functions";
-import { getUserWalletBalance } from "@/lib/wallet-functions";
 
 type UnlockCheckoutDialogProps = {
   trainerId: string;
@@ -75,19 +74,13 @@ export function UnlockCheckoutDialog({
   triggerLabel,
 }: UnlockCheckoutDialogProps) {
   const [open, setOpen] = useState(false);
-  const [durationMonths, setDurationMonths] = useState(1);
-  const [provider, setProvider] = useState<CheckoutProvider>("wallet");
+  const [provider, setProvider] = useState<CheckoutProvider>("stripe");
   const [bankInstructions, setBankInstructions] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const queryClient = useQueryClient();
-  const getWallet = useServerFn(getUserWalletBalance);
   const getGateways = useServerFn(listCheckoutGateways);
   const beginCheckout = useServerFn(createCheckoutOrder);
 
-  const walletQuery = useQuery({
-    queryKey: ["user-wallet"],
-    queryFn: () => getWallet(),
-    enabled: open,
-  });
   const gatewayQuery = useQuery({
     queryKey: ["checkout-gateways"],
     queryFn: () => getGateways(),
@@ -96,22 +89,17 @@ export function UnlockCheckoutDialog({
   });
 
   const methods = useMemo(
-    () => [
-      { provider: "wallet" as const, displayName: "LEER Wallet", mode: "live" as const },
-      ...(gatewayQuery.data ?? []),
-    ],
+    () => gatewayQuery.data ?? [],
     [gatewayQuery.data],
   );
 
   useEffect(() => {
     if (!methods.some((method) => method.provider === provider)) {
-      setProvider(methods[0]?.provider ?? "wallet");
+      setProvider(methods[0]?.provider ?? "stripe");
     }
   }, [methods, provider]);
 
-  const total = Math.round(subscriptionPrice * durationMonths * 100) / 100;
-  const walletBalance = walletQuery.data?.balance ?? 0;
-  const walletInsufficient = provider === "wallet" && walletBalance < total;
+  const total = Math.round(subscriptionPrice * 100) / 100;
 
   const checkout = useMutation({
     mutationFn: () =>
@@ -120,11 +108,12 @@ export function UnlockCheckoutDialog({
           kind: "subscription",
           provider,
           trainerId,
-          durationMonths,
+          durationMonths: 1,
         },
       }),
     onSuccess: (result) => {
       if (result.status === "redirect" && result.redirectUrl) {
+        setIsRedirecting(true);
         window.location.assign(result.redirectUrl);
         return;
       }
@@ -137,10 +126,12 @@ export function UnlockCheckoutDialog({
       queryClient.invalidateQueries({ queryKey: ["subscription-info", trainerId] });
       queryClient.invalidateQueries({ queryKey: ["premium-urls", trainerId] });
       queryClient.invalidateQueries({ queryKey: ["follow-counts", trainerId] });
-      queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
       setOpen(false);
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      setIsRedirecting(false);
+      toast.error(error.message);
+    },
   });
 
   if (isSubscribed) {
@@ -173,7 +164,10 @@ export function UnlockCheckoutDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setBankInstructions(null);
+        if (!next) {
+          setBankInstructions(null);
+          setIsRedirecting(false);
+        }
       }}
     >
       <DialogTrigger asChild onClick={handleOpenCheck}>
@@ -211,32 +205,24 @@ export function UnlockCheckoutDialog({
             </span>
           </DialogTitle>
           <DialogDescription className="text-neutral-400">
-            Premium posts, private coaching, and future subscriber content
+            Premium feed, exclusive shorts, and direct subscriber access
             {creatorUsername ? ` from @${creatorUsername}` : ""}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 3, 12].map((months) => (
-            <button
-              key={months}
-              type="button"
-              onClick={() => setDurationMonths(months)}
-              className={`rounded-xl border p-3 text-sm font-semibold ${
-                durationMonths === months
-                  ? "border-primary bg-primary/10 text-white"
-                  : "border-neutral-800 text-neutral-400"
-              }`}
-            >
-              {months} {months === 1 ? "month" : "months"}
-            </button>
-          ))}
-        </div>
-
+        {/* Pricing Plan Card */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
           <div className="flex items-end justify-between">
-            <span className="text-sm text-neutral-400">Total due now</span>
-            <span className="font-display text-3xl">${total.toFixed(2)}</span>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                Monthly Subscription
+              </span>
+              <p className="mt-0.5 text-xs text-neutral-400">Auto-renews monthly · Cancel anytime</p>
+            </div>
+            <div className="text-right">
+              <span className="font-display text-3xl font-bold">${total.toFixed(2)}</span>
+              <span className="text-xs text-neutral-400">/mo</span>
+            </div>
           </div>
           <div className="mt-4 grid gap-2">
             {methods.map((method) => {
@@ -246,20 +232,18 @@ export function UnlockCheckoutDialog({
                   key={method.provider}
                   type="button"
                   onClick={() => setProvider(method.provider)}
-                  className={`flex items-center justify-between rounded-xl border p-3 text-left ${
+                  className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
                     provider === method.provider
                       ? "border-primary bg-primary/10"
                       : "border-neutral-800 hover:border-neutral-600"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5 text-primary" />
                     <span>
                       <span className="block text-sm font-semibold">{method.displayName}</span>
                       <span className="block text-[11px] text-neutral-500">
-                        {method.provider === "wallet"
-                          ? `${walletBalance.toFixed(2)} ${walletQuery.data?.currency ?? "USD"} available`
-                          : `${method.mode} gateway`}
+                        {`${method.mode} gateway`}
                       </span>
                     </span>
                   </span>
@@ -272,14 +256,6 @@ export function UnlockCheckoutDialog({
           </div>
         </div>
 
-        {walletInsufficient && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-            Insufficient wallet balance.{" "}
-            <Link to="/wallet" className="font-semibold underline">
-              Add verified funds
-            </Link>
-          </div>
-        )}
         {bankInstructions && (
           <pre className="whitespace-pre-wrap rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-xs text-sky-100">
             {bankInstructions}
@@ -289,28 +265,33 @@ export function UnlockCheckoutDialog({
         <div className="grid gap-2 text-xs text-neutral-400">
           <span className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            Provider-confirmed payment; access is never granted on an unverified charge.
+            Encrypted checkout. Access is activated immediately upon successful payment.
           </span>
           <span className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-sky-400" />
             {dmsEnabled
-              ? "Subscriber messaging enabled."
+              ? "Subscriber direct messaging enabled."
               : "Messaging is disabled by this trainer."}
           </span>
         </div>
 
         <Button
-          className="w-full"
+          className="w-full font-bold uppercase tracking-wider text-xs h-12"
           size="lg"
-          disabled={checkout.isPending || walletInsufficient || !!bankInstructions}
+          disabled={checkout.isPending || isRedirecting || !!bankInstructions || methods.length === 0}
           onClick={() => checkout.mutate()}
         >
-          {checkout.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {checkout.isPending || isRedirecting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isRedirecting ? "Connecting to Stripe…" : "Preparing checkout…"}
+            </>
           ) : (
-            <Lock className="mr-2 h-4 w-4" />
+            <>
+              <Lock className="mr-2 h-4 w-4" />
+              {provider === "bank" ? "Create Bank Transfer Order" : `Subscribe for $${total.toFixed(2)}/mo`}
+            </>
           )}
-          {provider === "bank" ? "Create bank transfer" : `Pay ${total.toFixed(2)} USD`}
         </Button>
       </DialogContent>
     </Dialog>

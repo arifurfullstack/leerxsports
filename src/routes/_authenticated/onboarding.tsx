@@ -906,7 +906,7 @@ function TrainerForm({
         certificates: certs,
         id_doc_url: idDoc === "" ? undefined : idDoc,
         social_links: socials,
-        requested_price: price === "" ? 9.99 : Number(price),
+        requested_price: price === "" ? 19.99 : Number(price),
         payout_info: payout === "" ? undefined : payout,
         agreement_accepted: fd.get("agreement_accepted") === "on",
       };
@@ -1144,12 +1144,12 @@ function TrainerForm({
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Field label="Preferred monthly price (USD)" htmlFor="requested_price" hint="Optional subscriber pricing.">
-              <Input id="requested_price" name="requested_price" type="number" step="0.01" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="rounded-2xl border-neutral-800 bg-neutral-900/80 h-11 text-xs" />
+            <Field label="Preferred monthly price (USD)" htmlFor="requested_price" hint="Choose a monthly price between $4.99 and $499.99.">
+              <Input id="requested_price" name="requested_price" type="number" step="0.01" min={4.99} max={499.99} value={price} onChange={(e) => setPrice(e.target.value)} className="rounded-2xl border-neutral-800 bg-neutral-900/80 h-11 text-xs" />
             </Field>
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Presets:</span>
-              {["9.99", "19.99", "29.99", "49.99", "99.99"].map((p) => (
+              {["4.99", "9.99", "19.99", "49.99", "99.99"].map((p) => (
                 <button
                   key={p}
                   type="button"

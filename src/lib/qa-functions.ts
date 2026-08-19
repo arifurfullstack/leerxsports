@@ -60,46 +60,6 @@ export const sendQADispatch = createServerFn({ method: "POST" })
     const platformFee = Math.round(gross * bps) / 10000;
     const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
 
-    // Check trainee wallet balance
-    const { data: walletRow, error: wErr } = await (supabaseAdmin as any)
-      .from("user_wallets")
-      .select("balance, currency")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (wErr) throw new Error(wErr.message);
-
-    const currentBalance = Number(walletRow?.balance ?? 0);
-    if (currentBalance < gross) {
-      throw new Error(
-        `Insufficient wallet balance ($${currentBalance.toFixed(2)} available, $${gross}.00 required). Please top up your wallet.`,
-      );
-    }
-
-    const newBalance = Math.round((currentBalance - gross) * 100) / 100;
-
-    // Deduct $300 from trainee wallet
-    const { error: updWalletErr } = await (supabaseAdmin as any)
-      .from("user_wallets")
-      .upsert(
-        {
-          user_id: userId,
-          balance: newBalance,
-          currency: walletRow?.currency ?? currency,
-        },
-        { onConflict: "user_id" },
-      );
-    if (updWalletErr) throw new Error(updWalletErr.message);
-
-    // Insert wallet entry for trainee purchase
-    await (supabaseAdmin as any).from("wallet_entries").insert({
-      user_id: userId,
-      kind: "purchase",
-      amount: -gross,
-      balance_after: newBalance,
-      currency: walletRow?.currency ?? currency,
-      description: `Paid Q&A Dispatch ($${gross})`,
-    });
-
     const { data: tx, error: txErr } = await supabaseAdmin
       .from("transactions")
       .insert({
@@ -111,7 +71,7 @@ export const sendQADispatch = createServerFn({ method: "POST" })
         platform_fee: platformFee,
         trainer_amount: trainerAmount,
         currency,
-        metadata: { source: "placeholder", type: "qa_dispatch", video_url: data.videoUrl ?? null },
+        metadata: { source: "card_checkout", type: "qa_dispatch", video_url: data.videoUrl ?? null },
       })
       .select("id")
       .maybeSingle();
@@ -156,6 +116,19 @@ export const answerQADispatch = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Question not found.");
     if (row.creator_id !== userId) throw new Error("Not authorized.");
+
+    // RBAC: Verify caller holds a verified trainer role (prevents pending trainers)
+    const { data: verifiedTrainerRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "trainer")
+      .maybeSingle();
+    if (!verifiedTrainerRole) {
+      throw new Error(
+        "Only verified Pro Trainers can answer Q&A dispatches. Your trainer application may still be pending approval."
+      );
+    }
 
     if (row.status === "answered" || row.status === "expired" || row.status === "refunded") {
       throw new Error("This question has already been answered.");

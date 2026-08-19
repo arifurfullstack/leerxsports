@@ -76,7 +76,7 @@ const updateSchema = z.object({
   cover_url: z.string().trim().url().max(500).optional().or(z.literal("")),
   value_proposition: z.string().trim().min(1).max(160),
   specialties: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
-  subscription_price: z.number().min(0).max(999),
+  subscription_price: z.number().min(4.99, "Price must be at least $4.99/mo").max(499.99, "Price cannot exceed $499.99/mo"),
   monetization_enabled: z.boolean(),
   dms_enabled: z.boolean(),
 });

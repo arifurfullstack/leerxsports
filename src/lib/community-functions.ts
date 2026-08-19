@@ -344,6 +344,19 @@ export const addCommunityComment = createServerFn({ method: "POST" })
       }
 
       if (isTargetTrainer) {
+        // RBAC: Verify caller holds a verified trainer role (prevents pending trainers)
+        const { data: verifiedTrainerRole } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "trainer")
+          .maybeSingle();
+        if (!verifiedTrainerRole) {
+          throw new Error(
+            "Only verified Pro Trainers can submit coaching answers. Your trainer application may still be pending approval."
+          );
+        }
+
         // Step 2: Trainer's first response (PENDING → COACHED)
         // Step 4: Trainer's final answer   (COACHED → COACHING_COMPLETED)
         if (coachingStatus === "pending") {

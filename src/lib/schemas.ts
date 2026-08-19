@@ -141,7 +141,7 @@ export const trainerApplicationSchema = z.object({
   certificates: z.array(z.string().url()).max(10).default([]),
   id_doc_url: z.string().url().optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
   social_links: z.array(z.string().url()).max(10).default([]),
-  requested_price: z.coerce.number().min(0).max(999).optional().default(19.99),
+  requested_price: z.coerce.number().min(4.99, "Price must be at least $4.99/mo").max(499.99, "Price cannot exceed $499.99/mo").optional().default(19.99),
   payout_info: z.string().trim().max(500).optional(),
   agreement_accepted: z.literal(true),
 });

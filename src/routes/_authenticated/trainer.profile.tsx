@@ -608,8 +608,8 @@ function TrainerProfileEdit() {
                     <Input
                       id="subscription_price"
                       type="number"
-                      min={1}
-                      max={299.99}
+                      min={4.99}
+                      max={499.99}
                       step="0.01"
                       className="pl-8 border-neutral-800 bg-neutral-900 text-white focus-visible:ring-amber-500 font-bold text-base"
                       value={form.subscription_price}
@@ -622,7 +622,7 @@ function TrainerProfileEdit() {
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-neutral-400">
-                    Recommended range: $4.99 – $49.99 / month.
+                    Set your monthly subscriber fee between $4.99 and $499.99 / month.
                   </p>
                 </div>
 

@@ -292,3 +292,61 @@ describe("[STRIPE SANDBOX] Environment Keys & Payment Intent Infrastructure", ()
     expect(emailRegex.test("admin'--@hack.com")).toBe(false);
   });
 });
+
+// ─── QA ROUND 6 FIXES VERIFICATION ──────────────────────────────────────────
+
+describe("[QA ROUND FIXES] RBAC, Admin Flow, Wallet Removal, Checkout & Layout", () => {
+  it("QA-01: Trainer Pending status does not grant verified trainer role", () => {
+    const perms = permissionsForRole("trainee" as AppRole, false);
+    expect(perms).toHaveLength(0);
+  });
+
+  it("QA-02: App role schema strictly defines valid platform roles", () => {
+    expect(appRoleSchema.safeParse("trainer").success).toBe(true);
+    expect(appRoleSchema.safeParse("admin").success).toBe(true);
+    expect(appRoleSchema.safeParse("moderator").success).toBe(true);
+    expect(appRoleSchema.safeParse("trainee").success).toBe(true);
+    expect(appRoleSchema.safeParse("trainer_pending").success).toBe(false);
+  });
+
+  it("QA-03: Platform fee and trainer payout math for $300 Paid Q&A", () => {
+    const gross = 300;
+    const bps = 2000; // 20%
+    const platformFee = Math.round(gross * bps) / 10000;
+    const trainerAmount = Math.round((gross - platformFee) * 100) / 100;
+    expect(platformFee).toBe(60);
+    expect(trainerAmount).toBe(240);
+  });
+
+  it("QA-04: Trainer requested price allows minimum $4.99 and maximum $499.99", () => {
+    const baseValid = {
+      username: "coach_mike",
+      agreement_accepted: true,
+    };
+    // Valid boundary values
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 4.99 }).success).toBe(true);
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 19.99 }).success).toBe(true);
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 499.99 }).success).toBe(true);
+
+    // Invalid below minimum $4.99
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 4.98 }).success).toBe(false);
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 0 }).success).toBe(false);
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: -5 }).success).toBe(false);
+
+    // Invalid above maximum $499.99
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 500 }).success).toBe(false);
+    expect(trainerApplicationSchema.safeParse({ ...baseValid, requested_price: 1000 }).success).toBe(false);
+  });
+
+  it("QA-05: Single monthly subscription calculations across flexible price tiers", () => {
+    const prices = [4.99, 9.99, 19.99, 49.99, 149.99, 499.99];
+    const bps = 2000; // 20% commission
+
+    for (const p of prices) {
+      const platformFee = Math.round(p * bps) / 10000;
+      const trainerShare = Math.round((p - platformFee) * 100) / 100;
+      expect(platformFee + trainerShare).toBeCloseTo(p, 2);
+      expect(trainerShare).toBeGreaterThan(0);
+    }
+  });
+});

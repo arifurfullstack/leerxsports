@@ -18,7 +18,6 @@ import {
   listCheckoutGateways,
   type CheckoutProvider,
 } from "@/lib/checkout-functions";
-import { getUserWalletBalance } from "@/lib/wallet-functions";
 
 type PaidCheckoutButtonProps = {
   kind: "unlock" | "tip" | "wallet_topup";
@@ -57,44 +56,28 @@ export function PaidCheckoutButton({
   onPaid,
 }: PaidCheckoutButtonProps) {
   const [open, setOpen] = useState(false);
-  const [provider, setProvider] = useState<CheckoutProvider>(
-    kind === "wallet_topup" ? "stripe" : "wallet",
-  );
+  const [provider, setProvider] = useState<CheckoutProvider>("stripe");
   const [instructions, setInstructions] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const queryClient = useQueryClient();
-  const getWallet = useServerFn(getUserWalletBalance);
   const getGateways = useServerFn(listCheckoutGateways);
   const beginCheckout = useServerFn(createCheckoutOrder);
 
-  const wallet = useQuery({
-    queryKey: ["user-wallet"],
-    queryFn: () => getWallet(),
-    enabled: open && kind !== "wallet_topup",
-  });
   const gateways = useQuery({
     queryKey: ["checkout-gateways"],
     queryFn: () => getGateways(),
     enabled: open,
     staleTime: 60_000,
   });
-  const methods = useMemo(() => {
-    const external = gateways.data ?? [];
-    return kind === "wallet_topup"
-      ? external
-      : [
-          { provider: "wallet" as const, displayName: "LEER Wallet", mode: "live" as const },
-          ...external,
-        ];
-  }, [gateways.data, kind]);
+  // Wallet removed from MVP — only external gateways are available
+  const methods = useMemo(() => gateways.data ?? [], [gateways.data]);
 
   useEffect(() => {
     if (!methods.some((method) => method.provider === provider)) {
-      setProvider(methods[0]?.provider ?? (kind === "wallet_topup" ? "stripe" : "wallet"));
+      setProvider(methods[0]?.provider ?? "stripe");
     }
-  }, [kind, methods, provider]);
+  }, [methods, provider]);
 
-  const walletBalance = wallet.data?.balance ?? 0;
-  const walletInsufficient = provider === "wallet" && walletBalance < amount;
   const checkout = useMutation({
     mutationFn: () =>
       beginCheckout({
@@ -110,6 +93,7 @@ export function PaidCheckoutButton({
       }),
     onSuccess: (result) => {
       if (result.status === "redirect" && result.redirectUrl) {
+        setIsRedirecting(true);
         window.location.assign(result.redirectUrl);
         return;
       }
@@ -118,12 +102,14 @@ export function PaidCheckoutButton({
         toast.success("Bank transfer order created.");
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
       toast.success(kind === "wallet_topup" ? "Wallet funded." : "Payment complete.");
       setOpen(false);
       onPaid?.();
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      setIsRedirecting(false);
+      toast.error(error.message);
+    },
   });
 
   return (
@@ -131,7 +117,10 @@ export function PaidCheckoutButton({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setInstructions(null);
+        if (!next) {
+          setInstructions(null);
+          setIsRedirecting(false);
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -168,10 +157,8 @@ export function PaidCheckoutButton({
                   <Icon className="h-5 w-5" />
                   <span>
                     <span className="block text-sm font-medium">{method.displayName}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {method.provider === "wallet"
-                        ? `${walletBalance.toFixed(2)} ${wallet.data?.currency ?? "USD"} available`
-                        : `${method.mode} gateway`}
+                <span className="block text-xs text-muted-foreground">
+                      {`${method.mode} gateway`}
                     </span>
                   </span>
                 </span>
@@ -185,14 +172,6 @@ export function PaidCheckoutButton({
             </p>
           )}
         </div>
-        {walletInsufficient && (
-          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-            Insufficient wallet balance.{" "}
-            <Link to="/wallet" className="font-semibold underline">
-              Add funds
-            </Link>
-          </p>
-        )}
         {instructions && (
           <pre className="whitespace-pre-wrap rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs">
             {instructions}
@@ -201,11 +180,17 @@ export function PaidCheckoutButton({
         <Button
           onClick={() => checkout.mutate()}
           disabled={
-            checkout.isPending || walletInsufficient || methods.length === 0 || !!instructions
+            checkout.isPending || isRedirecting || methods.length === 0 || !!instructions
           }
         >
-          {checkout.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {provider === "bank" ? "Create transfer order" : `Pay $${amount.toFixed(2)}`}
+          {checkout.isPending || isRedirecting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isRedirecting ? "Connecting to Stripe…" : "Preparing checkout…"}
+            </>
+          ) : (
+            provider === "bank" ? "Create transfer order" : `Pay $${amount.toFixed(2)}`
+          )}
         </Button>
       </DialogContent>
     </Dialog>

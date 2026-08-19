@@ -26,8 +26,8 @@ export const getPlatformSettings = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return {
       commission_bps: data?.commission_bps ?? 2000,
-      min_subscription_price: Number(data?.min_subscription_price ?? 5),
-      max_subscription_price: Number(data?.max_subscription_price ?? 200),
+      min_subscription_price: Number(data?.min_subscription_price ?? 4.99),
+      max_subscription_price: Number(data?.max_subscription_price ?? 499.99),
       min_payout_amount: Number(data?.min_payout_amount ?? 25),
       dispute_window_hours: data?.dispute_window_hours ?? 24,
       trainer_sla_hours: data?.trainer_sla_hours ?? 48,

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BadgeCheck, XCircle, RotateCcw, Clock, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import {
   adminListTrainerApplications,
   adminReviewTrainerApplication,
@@ -10,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AdminNav } from "@/components/admin-nav";
+import { UserAvatar } from "@/components/user-avatar";
 
 const appsQuery = queryOptions({
   queryKey: ["admin-trainer-apps"],
@@ -37,6 +39,11 @@ function AdminTrainersPage() {
   const { data: apps } = useSuspenseQuery(appsQuery);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
 
+  const pendingCount = useMemo(
+    () => apps.filter((a) => a.status === "pending" || a.status === "resubmit").length,
+    [apps],
+  );
+
   const visible = apps.filter((a) =>
     filter === "pending" ? a.status === "pending" || a.status === "resubmit" : true,
   );
@@ -61,6 +68,11 @@ function AdminTrainersPage() {
               onClick={() => setFilter("pending")}
             >
               Pending
+              {pendingCount > 0 && (
+                <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-black">
+                  {pendingCount}
+                </span>
+              )}
             </Button>
             <Button
               variant={filter === "all" ? "default" : "outline"}
@@ -97,10 +109,18 @@ function AppCard({ app }: { app: App }) {
   const review = useMutation({
     mutationFn: (decision: Decision) =>
       reviewFn({ data: { applicationId: app.id, decision, notes: notes || null } }),
-    onSuccess: () => {
+    onSuccess: (_data, decision) => {
+      const name = app.public_trainer_name || app.username || "Applicant";
+      const messages: Record<Decision, string> = {
+        approved: `✅ ${name} has been approved as a Pro Trainer.`,
+        rejected: `❌ ${name}'s application has been rejected.`,
+        resubmit: `🔄 ${name} has been asked to resubmit their application.`,
+      };
+      toast.success(messages[decision]);
       qc.invalidateQueries({ queryKey: ["admin-trainer-apps"] });
       qc.invalidateQueries({ queryKey: ["navbar-trainer-status"] });
     },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const statusColor =
@@ -113,7 +133,13 @@ function AppCard({ app }: { app: App }) {
   return (
     <div className="rounded-lg border border-border bg-card p-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="flex items-start gap-3">
+          <UserAvatar
+            src={app.avatar_url}
+            name={app.public_trainer_name || app.full_legal_name}
+            size="lg"
+          />
+          <div>
           <div className="flex items-center gap-2">
             <h3 className="font-display text-xl uppercase">
               {app.public_trainer_name}
@@ -124,6 +150,9 @@ function AppCard({ app }: { app: App }) {
               {app.status}
             </span>
           </div>
+          {app.username && (
+            <p className="text-xs text-muted-foreground">@{app.username}</p>
+          )}
           <p className="text-sm text-muted-foreground">
             Legal name: {app.full_legal_name}
           </p>
@@ -136,6 +165,7 @@ function AppCard({ app }: { app: App }) {
               {new Date(app.created_at).toLocaleDateString()}
             </span>
           </p>
+          </div>
         </div>
         <div className="text-right">
           <p className="font-display text-lg text-primary">

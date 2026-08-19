@@ -91,6 +91,13 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     metadata.trainer_id = trainerId;
   }
 
+    if (data.provider === "wallet") {
+      throw new Error("LEER Wallet is currently disabled for this release. Please choose Card (Stripe) or an enabled gateway.");
+    }
+    if (data.kind === "wallet_topup") {
+      throw new Error("Wallet top-ups are disabled for this release. Please pay directly with Card (Stripe).");
+    }
+
     if (data.kind === "subscription") {
       if (trainerId === userId) throw new Error("You cannot subscribe to yourself.");
       const { data: trainer, error } = await supabaseAdmin
@@ -103,10 +110,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         throw new Error("This trainer is not accepting subscriptions.");
       }
       const monthlyPrice = Number(trainer.subscription_price ?? 0);
-      const minimum = Number(settings?.min_subscription_price ?? 5);
-      const maximum = Number(settings?.max_subscription_price ?? 200);
+      const minimum = Number(settings?.min_subscription_price ?? 4.99);
+      const maximum = Number(settings?.max_subscription_price ?? 499.99);
       if (monthlyPrice < minimum || monthlyPrice > maximum) {
-        throw new Error("The trainer subscription price is outside platform limits.");
+        throw new Error(`The trainer subscription price is outside platform limits ($${minimum.toFixed(2)} - $${maximum.toFixed(2)}).`);
       }
       const { count, error: postCountError } = await supabaseAdmin
         .from("posts")
@@ -120,8 +127,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       if ((count ?? 0) < 3) {
         throw new Error("This trainer needs at least 3 public posts before accepting subscribers.");
       }
-      amount = Math.round(monthlyPrice * data.durationMonths * 100) / 100;
+      amount = Math.round(monthlyPrice * 100) / 100;
       metadata.monthly_price = monthlyPrice;
+      metadata.recurring = "monthly";
     } else if (data.kind === "unlock") {
       const { data: post, error } = await supabaseAdmin
         .from("posts")
@@ -174,16 +182,14 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       postId = null;
     }
 
-    if (data.provider !== "wallet") {
-      const { data: gateway, error } = await supabaseAdmin
-        .from("payment_gateways")
-        .select("provider")
-        .eq("provider", data.provider)
-        .eq("enabled", true)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      if (!gateway) throw new Error(`${data.provider} is not enabled.`);
-    }
+    const { data: gateway, error } = await supabaseAdmin
+      .from("payment_gateways")
+      .select("provider")
+      .eq("provider", data.provider)
+      .eq("enabled", true)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!gateway) throw new Error(`${data.provider} is not enabled.`);
 
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("payment_orders")
@@ -197,66 +203,13 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         currency,
         post_id: postId,
         coaching_thread_id: data.threadId ?? null,
-        duration_months: data.durationMonths,
+        duration_months: data.kind === "subscription" ? 1 : (data.durationMonths ?? 1),
         message: data.message ?? null,
         metadata,
       })
       .select("id, payer_id, kind, provider, amount, currency")
       .single();
     if (orderError) throw new Error(orderError.message);
-
-    if (data.provider === "wallet") {
-      const { data: result, error } = await (supabase as any).rpc("pay_payment_order_with_wallet", {
-        _order_id: order.id,
-      });
-      if (error) throw new Error(error.message);
-
-      if (trainerId) {
-        try {
-          const { creditCreatorWallet } = await import("./wallet-functions");
-          const { data: tx } = await (supabaseAdmin as any)
-            .from("transactions")
-            .select("id, trainer_amount, currency")
-            .eq("metadata->>payment_order_id", order.id)
-            .maybeSingle();
-
-          const { data: payerProfile } = await (supabaseAdmin as any)
-            .from("profiles")
-            .select("display_name, username")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          const payerName = payerProfile?.display_name || payerProfile?.username || "supporter";
-          let desc = `Earned payment from ${payerName}`;
-          if (data.kind === "tip") desc = `Earned tip from ${payerName}`;
-          if (data.kind === "subscription") desc = `Earned subscription from ${payerName}`;
-          if (data.kind === "unlock") desc = `Earned content unlock from ${payerName}`;
-
-          const earned = Number(tx?.trainer_amount ?? Math.round(order.amount * 0.8 * 100) / 100);
-          const curr = tx?.currency || currency || "USD";
-
-          await creditCreatorWallet(
-            supabaseAdmin,
-            trainerId,
-            earned,
-            curr,
-            tx?.id,
-            desc,
-            order.id,
-          );
-        } catch (e) {
-          console.error("[Checkout] Error crediting creator wallet:", e);
-        }
-      }
-
-      return {
-        orderId: order.id,
-        status: "paid",
-        redirectUrl: null,
-        instructions: null,
-        walletBalance: Number(result?.wallet_balance ?? 0),
-      };
-    }
 
     try {
       const request = getRequest();
