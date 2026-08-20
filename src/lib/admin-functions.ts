@@ -128,7 +128,7 @@ export const adminReviewTrainerApplication = createServerFn({ method: "POST" })
         );
       if (roleErr) throw new Error(roleErr.message);
 
-      // Create trainer profile
+      // Create or update verified trainer profile
       const { error: tpErr } = await supabaseAdmin
         .from("trainer_profiles")
         .upsert(
@@ -143,6 +143,29 @@ export const adminReviewTrainerApplication = createServerFn({ method: "POST" })
           { onConflict: "user_id" },
         );
       if (tpErr) throw new Error(tpErr.message);
+
+      // Mark user profile as verified
+      await supabaseAdmin
+        .from("profiles")
+        .update({ is_verified: true })
+        .eq("user_id", app.user_id);
+    } else {
+      // If rejected or requested resubmit, revoke trainer role and set verified to false
+      await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", app.user_id)
+        .eq("role", "trainer");
+
+      await supabaseAdmin
+        .from("trainer_profiles")
+        .update({ is_verified: false, monetization_enabled: false })
+        .eq("user_id", app.user_id);
+
+      await supabaseAdmin
+        .from("profiles")
+        .update({ is_verified: false })
+        .eq("user_id", app.user_id);
     }
 
     return { ok: true };

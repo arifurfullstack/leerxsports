@@ -382,13 +382,50 @@ function ChatThreadView({
   const partner = isTrainer ? d.fan : d.creator;
   const partnerName = partner?.display_name ?? partner?.username ?? (isTrainer ? "Client" : "Coach");
 
+  // Check verified trainer role & status for the current user
+  const { data: isVerifiedTrainer = false } = useQuery({
+    queryKey: ["is-verified-trainer", currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return false;
+      const { data: role } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUserId)
+        .eq("role", "trainer")
+        .maybeSingle();
+      const { data: prof } = await supabase
+        .from("trainer_profiles")
+        .select("is_verified")
+        .eq("user_id", currentUserId)
+        .maybeSingle();
+      const { data: app } = await supabase
+        .from("trainer_applications")
+        .select("status")
+        .eq("user_id", currentUserId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const isPending =
+        app?.status === "pending" ||
+        app?.status === "rejected" ||
+        app?.status === "resubmit";
+      return Boolean(role && prof?.is_verified && !isPending);
+    },
+    enabled: Boolean(currentUserId && isTrainer),
+  });
+
   const [responseText, setResponseText] = useState("");
   const [showDispute, setShowDispute] = useState(false);
   const [showTip, setShowTip] = useState(false);
 
   // Mutation for Trainer Answer
   const answerMut = useMutation({
-    mutationFn: () => answer({ data: { dispatchId: d.id, answer: responseText } }),
+    mutationFn: () => {
+      if (!isVerifiedTrainer) {
+        throw new Error("Only verified Pro Trainers can submit official Q&A answers.");
+      }
+      return answer({ data: { dispatchId: d.id, answer: responseText } });
+    },
     onSuccess: () => {
       toast.success("Feedback delivered successfully! Funds credited to your wallet.");
       setResponseText("");
@@ -680,7 +717,16 @@ function ChatThreadView({
       <div className="p-4 border-t border-border/60 bg-card/80 backdrop-blur-md shrink-0">
         
         {/* Case A: Trainer needs to send primary answer or final response */}
-        {isTrainer && (d.status === "pending" || d.status === "followup_pending") && (
+        {isTrainer && !isVerifiedTrainer && (d.status === "pending" || d.status === "followup_pending") && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-center text-xs text-amber-300">
+            <p className="font-semibold uppercase tracking-wider">Trainer Application Pending Review</p>
+            <p className="text-muted-foreground mt-1">
+              Only verified Pro Trainers can submit official Q&A answers and claim payouts. Your application is currently awaiting admin approval.
+            </p>
+          </div>
+        )}
+
+        {isTrainer && isVerifiedTrainer && (d.status === "pending" || d.status === "followup_pending") && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-premium">
               <span>

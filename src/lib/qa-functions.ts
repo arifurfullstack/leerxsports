@@ -42,11 +42,11 @@ export const sendQADispatch = createServerFn({ method: "POST" })
 
     const { data: tp, error: tpErr } = await supabase
       .from("trainer_profiles")
-      .select("user_id, monetization_enabled")
+      .select("user_id, monetization_enabled, is_verified")
       .eq("user_id", data.creatorId)
       .maybeSingle();
     if (tpErr) throw new Error(tpErr.message);
-    if (!tp) throw new Error("Creator not found.");
+    if (!tp || !tp.is_verified) throw new Error("This creator is not a verified Pro Trainer.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: settings } = await supabaseAdmin
@@ -117,16 +117,36 @@ export const answerQADispatch = createServerFn({ method: "POST" })
     if (!row) throw new Error("Question not found.");
     if (row.creator_id !== userId) throw new Error("Not authorized.");
 
-    // RBAC: Verify caller holds a verified trainer role (prevents pending trainers)
+    // RBAC: Verify caller holds a verified trainer role, verified profile, and is not in pending/rejected application status
     const { data: verifiedTrainerRole } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "trainer")
       .maybeSingle();
-    if (!verifiedTrainerRole) {
+
+    const { data: trainerProfile } = await supabase
+      .from("trainer_profiles")
+      .select("is_verified")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const { data: appStatus } = await supabase
+      .from("trainer_applications")
+      .select("status")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const isPendingOrRejected =
+      appStatus?.status === "pending" ||
+      appStatus?.status === "rejected" ||
+      appStatus?.status === "resubmit";
+
+    if (!verifiedTrainerRole || !trainerProfile?.is_verified || isPendingOrRejected) {
       throw new Error(
-        "Only verified Pro Trainers can answer Q&A dispatches. Your trainer application may still be pending approval."
+        "Only verified Pro Trainers can submit official Q&A answers. Your trainer application may still be pending approval or unverified."
       );
     }
 

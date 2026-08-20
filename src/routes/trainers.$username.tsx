@@ -35,6 +35,7 @@ import {
   Sparkles,
   Heart,
   Settings,
+  Grid3X3,
 } from "lucide-react";
 import { UnlockCheckoutDialog } from "@/components/unlock-checkout-dialog";
 import { TipModal } from "@/components/tip-modal";
@@ -84,7 +85,6 @@ import {
   type TrainerSummary,
 } from "@/lib/trainer-functions";
 import { TranslateToggle } from "@/components/translate-toggle";
-import { AskQuestionDialog } from "@/components/ask-question-dialog";
 import {
   cancelSubscription,
   getPremiumPostUrls,
@@ -746,26 +746,6 @@ function TrainerProfileInner({
                   {t.dms_enabled ? "Message" : "DMs Off"}
                 </Button>
 
-                {/* Ask Question Dialog Button ($300) */}
-                <AskQuestionDialog
-                  creatorId={t.user_id}
-                  creatorName={t.display_name ?? t.username ?? "this creator"}
-                  disabled={!t.monetization_enabled}
-                />
-
-                {/* Tip Button */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!t.monetization_enabled}
-                  title="Send a coaching tip"
-                  onClick={() => requireAuth(() => setTipOpen(true))}
-                  className="rounded-xl px-3 text-xs hover:border-primary/60 hover:text-primary"
-                >
-                  <Heart className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                  Tip
-                </Button>
-
                 {/* Share Button */}
                 <Button
                   size="sm"
@@ -897,8 +877,13 @@ function TrainerProfileInner({
           onValueChange={(v) => setTab(v as typeof tab)}
         >
           <TabsList className="grid w-full grid-cols-3 sm:w-auto">
-            <TabsTrigger value="feed" className="font-display uppercase tracking-widest text-xs">
-              Feed
+            <TabsTrigger
+              value="feed"
+              className="font-display uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 px-4"
+              aria-label="Feed posts"
+              title="Feed"
+            >
+              <Grid3X3 className="h-4 w-4" />
             </TabsTrigger>
             <TabsTrigger value="shorts" className="font-display uppercase tracking-widest text-xs">
               Shorts

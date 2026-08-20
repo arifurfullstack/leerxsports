@@ -23,7 +23,7 @@ interface TrainerReplyBoxProps {
 export function TrainerReplyBox({ postId, trainerId, coachingStatus, onSuccess }: TrainerReplyBoxProps) {
   const addFn = useServerFn(addCommunityComment);
 
-  // RBAC: Verify the current user holds a verified trainer role before rendering
+  // RBAC: Verify the current user holds a verified trainer role and verified profile before rendering
   const [isVerifiedTrainer, setIsVerifiedTrainer] = useState<boolean | null>(null);
   useEffect(() => {
     let alive = true;
@@ -34,7 +34,29 @@ export function TrainerReplyBox({ postId, trainerId, coachingStatus, onSuccess }
         .eq("user_id", trainerId)
         .eq("role", "trainer")
         .maybeSingle();
-      if (alive) setIsVerifiedTrainer(!!roleRow);
+
+      const { data: profRow } = await supabase
+        .from("trainer_profiles")
+        .select("is_verified")
+        .eq("user_id", trainerId)
+        .maybeSingle();
+
+      const { data: appRow } = await supabase
+        .from("trainer_applications")
+        .select("status")
+        .eq("user_id", trainerId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const isPendingOrRejected =
+        appRow?.status === "pending" ||
+        appRow?.status === "rejected" ||
+        appRow?.status === "resubmit";
+
+      if (alive) {
+        setIsVerifiedTrainer(Boolean(roleRow && profRow?.is_verified && !isPendingOrRejected));
+      }
     })();
     return () => { alive = false; };
   }, [trainerId]);

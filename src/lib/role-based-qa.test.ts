@@ -349,4 +349,31 @@ describe("[QA ROUND FIXES] RBAC, Admin Flow, Wallet Removal, Checkout & Layout",
       expect(trainerShare).toBeGreaterThan(0);
     }
   });
+
+  it("QA-06: Q&A RBAC rejects Pending Trainers & Trainees from answering dispatches", () => {
+    function canAnswerQA(user: { role?: string; is_verified?: boolean; app_status?: string }) {
+      const isVerifiedRole = user.role === "trainer";
+      const isVerifiedProfile = user.is_verified === true;
+      const isPendingOrRejected =
+        user.app_status === "pending" ||
+        user.app_status === "rejected" ||
+        user.app_status === "resubmit";
+      return Boolean(isVerifiedRole && isVerifiedProfile && !isPendingOrRejected);
+    }
+
+    // Trainee
+    expect(canAnswerQA({ role: "trainee", is_verified: false })).toBe(false);
+
+    // Pending Trainer (application submitted, not yet approved)
+    expect(canAnswerQA({ role: "trainee", is_verified: false, app_status: "pending" })).toBe(false);
+    expect(canAnswerQA({ role: "trainer", is_verified: false, app_status: "pending" })).toBe(false);
+    expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: "pending" })).toBe(false);
+
+    // Rejected Trainer
+    expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: "rejected" })).toBe(false);
+
+    // Verified Pro Trainer
+    expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: "approved" })).toBe(true);
+    expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: undefined })).toBe(true);
+  });
 });

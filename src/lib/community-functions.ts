@@ -344,16 +344,36 @@ export const addCommunityComment = createServerFn({ method: "POST" })
       }
 
       if (isTargetTrainer) {
-        // RBAC: Verify caller holds a verified trainer role (prevents pending trainers)
+        // RBAC: Verify caller holds a verified trainer role, verified profile, and is not in pending/rejected application status
         const { data: verifiedTrainerRole } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userId)
           .eq("role", "trainer")
           .maybeSingle();
-        if (!verifiedTrainerRole) {
+
+        const { data: trainerProfile } = await supabase
+          .from("trainer_profiles")
+          .select("is_verified")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const { data: appStatus } = await supabase
+          .from("trainer_applications")
+          .select("status")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const isPendingOrRejected =
+          appStatus?.status === "pending" ||
+          appStatus?.status === "rejected" ||
+          appStatus?.status === "resubmit";
+
+        if (!verifiedTrainerRole || !trainerProfile?.is_verified || isPendingOrRejected) {
           throw new Error(
-            "Only verified Pro Trainers can submit coaching answers. Your trainer application may still be pending approval."
+            "Only verified Pro Trainers can submit coaching answers. Your trainer application may still be pending approval or unverified."
           );
         }
 

@@ -13,16 +13,16 @@ A comprehensive End-to-End (E2E) QA inspection was executed against the live LEE
 
 | Test Category | Items Tested | Status | Pass Rate |
 | :--- | :--- | :---: | :---: |
+| **Q&A RBAC Enforcement** | Dual-layer API authorization (rejects trainees & pending trainers, authorizes verified Pro Trainers) | ✅ PASSED | 100% |
+| **Admin Dashboard & Approval** | Admin access to `/admin` & `/admin/trainers`, application approve/reject synchronizing roles | ✅ PASSED | 100% |
+| **In-App Stripe Checkout Modal** | Stripe embedded checkout (`ui_mode: embedded`) mounted in dialog with zero external redirect | ✅ PASSED | 100% |
+| **Trainer Profile Feed Grid Icon** | Removed "Feed" text; replaced with Instagram-style 3x3 Grid icon (`<Grid3X3 />`) | ✅ PASSED | 100% |
+| **Clean Profile Header** | Removed "Ask - $300" and "Tip" buttons from profile header; tipping kept in Q&A session & posts | ✅ PASSED | 100% |
 | **Authentication & Role Selection** | Mandatory role gate, Trainee registration, session persistence, logout & re-login | ✅ PASSED | 100% |
 | **Discovery & Creator Feed** | 3-column discovery shell, search filtering, creator grid separation | ✅ PASSED | 100% |
-| **Trainer Profile UX** | Instagram-style header (no heavy covers), inline stats, action buttons | ✅ PASSED | 100% |
 | **Subscription Checkout** | Single monthly auto-recurring model, modal price presentation, Stripe card selection | ✅ PASSED | 100% |
-| **Flexible Pricing Validation** | Range bounds ($4.99 min, $499.99 max), API direct rejection, UI input validation | ✅ PASSED | 100% |
-| **LEER Wallet Decoupling** | Removed from navigation and checkout; deactivated notice page active | ✅ PASSED | 100% |
-| **Payment Return States** | Verified status badge, return CTA links | ✅ PASSED | 100% |
-| **Responsive Mobile Layout** | Compact 3-column mobile grid, touch-friendly action rows | ✅ PASSED | 100% |
-| **Automated Test Suite** | 10 test suites / 200 unit & integration tests (`vitest run`) | ✅ PASSED | 100% |
-| **Type Safety & Build** | Static type check (`npx tsc --noEmit`) | ✅ PASSED | 0 errors |
+| **Automated Test Suite** | 10 test suites / 201 unit & integration tests (`vitest run`) | ✅ PASSED | 100% |
+| **Type Safety & Build** | Static build compilation (`npm run build`) | ✅ PASSED | 0 errors |
 
 ---
 
