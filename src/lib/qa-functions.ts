@@ -117,7 +117,7 @@ export const answerQADispatch = createServerFn({ method: "POST" })
     if (!row) throw new Error("Question not found.");
     if (row.creator_id !== userId) throw new Error("Not authorized.");
 
-    // RBAC: Verify caller holds a verified trainer role, verified profile, and is not in pending/rejected application status
+    // RBAC: Verify caller holds a verified trainer role, verified profile, and is not in pending/rejected/resubmit application status
     const { data: verifiedTrainerRole } = await supabase
       .from("user_roles")
       .select("role")
@@ -127,6 +127,12 @@ export const answerQADispatch = createServerFn({ method: "POST" })
 
     const { data: trainerProfile } = await supabase
       .from("trainer_profiles")
+      .select("is_verified, monetization_enabled")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const { data: profileRow } = await supabase
+      .from("profiles")
       .select("is_verified")
       .eq("user_id", userId)
       .maybeSingle();
@@ -140,13 +146,19 @@ export const answerQADispatch = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const isPendingOrRejected =
-      appStatus?.status === "pending" ||
-      appStatus?.status === "rejected" ||
-      appStatus?.status === "resubmit";
+      !appStatus ||
+      appStatus.status === "pending" ||
+      appStatus.status === "rejected" ||
+      appStatus.status === "resubmit";
 
-    if (!verifiedTrainerRole || !trainerProfile?.is_verified || isPendingOrRejected) {
+    if (
+      !verifiedTrainerRole ||
+      !trainerProfile?.is_verified ||
+      !profileRow?.is_verified ||
+      isPendingOrRejected
+    ) {
       throw new Error(
-        "Only verified Pro Trainers can submit official Q&A answers. Your trainer application may still be pending approval or unverified."
+        "403 Forbidden: Only verified Pro Trainers can submit official Q&A answers. Your trainer application may still be pending approval, rejected, or unverified."
       );
     }
 

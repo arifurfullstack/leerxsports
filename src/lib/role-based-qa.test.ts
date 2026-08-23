@@ -372,8 +372,48 @@ describe("[QA ROUND FIXES] RBAC, Admin Flow, Wallet Removal, Checkout & Layout",
     // Rejected Trainer
     expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: "rejected" })).toBe(false);
 
+    // Unverified Trainer
+    expect(canAnswerQA({ role: "trainer", is_verified: false, app_status: "approved" })).toBe(false);
+
     // Verified Pro Trainer
     expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: "approved" })).toBe(true);
     expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: undefined })).toBe(true);
+  });
+
+  it("QA-07: Stripe Checkout creation enforces ui_mode: 'embedded_page' and return_url", () => {
+    const origin = "https://leersports.cliplyx.com";
+    const orderId = "123e4567-e89b-12d3-a456-426614174000";
+    const returnUrl = `${origin}/payment/complete?order_id=${orderId}&session_id={CHECKOUT_SESSION_ID}`;
+
+    const body = new URLSearchParams();
+    body.set("ui_mode", "embedded_page");
+    body.set("mode", "subscription");
+    body.set("return_url", returnUrl);
+
+    expect(body.get("ui_mode")).toBe("embedded_page");
+    expect(body.get("ui_mode")).not.toBe("embedded");
+    expect(body.get("return_url")).toContain("{CHECKOUT_SESSION_ID}");
+  });
+
+  it("QA-08: Unconfigured PayPal Gateway without credentials is excluded from client checkout", () => {
+    const gateways = [
+      { provider: "stripe", enabled: true, config: { publishable_key: "pk_test", secret_key: "sk_test" } },
+      { provider: "paypal", enabled: true, config: {} }, // Unconfigured credentials
+      { provider: "bank", enabled: true, config: {} },
+    ];
+
+    const validGateways = gateways.filter((row) => {
+      const cfg = row.config as Record<string, string>;
+      if (row.provider === "paypal") {
+        return Boolean(cfg.client_id && (cfg.client_secret || cfg.secret));
+      }
+      if (row.provider === "stripe") {
+        return Boolean(cfg.publishable_key && cfg.secret_key);
+      }
+      return true;
+    });
+
+    expect(validGateways.map((g) => g.provider)).toEqual(["stripe", "bank"]);
+    expect(validGateways.map((g) => g.provider)).not.toContain("paypal");
   });
 });

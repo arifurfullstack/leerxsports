@@ -57,12 +57,25 @@ export const listCheckoutGateways = createServerFn({ method: "GET" }).handler(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("payment_gateways")
-      .select("provider, display_name, mode")
+      .select("provider, display_name, mode, config")
       .eq("enabled", true)
       .in("provider", ["stripe", "paypal", "bank"])
       .order("provider");
     if (error) throw new Error(error.message);
-    return (data ?? []).map((row) => ({
+
+    // Only present gateways in the UI that have valid credentials configured
+    const valid = (data ?? []).filter((row) => {
+      const cfg = (row.config ?? {}) as Record<string, string>;
+      if (row.provider === "paypal") {
+        return Boolean(cfg.client_id && (cfg.client_secret || cfg.secret));
+      }
+      if (row.provider === "stripe") {
+        return Boolean(cfg.publishable_key && cfg.secret_key);
+      }
+      return true;
+    });
+
+    return valid.map((row) => ({
       provider: row.provider as CheckoutGateway["provider"],
       displayName: row.display_name,
       mode: row.mode as "test" | "live",

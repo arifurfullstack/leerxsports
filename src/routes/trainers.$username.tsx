@@ -36,6 +36,7 @@ import {
   Heart,
   Settings,
   Grid3X3,
+  Clapperboard,
 } from "lucide-react";
 import { UnlockCheckoutDialog } from "@/components/unlock-checkout-dialog";
 import { TipModal } from "@/components/tip-modal";
@@ -885,11 +886,21 @@ function TrainerProfileInner({
             >
               <Grid3X3 className="h-4 w-4" />
             </TabsTrigger>
-            <TabsTrigger value="shorts" className="font-display uppercase tracking-widest text-xs">
-              Shorts
+            <TabsTrigger
+              value="shorts"
+              className="font-display uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 px-4"
+              aria-label="Shorts videos"
+              title="Shorts"
+            >
+              <Clapperboard className="h-4 w-4" />
             </TabsTrigger>
-            <TabsTrigger value="coaching" className="font-display uppercase tracking-widest text-xs">
-              Coaching
+            <TabsTrigger
+              value="coaching"
+              className="font-display uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 px-4"
+              aria-label="Coaching sessions"
+              title="Coaching"
+            >
+              <MessageSquare className="h-4 w-4" />
             </TabsTrigger>
           </TabsList>
 

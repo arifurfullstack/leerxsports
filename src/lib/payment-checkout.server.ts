@@ -77,7 +77,7 @@ export async function createProviderCheckout(params: {
     const returnUrl = `${origin}/payment/complete?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`;
 
     const body = new URLSearchParams();
-    body.set("ui_mode", "embedded");
+    body.set("ui_mode", "embedded_page");
     body.set("mode", isSubscription ? "subscription" : "payment");
     body.set("return_url", returnUrl);
     body.set("client_reference_id", order.id);
