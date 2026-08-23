@@ -184,15 +184,14 @@ export const Route = createFileRoute("/community")({
 
 function CommunityPage() {
   const [filter, setFilter] = useState<Filter>({ kind: "all", sort: "new" });
-  const first = useSuspenseQuery(listQuery({ kind: "all", sort: "new" }));
   const listFilter: Filter =
     filter.kind === "saved" ? { kind: "all", sort: filter.sort } : filter;
-  const q = useQuery({ ...listQuery(listFilter), initialData: first.data });
+  const q = useQuery(listQuery(listFilter));
   const allPosts = q.data ?? [];
   const qc = useQueryClient();
 
   // Bookmarks (localStorage-backed) — subscribed so the Saved tab updates live.
-  const [bookmarks, setBookmarks] = useState<Set<string>>(() => readBookmarks());
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   useEffect(() => {
     const sync = () => setBookmarks(readBookmarks());
     sync();
