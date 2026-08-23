@@ -146,10 +146,9 @@ export const answerQADispatch = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const isPendingOrRejected =
-      !appStatus ||
-      appStatus.status === "pending" ||
-      appStatus.status === "rejected" ||
-      appStatus.status === "resubmit";
+      appStatus?.status === "pending" ||
+      appStatus?.status === "rejected" ||
+      appStatus?.status === "resubmit";
 
     if (
       !verifiedTrainerRole ||
