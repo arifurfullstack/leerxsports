@@ -115,10 +115,13 @@ async function decoratePosts<
     return false;
   };
 
+  // Collect paths for signing: full media only for accessible posts,
+  // but thumbnails for ALL posts (used as blurred teaser for locked premium).
   const paths = posts
     .flatMap((p) => [
       canAccess(p) ? p.media_url : null,
-      canAccess(p) ? p.thumbnail_url : null,
+      // Always sign thumbnail — needed for blurred teaser on locked content
+      p.thumbnail_url,
     ])
     .filter((p): p is string => !!p && !p.startsWith("http"));
 
@@ -136,7 +139,14 @@ async function decoratePosts<
     const hasAccess = canAccess(p);
     const item = p as unknown as { is_premium?: boolean };
     if (item.is_premium && !hasAccess) {
-      return { ...p, media_url: "", thumbnail_url: null };
+      // Strip full media but KEEP thumbnail for blurred teaser preview
+      return {
+        ...p,
+        media_url: "",
+        thumbnail_url: p.thumbnail_url
+          ? signedMap.get(p.thumbnail_url) ?? p.thumbnail_url
+          : null,
+      };
     }
     return {
       ...p,

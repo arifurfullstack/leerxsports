@@ -274,9 +274,10 @@
   }
 
   .locked-blur {
-    filter: blur(28px) saturate(1.4) contrast(1.15);
-    opacity: 0.20 !important;
-    transform: scale(1.12);
+    filter: blur(12px) saturate(1.3) brightness(0.85);
+    opacity: 1 !important;
+    transform: scale(1.15);
+    pointer-events: none;
   }
 
   @keyframes lock-vibes-pulse {

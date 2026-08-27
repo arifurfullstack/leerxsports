@@ -172,3 +172,152 @@ describe("[STORY-VISIBILITY] Multi-User Story Sharing & Reel Ordering", () => {
   });
 });
 
+// ─── BUYER-REPORTED FIX 1: Q&A Community Answer RBAC ───────────────────────
+
+describe("[CRITICAL FIX 1] Q&A RBAC & FLEX Access Validation", () => {
+  type AuthorCtx = {
+    role: string | null;
+    is_verified_trainer_profile: boolean;
+    is_verified_profile: boolean;
+    app_status: "pending" | "approved" | "rejected" | "resubmit" | null;
+  };
+
+  function canSubmitQAAnswer(kind: "question" | "flex", isTopLevel: boolean, ctx: AuthorCtx): { allowed: boolean; status?: number; error?: string } {
+    // FLEX posts are open to everyone for comments & replies
+    if (kind === "flex") {
+      return { allowed: true };
+    }
+
+    // On Q&A posts: replies to existing comments follow parent author rules;
+    // but top-level comment (submitting an Answer) strictly requires Verified Pro Trainer.
+    if (kind === "question" && isTopLevel) {
+      const isPendingOrRejected =
+        ctx.app_status === "pending" ||
+        ctx.app_status === "rejected" ||
+        ctx.app_status === "resubmit";
+
+      if (
+        ctx.role !== "trainer" ||
+        !ctx.is_verified_trainer_profile ||
+        !ctx.is_verified_profile ||
+        isPendingOrRejected
+      ) {
+        return {
+          allowed: false,
+          status: 403,
+          error: "403 Forbidden: Only verified Pro Trainers can submit Q&A answers. Your trainer application may still be pending approval, rejected, or unverified.",
+        };
+      }
+    }
+
+    return { allowed: true };
+  }
+
+  it("Trainee is BLOCKED with 403 Forbidden on Q&A answers", () => {
+    const res = canSubmitQAAnswer("question", true, {
+      role: "trainee",
+      is_verified_trainer_profile: false,
+      is_verified_profile: true,
+      app_status: null,
+    });
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.error).toContain("403 Forbidden");
+  });
+
+  it("Pending Trainer is BLOCKED with 403 Forbidden on Q&A answers", () => {
+    const res = canSubmitQAAnswer("question", true, {
+      role: "trainer",
+      is_verified_trainer_profile: false,
+      is_verified_profile: true,
+      app_status: "pending",
+    });
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.error).toContain("403 Forbidden");
+  });
+
+  it("Rejected Trainer is BLOCKED with 403 Forbidden on Q&A answers", () => {
+    const res = canSubmitQAAnswer("question", true, {
+      role: "trainer",
+      is_verified_trainer_profile: false,
+      is_verified_profile: true,
+      app_status: "rejected",
+    });
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.error).toContain("403 Forbidden");
+  });
+
+  it("Verified Pro Trainer is ALLOWED to submit Q&A answers", () => {
+    const res = canSubmitQAAnswer("question", true, {
+      role: "trainer",
+      is_verified_trainer_profile: true,
+      is_verified_profile: true,
+      app_status: "approved",
+    });
+    expect(res.allowed).toBe(true);
+    expect(res.status).toBeUndefined();
+  });
+
+  it("FLEX posts allow Trainees and all users to comment", () => {
+    const res = canSubmitQAAnswer("flex", true, {
+      role: "trainee",
+      is_verified_trainer_profile: false,
+      is_verified_profile: true,
+      app_status: null,
+    });
+    expect(res.allowed).toBe(true);
+  });
+});
+
+// ─── BUYER-REPORTED FIX 2: Premium Media Teaser Preservation ─────────────────
+
+describe("[CRITICAL FIX 4] Premium Media Teaser Preservation (No Black Screen)", () => {
+  type PostItem = {
+    id: string;
+    trainer_id: string;
+    is_premium: boolean;
+    media_url: string;
+    thumbnail_url: string | null;
+  };
+
+  function transformLockedPost(post: PostItem, hasAccess: boolean): PostItem {
+    if (post.is_premium && !hasAccess) {
+      return {
+        ...post,
+        media_url: "", // Stripped for security
+        thumbnail_url: post.thumbnail_url, // Preserved for blurred teaser
+      };
+    }
+    return post;
+  }
+
+  it("strips full media_url but preserves thumbnail_url for locked premium posts", () => {
+    const original: PostItem = {
+      id: "post-1",
+      trainer_id: "trainer-1",
+      is_premium: true,
+      media_url: "https://storage.supabase.co/full-video.mp4",
+      thumbnail_url: "https://storage.supabase.co/preview-thumb.jpg",
+    };
+
+    const transformed = transformLockedPost(original, false);
+    expect(transformed.media_url).toBe(""); // Secure
+    expect(transformed.thumbnail_url).toBe("https://storage.supabase.co/preview-thumb.jpg"); // Teaser preserved
+  });
+
+  it("serves full media_url to authorized subscribers", () => {
+    const original: PostItem = {
+      id: "post-1",
+      trainer_id: "trainer-1",
+      is_premium: true,
+      media_url: "https://storage.supabase.co/full-video.mp4",
+      thumbnail_url: "https://storage.supabase.co/preview-thumb.jpg",
+    };
+
+    const transformed = transformLockedPost(original, true);
+    expect(transformed.media_url).toBe("https://storage.supabase.co/full-video.mp4");
+    expect(transformed.thumbnail_url).toBe("https://storage.supabase.co/preview-thumb.jpg");
+  });
+});

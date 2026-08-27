@@ -2079,7 +2079,7 @@ function PostTile({
           fit="cover"
           className={cn(
             "absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105",
-            post.is_premium && !src && "locked-blur opacity-60",
+            post.is_premium && !post.media_url && "locked-blur",
           )}
         />
         {isShort && (
@@ -2087,7 +2087,7 @@ function PostTile({
             <Film className="h-3 w-3" /> Reel
           </span>
         )}
-        {post.is_premium && !src ? (
+        {post.is_premium && !post.media_url ? (
           <>
             {/* Dark scrim so the lock reads clearly over any image */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black/75" />

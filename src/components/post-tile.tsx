@@ -14,8 +14,10 @@ export function PostTile({
   unlockedUrl?: string | null;
 }) {
   const rawThumb = post.thumbnail_url ?? post.media_url;
+  // For premium posts: use unlocked URL if available; otherwise use thumbnail for blur teaser
   const thumb = post.is_premium && unlockedUrl ? unlockedUrl : rawThumb;
-  const locked = post.is_premium && !unlockedUrl && !post.media_url;
+  // Locked = premium content the user hasn't unlocked (media_url stripped by server)
+  const locked = post.is_premium && !unlockedUrl;
   const isVideo = post.kind === "short";
   const label = locked
     ? "Locked premium post — subscribe to unlock"

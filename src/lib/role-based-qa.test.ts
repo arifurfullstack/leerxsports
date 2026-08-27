@@ -380,18 +380,17 @@ describe("[QA ROUND FIXES] RBAC, Admin Flow, Wallet Removal, Checkout & Layout",
     expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: undefined })).toBe(true);
   });
 
-  it("QA-07: Stripe Checkout creation enforces ui_mode: 'embedded_page' and return_url", () => {
+  it("QA-07: Stripe Checkout creation enforces ui_mode: 'embedded' and return_url", () => {
     const origin = "https://leersports.cliplyx.com";
     const orderId = "123e4567-e89b-12d3-a456-426614174000";
     const returnUrl = `${origin}/payment/complete?order_id=${orderId}&session_id={CHECKOUT_SESSION_ID}`;
 
     const body = new URLSearchParams();
-    body.set("ui_mode", "embedded_page");
+    body.set("ui_mode", "embedded");
     body.set("mode", "subscription");
     body.set("return_url", returnUrl);
 
-    expect(body.get("ui_mode")).toBe("embedded_page");
-    expect(body.get("ui_mode")).not.toBe("embedded");
+    expect(body.get("ui_mode")).toBe("embedded");
     expect(body.get("return_url")).toContain("{CHECKOUT_SESSION_ID}");
   });
 

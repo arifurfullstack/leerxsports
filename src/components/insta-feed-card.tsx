@@ -489,7 +489,7 @@ export function InstaFeedCard({
               fetchPriority={priority ? "high" : "auto"}
               className={cn(
                 "h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-[1.02]",
-                post.is_premium && (!thumb && !post.media_url) && "locked-blur",
+                post.is_premium && !post.media_url && "locked-blur",
               )}
             />
           </button>
@@ -497,7 +497,7 @@ export function InstaFeedCard({
           <div className="h-full w-full bg-gradient-to-br from-primary/25 via-card to-accent/25" />
         )}
 
-        {post.is_premium && (!thumb && !post.media_url) ? (
+        {post.is_premium && !post.media_url ? (
           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="relative flex items-center justify-center">
               <span className="absolute h-14 w-14 rounded-full border border-primary/50 bg-primary/20 animate-lock-ring" />

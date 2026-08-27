@@ -95,11 +95,35 @@ export function UnlockCheckoutDialog({
     [gatewayQuery.data],
   );
 
+  // Auto-select: when only one gateway exists, pick it automatically
   useEffect(() => {
-    if (!methods.some((method) => method.provider === provider)) {
+    if (methods.length === 1) {
+      setProvider(methods[0].provider);
+    } else if (!methods.some((method) => method.provider === provider)) {
       setProvider(methods[0]?.provider ?? "stripe");
     }
   }, [methods, provider]);
+
+  // Auto-checkout: when only one gateway is available, start checkout immediately
+  const autoCheckoutTriggered = useState(false);
+  useEffect(() => {
+    if (
+      open &&
+      methods.length === 1 &&
+      !autoCheckoutTriggered[0] &&
+      !stripeSession &&
+      !bankInstructions &&
+      !checkout.isPending &&
+      !isRedirecting
+    ) {
+      autoCheckoutTriggered[1](true);
+      checkout.mutate();
+    }
+    if (!open) {
+      autoCheckoutTriggered[1](false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, methods.length]);
 
   const total = Math.round(subscriptionPrice * 100) / 100;
 
@@ -181,6 +205,7 @@ export function UnlockCheckoutDialog({
         if (!next) {
           setBankInstructions(null);
           setIsRedirecting(false);
+          setStripeSession(null);
         }
       }}
     >
@@ -201,7 +226,7 @@ export function UnlockCheckoutDialog({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white sm:max-w-lg">
+      <DialogContent className={`max-h-[90vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white ${stripeSession ? "sm:max-w-xl" : "sm:max-w-lg"}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 font-display text-2xl uppercase">
             <span className="relative h-12 w-12 overflow-hidden rounded-full border border-white/20 bg-neutral-900">
@@ -226,20 +251,31 @@ export function UnlockCheckoutDialog({
 
         {/* When Stripe Embedded session is active, render embedded checkout */}
         {stripeSession ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-3">
+              <div className="flex items-end justify-between">
+                <span className="flex items-center gap-1.5 text-sm text-neutral-400">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                  Secure payment
+                </span>
+                <span className="font-display text-2xl">${total.toFixed(2)}/mo</span>
+              </div>
+            </div>
             <StripeEmbeddedCheckout
               clientSecret={stripeSession.clientSecret}
               publishableKey={stripeSession.publishableKey}
               onComplete={handleCheckoutSuccess}
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs text-muted-foreground hover:text-white"
-              onClick={() => setStripeSession(null)}
-            >
-              Choose different payment method
-            </Button>
+            {methods.length > 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-neutral-500 hover:text-white"
+                onClick={() => setStripeSession(null)}
+              >
+                ← Choose different payment method
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -257,36 +293,46 @@ export function UnlockCheckoutDialog({
                   <span className="text-xs text-neutral-400">/mo</span>
                 </div>
               </div>
-              <div className="mt-4 grid gap-2">
-                {methods.map((method) => {
-                  const Icon = providerIcon[method.provider];
-                  return (
-                    <button
-                      key={method.provider}
-                      type="button"
-                      onClick={() => setProvider(method.provider)}
-                      className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                        provider === method.provider
-                          ? "border-primary bg-primary/10"
-                          : "border-neutral-800 hover:border-neutral-600"
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon className="h-5 w-5 text-primary" />
-                        <span>
-                          <span className="block text-sm font-semibold">{method.displayName}</span>
-                          <span className="block text-[11px] text-neutral-500">
-                            {`${method.mode} gateway`}
+              {methods.length > 1 && (
+                <div className="mt-4 grid gap-2">
+                  {methods.map((method) => {
+                    const Icon = providerIcon[method.provider];
+                    return (
+                      <button
+                        key={method.provider}
+                        type="button"
+                        onClick={() => setProvider(method.provider)}
+                        className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                          provider === method.provider
+                            ? "border-primary bg-primary/10"
+                            : "border-neutral-800 hover:border-neutral-600"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon className="h-5 w-5 text-primary" />
+                          <span>
+                            <span className="block text-sm font-semibold">{method.displayName}</span>
+                            <span className="block text-[11px] text-neutral-500">
+                              {`${method.mode} gateway`}
+                            </span>
                           </span>
                         </span>
-                      </span>
-                      {provider === method.provider && (
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        {provider === method.provider && (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Single-gateway auto-checkout loading */}
+              {methods.length <= 1 && (checkout.isPending || gatewayQuery.isLoading) && (
+                <div className="mt-4 flex flex-col items-center gap-3 py-4">
+                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  <p className="text-sm text-neutral-400">Preparing secure checkout…</p>
+                </div>
+              )}
             </div>
 
             {bankInstructions && (
@@ -308,24 +354,26 @@ export function UnlockCheckoutDialog({
               </span>
             </div>
 
-            <Button
-              className="w-full font-bold uppercase tracking-wider text-xs h-12"
-              size="lg"
-              disabled={checkout.isPending || isRedirecting || !!bankInstructions || methods.length === 0}
-              onClick={() => checkout.mutate()}
-            >
-              {checkout.isPending || isRedirecting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isRedirecting ? "Connecting to payment gateway…" : "Preparing checkout…"}
-                </>
-              ) : (
-                <>
-                  <Lock className="mr-2 h-4 w-4" />
-                  {provider === "bank" ? "Create Bank Transfer Order" : `Subscribe for $${total.toFixed(2)}/mo`}
-                </>
-              )}
-            </Button>
+            {methods.length > 1 && (
+              <Button
+                className="w-full font-bold uppercase tracking-wider text-xs h-12"
+                size="lg"
+                disabled={checkout.isPending || isRedirecting || !!bankInstructions || methods.length === 0}
+                onClick={() => checkout.mutate()}
+              >
+                {checkout.isPending || isRedirecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isRedirecting ? "Connecting to payment gateway…" : "Preparing checkout…"}
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    {provider === "bank" ? "Create Bank Transfer Order" : `Subscribe for $${total.toFixed(2)}/mo`}
+                  </>
+                )}
+              </Button>
+            )}
           </>
         )}
       </DialogContent>

@@ -87,8 +87,9 @@ export function PostDetailDialog({
   const isSelf = !!currentUserId && post?.trainer_id === currentUserId;
   const locked = (post?.is_premium ?? false) && !unlockedUrl && !isSelf && !post?.media_url;
 
+  // For locked premium: show blurred thumbnail teaser; for unlocked: show full media
   const mediaSrc = post?.is_premium
-    ? (unlockedUrl || post?.media_url || "")
+    ? (unlockedUrl || post?.media_url || post?.thumbnail_url || "")
     : (post?.media_url || "");
   const isVideo =
     post?.kind === "short" ||

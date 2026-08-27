@@ -316,7 +316,7 @@ export const addCommunityComment = createServerFn({ method: "POST" })
     // ── Fetch post ────────────────────────────────────────────────────────
     const { data: postRow, error: postErr } = await supabase
       .from("community_posts")
-      .select("author_id, target_trainer_id, coaching_status")
+      .select("author_id, kind, target_trainer_id, coaching_status")
       .eq("id", data.postId)
       .single();
     if (postErr) throw new Error(postErr.message);
@@ -436,6 +436,56 @@ export const addCommunityComment = createServerFn({ method: "POST" })
         );
       }
     } else {
+      // ── Q&A RBAC: Only verified Pro Trainers can answer Q&A threads ──
+      // FLEX posts (kind="flex") remain open to all signed-in users.
+      const postKind = (postRow as any).kind as string | null;
+      if (postKind === "question" && !data.parentId) {
+        // Top-level comment on a Q&A thread = submitting an "answer".
+        // Enforce: caller MUST be a verified Pro Trainer.
+        const [{ data: trainerRole }, { data: tpRow }, { data: profRow }, { data: appRow }] =
+          await Promise.all([
+            supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", userId)
+              .eq("role", "trainer")
+              .maybeSingle(),
+            supabase
+              .from("trainer_profiles")
+              .select("is_verified")
+              .eq("user_id", userId)
+              .maybeSingle(),
+            supabase
+              .from("profiles")
+              .select("is_verified")
+              .eq("user_id", userId)
+              .maybeSingle(),
+            supabase
+              .from("trainer_applications")
+              .select("status")
+              .eq("user_id", userId)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ]);
+
+        const isPendingOrRejected =
+          appRow?.status === "pending" ||
+          appRow?.status === "rejected" ||
+          appRow?.status === "resubmit";
+
+        if (
+          !trainerRole ||
+          !tpRow?.is_verified ||
+          !profRow?.is_verified ||
+          isPendingOrRejected
+        ) {
+          throw new Error(
+            "403 Forbidden: Only verified Pro Trainers can submit Q&A answers. Your trainer application may still be pending approval, rejected, or unverified."
+          );
+        }
+      }
+
       // ── Standard community thread reply-permission rules ─────────────
       if (data.parentId) {
         const { data: parentComment, error: pcErr } = await supabase
