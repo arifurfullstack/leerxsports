@@ -431,7 +431,7 @@ function ShortSlide({
         openAuthGate({ action: "follow creators" });
         throw new Error("Unauthorized");
       }
-      return followFn({ data: { trainerUserId: post.trainer.user_id } });
+      return followFn({ data: { trainerId: post.trainer.user_id } });
     },
     onMutate: () => setFollowing((v) => !v),
     onError: (err: Error) => {

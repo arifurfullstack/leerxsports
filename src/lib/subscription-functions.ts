@@ -121,7 +121,20 @@ export const cancelSubscription = createServerFn({ method: "POST" })
 
 export const toggleFollow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) => z.object({ trainerId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => {
+    const schema = z
+      .object({
+        trainerId: z.string().uuid().optional(),
+        trainerUserId: z.string().uuid().optional(),
+      })
+      .refine((d) => Boolean(d.trainerId || d.trainerUserId), {
+        message: "trainerId is required",
+      })
+      .transform((d) => ({
+        trainerId: (d.trainerId || d.trainerUserId)!,
+      }));
+    return schema.parse(input);
+  })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     if (userId === data.trainerId) throw new Error("You can't follow yourself.");
