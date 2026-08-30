@@ -6,9 +6,15 @@ import path from "path";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
-const BASE_URL = process.env.BASE_URL || "https://leersports.cliplyx.com";
+const BASE_URL = process.env.BASE_URL || "http://localhost:3333";
 
 export default defineConfig({
+  webServer: {
+    command: "npx vite dev --port 3333",
+    port: 3333,
+    reuseExistingServer: true,
+    timeout: 60_000,
+  },
   testDir: "./tests",
   fullyParallel: false, // Run tests in predictable sequence
   forbidOnly: !!process.env.CI,

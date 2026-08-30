@@ -11,13 +11,12 @@ test.describe("1. Authentication & Role Permissions Suite", () => {
 
   test("A. Signup page loads with mandatory role selection", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await page.context().clearCookies();
     await page.goto("/auth", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("domcontentloaded");
 
     // Click Sign Up tab
     const signUpTab = page.getByRole("tab", { name: "Sign Up" });
-    await expect(signUpTab).toBeVisible({ timeout: 5000 });
+    await expect(signUpTab).toBeVisible({ timeout: 10_000 });
     await signUpTab.click();
     await page.waitForTimeout(500);
 

@@ -598,12 +598,16 @@ function ShortSlide({
       >
         {post.is_premium ? (
           <div className="relative h-full w-full">
-            {post.thumbnail_url && (
+            {post.thumbnail_url ? (
               <img
                 src={post.thumbnail_url}
                 alt=""
                 className={cn("h-full w-full object-cover", "locked-blur")}
               />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-primary/20 via-[oklch(0.15_0.02_25)] to-[oklch(0.08_0.01_20)]">
+                <div className="h-full w-full locked-blur bg-gradient-to-tr from-primary/15 via-transparent to-primary/10" />
+              </div>
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/50 text-center">
               <div className="rounded-full border border-primary/50 bg-black/50 p-3">

@@ -186,7 +186,7 @@ function CommunityPage() {
   const [filter, setFilter] = useState<Filter>({ kind: "all", sort: "new" });
   const listFilter: Filter =
     filter.kind === "saved" ? { kind: "all", sort: filter.sort } : filter;
-  const q = useQuery(listQuery(listFilter));
+  const q = useSuspenseQuery(listQuery(listFilter));
   const allPosts = q.data ?? [];
   const qc = useQueryClient();
 

@@ -141,12 +141,12 @@ function ExplorePage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [query, setQuery] = useState("");
 
-  const { data: facetsData } = useQuery(facetsQuery);
+  const { data: facetsData } = useSuspenseQuery(facetsQuery);
   const facets = facetsData ?? { countries: [], specialties: [] };
-  const { data: posts, isFetching, isPending } = useQuery(
+  const { data: posts, isFetching } = useSuspenseQuery(
     postsQueryOptions({ kind, country, specialty, verifiedOnly, sort }),
   );
-  const showSkeleton = isPending || (isFetching && !posts);
+  const showSkeleton = isFetching && !posts;
 
   const qc = useQueryClient();
   const navigate = useNavigate();

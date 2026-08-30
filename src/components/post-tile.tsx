@@ -47,6 +47,11 @@ export function PostTile({
             locked && "locked-blur",
           )}
         />
+      ) : locked ? (
+        /* Premium placeholder gradient — visible blurred teaser when no thumbnail exists */
+        <div className="h-full w-full bg-gradient-to-br from-primary/20 via-[oklch(0.15_0.02_25)] to-[oklch(0.08_0.01_20)]">
+          <div className="h-full w-full locked-blur bg-gradient-to-tr from-primary/15 via-transparent to-primary/10" />
+        </div>
       ) : (
         <div className="h-full w-full bg-linear-to-br from-[oklch(0.14_0.007_20)] to-[oklch(0.08_0.005_20)]" />
       )}

@@ -59,10 +59,8 @@ export async function createProviderCheckout(params: {
   order: PaymentOrder;
   origin: string;
 }): Promise<{
-  status: "redirect" | "pending" | "embedded";
+  status: "redirect" | "pending";
   redirectUrl: string | null;
-  clientSecret?: string | null;
-  publishableKey?: string | null;
   providerReference: string | null;
   instructions: string | null;
 }> {
@@ -74,12 +72,12 @@ export async function createProviderCheckout(params: {
     if (!secret) throw new Error("Stripe secret key is not configured.");
 
     const isSubscription = order.kind === "subscription";
-    const returnUrl = `${origin}/payment/complete?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`;
+    const { successUrl, cancelUrl } = buildStripeReturnUrls(origin, order.id);
 
     const body = new URLSearchParams();
-    body.set("ui_mode", "embedded");
     body.set("mode", isSubscription ? "subscription" : "payment");
-    body.set("return_url", returnUrl);
+    body.set("success_url", successUrl);
+    body.set("cancel_url", cancelUrl);
     body.set("client_reference_id", order.id);
     body.set("metadata[payment_order_id]", order.id);
     if (isSubscription) {
@@ -105,17 +103,14 @@ export async function createProviderCheckout(params: {
     const result = (await response.json()) as {
       id?: string;
       url?: string;
-      client_secret?: string;
       error?: { message?: string };
     };
-    if (!response.ok || !result.id) {
+    if (!response.ok || !result.id || !result.url) {
       throw new Error(result.error?.message ?? `Stripe checkout failed (${response.status}).`);
     }
     return {
-      status: "embedded",
-      redirectUrl: result.url ?? null,
-      clientSecret: result.client_secret ?? null,
-      publishableKey: gateway.config.publishable_key ?? null,
+      status: "redirect",
+      redirectUrl: result.url,
       providerReference: result.id,
       instructions: null,
     };

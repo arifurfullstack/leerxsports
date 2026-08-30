@@ -15,10 +15,8 @@ export type CheckoutGateway = {
 
 export type CheckoutStartResult = {
   orderId: string;
-  status: "paid" | "redirect" | "pending" | "embedded";
+  status: "paid" | "redirect" | "pending";
   redirectUrl: string | null;
-  clientSecret?: string | null;
-  publishableKey?: string | null;
   instructions: string | null;
   walletBalance: number | null;
 };
@@ -249,8 +247,6 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         orderId: order.id,
         status: checkout.status,
         redirectUrl: checkout.redirectUrl,
-        clientSecret: checkout.clientSecret ?? null,
-        publishableKey: checkout.publishableKey ?? null,
         instructions: checkout.instructions,
         walletBalance: null,
       };

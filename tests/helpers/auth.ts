@@ -64,7 +64,7 @@ export const QA_USERS = {
   },
   admin: {
     email: process.env.QA_ADMIN_EMAIL || "qa.admin@leersports.com",
-    password: process.env.QA_ADMIN_PASSWORD || "LeerSports2026!AdminSec",
+    password: process.env.QA_ADMIN_PASSWORD || "LeerAdmin2026!",
     displayName: "QA System Admin",
     role: "admin" as const,
     isVerified: true,
@@ -139,6 +139,24 @@ export async function ensureQAUser(type: keyof typeof QA_USERS) {
         },
         { onConflict: "user_id" },
       );
+      // Ensure at least 3 public posts exist for monetization threshold
+      const { count } = await supabaseAdmin
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("trainer_id", user.id)
+        .eq("is_premium", false);
+      if ((count ?? 0) < 3) {
+        for (let i = (count ?? 0); i < 3; i++) {
+          await supabaseAdmin.from("posts").insert({
+            trainer_id: user.id,
+            kind: "feed",
+            is_premium: false,
+            caption: `Public drill workout #${i + 1}`,
+            media_url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+            is_published: true,
+          });
+        }
+      }
     } else {
       // Pending trainer: keep role or omit until approved, ensure trainer_profile is_verified = false
       await supabaseAdmin.from("trainer_profiles").upsert(

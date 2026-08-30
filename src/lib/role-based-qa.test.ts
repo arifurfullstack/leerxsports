@@ -380,18 +380,21 @@ describe("[QA ROUND FIXES] RBAC, Admin Flow, Wallet Removal, Checkout & Layout",
     expect(canAnswerQA({ role: "trainer", is_verified: true, app_status: undefined })).toBe(true);
   });
 
-  it("QA-07: Stripe Checkout creation enforces ui_mode: 'embedded' and return_url", () => {
+  it("QA-07: Stripe Checkout creation uses hosted mode with success_url and cancel_url", () => {
     const origin = "https://leersports.cliplyx.com";
     const orderId = "123e4567-e89b-12d3-a456-426614174000";
-    const returnUrl = `${origin}/payment/complete?order_id=${orderId}&session_id={CHECKOUT_SESSION_ID}`;
+
+    const successUrl = `${origin}/payment/complete?order=${orderId}&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/payment/complete?order=${orderId}&cancelled=1`;
 
     const body = new URLSearchParams();
-    body.set("ui_mode", "embedded");
     body.set("mode", "subscription");
-    body.set("return_url", returnUrl);
+    body.set("success_url", successUrl);
+    body.set("cancel_url", cancelUrl);
 
-    expect(body.get("ui_mode")).toBe("embedded");
-    expect(body.get("return_url")).toContain("{CHECKOUT_SESSION_ID}");
+    expect(body.has("ui_mode")).toBe(false);
+    expect(body.get("success_url")).toContain("{CHECKOUT_SESSION_ID}");
+    expect(body.get("cancel_url")).toContain("cancelled=1");
   });
 
   it("QA-08: Unconfigured PayPal Gateway without credentials is excluded from client checkout", () => {

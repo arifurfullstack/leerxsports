@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -28,7 +27,6 @@ import {
   listCheckoutGateways,
   type CheckoutProvider,
 } from "@/lib/checkout-functions";
-import { StripeEmbeddedCheckout } from "@/components/stripe-embedded-checkout";
 
 type UnlockCheckoutDialogProps = {
   trainerId: string;
@@ -78,7 +76,6 @@ export function UnlockCheckoutDialog({
   const [provider, setProvider] = useState<CheckoutProvider>("stripe");
   const [bankInstructions, setBankInstructions] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [stripeSession, setStripeSession] = useState<{ clientSecret: string; publishableKey?: string | null } | null>(null);
   const queryClient = useQueryClient();
   const getGateways = useServerFn(listCheckoutGateways);
   const beginCheckout = useServerFn(createCheckoutOrder);
@@ -111,7 +108,6 @@ export function UnlockCheckoutDialog({
       open &&
       methods.length === 1 &&
       !autoCheckoutTriggered[0] &&
-      !stripeSession &&
       !bankInstructions &&
       !checkout.isPending &&
       !isRedirecting
@@ -133,7 +129,6 @@ export function UnlockCheckoutDialog({
     queryClient.invalidateQueries({ queryKey: ["premium-urls", trainerId] });
     queryClient.invalidateQueries({ queryKey: ["follow-counts", trainerId] });
     setOpen(false);
-    setStripeSession(null);
   };
 
   const checkout = useMutation({
@@ -147,13 +142,6 @@ export function UnlockCheckoutDialog({
         },
       }),
     onSuccess: (result) => {
-      if (result.status === "embedded" && result.clientSecret) {
-        setStripeSession({
-          clientSecret: result.clientSecret,
-          publishableKey: result.publishableKey,
-        });
-        return;
-      }
       if (result.status === "redirect" && result.redirectUrl) {
         setIsRedirecting(true);
         window.location.assign(result.redirectUrl);
@@ -205,7 +193,6 @@ export function UnlockCheckoutDialog({
         if (!next) {
           setBankInstructions(null);
           setIsRedirecting(false);
-          setStripeSession(null);
         }
       }}
     >
@@ -226,7 +213,7 @@ export function UnlockCheckoutDialog({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className={`max-h-[90vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white ${stripeSession ? "sm:max-w-xl" : "sm:max-w-lg"}`}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 font-display text-2xl uppercase">
             <span className="relative h-12 w-12 overflow-hidden rounded-full border border-white/20 bg-neutral-900">
@@ -249,132 +236,111 @@ export function UnlockCheckoutDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* When Stripe Embedded session is active, render embedded checkout */}
-        {stripeSession ? (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-3">
-              <div className="flex items-end justify-between">
-                <span className="flex items-center gap-1.5 text-sm text-neutral-400">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  Secure payment
-                </span>
-                <span className="font-display text-2xl">${total.toFixed(2)}/mo</span>
-              </div>
+        {/* Pricing Plan Card */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+          <div className="flex items-end justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                Monthly Subscription
+              </span>
+              <p className="mt-0.5 text-xs text-neutral-400">Auto-renews monthly · Cancel anytime</p>
             </div>
-            <StripeEmbeddedCheckout
-              clientSecret={stripeSession.clientSecret}
-              publishableKey={stripeSession.publishableKey}
-              onComplete={handleCheckoutSuccess}
-            />
-            {methods.length > 1 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-neutral-500 hover:text-white"
-                onClick={() => setStripeSession(null)}
-              >
-                ← Choose different payment method
-              </Button>
-            )}
+            <div className="text-right">
+              <span className="font-display text-3xl font-bold">${total.toFixed(2)}</span>
+              <span className="text-xs text-neutral-400">/mo</span>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Pricing Plan Card */}
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                    Monthly Subscription
-                  </span>
-                  <p className="mt-0.5 text-xs text-neutral-400">Auto-renews monthly · Cancel anytime</p>
-                </div>
-                <div className="text-right">
-                  <span className="font-display text-3xl font-bold">${total.toFixed(2)}</span>
-                  <span className="text-xs text-neutral-400">/mo</span>
-                </div>
-              </div>
-              {methods.length > 1 && (
-                <div className="mt-4 grid gap-2">
-                  {methods.map((method) => {
-                    const Icon = providerIcon[method.provider];
-                    return (
-                      <button
-                        key={method.provider}
-                        type="button"
-                        onClick={() => setProvider(method.provider)}
-                        className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                          provider === method.provider
-                            ? "border-primary bg-primary/10"
-                            : "border-neutral-800 hover:border-neutral-600"
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <Icon className="h-5 w-5 text-primary" />
-                          <span>
-                            <span className="block text-sm font-semibold">{method.displayName}</span>
-                            <span className="block text-[11px] text-neutral-500">
-                              {`${method.mode} gateway`}
-                            </span>
-                          </span>
+          {methods.length > 1 && (
+            <div className="mt-4 grid gap-2">
+              {methods.map((method) => {
+                const Icon = providerIcon[method.provider];
+                return (
+                  <button
+                    key={method.provider}
+                    type="button"
+                    onClick={() => setProvider(method.provider)}
+                    className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                      provider === method.provider
+                        ? "border-primary bg-primary/10"
+                        : "border-neutral-800 hover:border-neutral-600"
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 text-primary" />
+                      <span>
+                        <span className="block text-sm font-semibold">{method.displayName}</span>
+                        <span className="block text-[11px] text-neutral-500">
+                          {`${method.mode} gateway`}
                         </span>
-                        {provider === method.provider && (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Single-gateway auto-checkout loading */}
-              {methods.length <= 1 && (checkout.isPending || gatewayQuery.isLoading) && (
-                <div className="mt-4 flex flex-col items-center gap-3 py-4">
-                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
-                  <p className="text-sm text-neutral-400">Preparing secure checkout…</p>
-                </div>
-              )}
+                      </span>
+                    </span>
+                    {provider === method.provider && (
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
+          )}
 
-            {bankInstructions && (
-              <pre className="whitespace-pre-wrap rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-xs text-sky-100">
-                {bankInstructions}
-              </pre>
-            )}
+          {/* Single-gateway auto-checkout loading */}
+          {methods.length <= 1 && (checkout.isPending || gatewayQuery.isLoading) && (
+            <div className="mt-4 flex flex-col items-center gap-3 py-4">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              <p className="text-sm text-neutral-400">Preparing secure checkout…</p>
+            </div>
+          )}
 
-            <div className="grid gap-2 text-xs text-neutral-400">
-              <span className="flex items-center gap-2">
+          {/* Redirecting indicator */}
+          {isRedirecting && (
+            <div className="mt-4 flex flex-col items-center gap-3 py-4">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              <div className="flex items-center gap-1.5 text-sm text-neutral-400">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                Encrypted checkout. Access is activated immediately upon successful payment.
-              </span>
-              <span className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-sky-400" />
-                {dmsEnabled
-                  ? "Subscriber direct messaging enabled."
-                  : "Messaging is disabled by this trainer."}
-              </span>
+                Connecting to secure payment gateway…
+              </div>
             </div>
+          )}
+        </div>
 
-            {methods.length > 1 && (
-              <Button
-                className="w-full font-bold uppercase tracking-wider text-xs h-12"
-                size="lg"
-                disabled={checkout.isPending || isRedirecting || !!bankInstructions || methods.length === 0}
-                onClick={() => checkout.mutate()}
-              >
-                {checkout.isPending || isRedirecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isRedirecting ? "Connecting to payment gateway…" : "Preparing checkout…"}
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    {provider === "bank" ? "Create Bank Transfer Order" : `Subscribe for $${total.toFixed(2)}/mo`}
-                  </>
-                )}
-              </Button>
+        {bankInstructions && (
+          <pre className="whitespace-pre-wrap rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-xs text-sky-100">
+            {bankInstructions}
+          </pre>
+        )}
+
+        <div className="grid gap-2 text-xs text-neutral-400">
+          <span className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            Encrypted checkout. Access is activated immediately upon successful payment.
+          </span>
+          <span className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-sky-400" />
+            {dmsEnabled
+              ? "Subscriber direct messaging enabled."
+              : "Messaging is disabled by this trainer."}
+          </span>
+        </div>
+
+        {methods.length > 1 && (
+          <Button
+            className="w-full font-bold uppercase tracking-wider text-xs h-12"
+            size="lg"
+            disabled={checkout.isPending || isRedirecting || !!bankInstructions || methods.length === 0}
+            onClick={() => checkout.mutate()}
+          >
+            {checkout.isPending || isRedirecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isRedirecting ? "Connecting to payment gateway…" : "Preparing checkout…"}
+              </>
+            ) : (
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                {provider === "bank" ? "Create Bank Transfer Order" : `Subscribe for $${total.toFixed(2)}/mo`}
+              </>
             )}
-          </>
+          </Button>
         )}
       </DialogContent>
     </Dialog>

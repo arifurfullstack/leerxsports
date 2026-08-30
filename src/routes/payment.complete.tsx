@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 type PaymentSearch = {
   order?: string;
+  order_id?: string;
   session_id?: string;
   token?: string;
   cancelled?: string;
@@ -14,10 +15,11 @@ type PaymentSearch = {
 
 export const Route = createFileRoute("/payment/complete")({
   validateSearch: (search: Record<string, unknown>): PaymentSearch => ({
-    order: typeof search.order === "string" ? search.order : undefined,
-    session_id: typeof search.session_id === "string" ? search.session_id : undefined,
-    token: typeof search.token === "string" ? search.token : undefined,
-    cancelled: typeof search.cancelled === "string" ? search.cancelled : undefined,
+    order: search.order != null ? String(search.order) : undefined,
+    order_id: search.order_id != null ? String(search.order_id) : undefined,
+    session_id: search.session_id != null ? String(search.session_id) : undefined,
+    token: search.token != null ? String(search.token) : undefined,
+    cancelled: search.cancelled != null ? String(search.cancelled) : undefined,
   }),
   head: () => ({ meta: [{ title: "Payment Status | LEER" }] }),
   component: PaymentCompletePage,
@@ -26,15 +28,20 @@ export const Route = createFileRoute("/payment/complete")({
 function PaymentCompletePage() {
   const search = Route.useSearch();
   const confirm = useServerFn(confirmPaymentReturn);
+  const isCancelled = search.cancelled === "1" || search.cancelled === "true";
   const [state, setState] = useState<"checking" | "success" | "cancelled" | "error">(
-    search.cancelled === "1" ? "cancelled" : "checking",
+    isCancelled ? "cancelled" : "checking",
   );
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (search.cancelled === "1") return;
+    if (isCancelled) {
+      setState("cancelled");
+      return;
+    }
     const reference = search.session_id ?? search.token;
-    if (!search.order || !reference) {
+    const orderId = search.order ?? search.order_id;
+    if (!orderId || !reference) {
       setState("error");
       setMessage("The payment return link is missing session parameters.");
       return;
@@ -42,7 +49,7 @@ function PaymentCompletePage() {
     let active = true;
     confirm({
       data: {
-        orderId: search.order,
+        orderId,
         providerReference: reference,
       },
     })
@@ -57,7 +64,7 @@ function PaymentCompletePage() {
     return () => {
       active = false;
     };
-  }, [confirm, search.cancelled, search.order, search.session_id, search.token]);
+  }, [confirm, search.cancelled, search.order, search.order_id, search.session_id, search.token]);
 
   return (
     <main className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-16">

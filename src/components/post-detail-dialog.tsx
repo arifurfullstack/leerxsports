@@ -485,14 +485,30 @@ export function PostDetailDialog({
             aria-label="Media"
           >
             {locked ? (
-              <div className="flex flex-col items-center gap-2 p-8 text-center">
-                <Lock className="h-8 w-8 text-primary" />
-                <p className="font-display uppercase tracking-widest text-primary">
-                  Premium
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Subscribe to unlock this post.
-                </p>
+              <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+                {/* Blurred gradient teaser background */}
+                {post.thumbnail_url ? (
+                  <img
+                    src={post.thumbnail_url}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover locked-blur"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-[oklch(0.15_0.02_25)] to-[oklch(0.08_0.01_20)]">
+                    <div className="h-full w-full locked-blur bg-gradient-to-tr from-primary/15 via-transparent to-primary/10" />
+                  </div>
+                )}
+                <div className="relative z-10 flex flex-col items-center gap-2 p-8 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-primary/60 bg-black/70 text-primary shadow-2xl backdrop-blur-md">
+                    <Lock className="h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
+                  </div>
+                  <p className="font-display uppercase tracking-widest text-primary">
+                    Premium
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Subscribe to unlock this post.
+                  </p>
+                </div>
               </div>
             ) : isVideo && mediaSrc ? (
               <VideoPlayer
