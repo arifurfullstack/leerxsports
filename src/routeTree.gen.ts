@@ -30,7 +30,6 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as TrainersUsernameRouteImport } from './routes/trainers.$username'
 import { Route as PostsPostIdRouteImport } from './routes/posts.$postId'
 import { Route as PaymentCompleteRouteImport } from './routes/payment.complete'
-import { Route as DevHeaderPreviewRouteImport } from './routes/dev.header-preview'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedQaRouteImport } from './routes/_authenticated/qa'
@@ -183,11 +182,6 @@ const PostsPostIdRoute = PostsPostIdRouteImport.update({
 const PaymentCompleteRoute = PaymentCompleteRouteImport.update({
   id: '/payment/complete',
   path: '/payment/complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevHeaderPreviewRoute = DevHeaderPreviewRouteImport.update({
-  id: '/dev/header-preview',
-  path: '/dev/header-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
@@ -494,7 +488,6 @@ export interface FileRoutesByFullPath {
   '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
-  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -565,7 +558,6 @@ export interface FileRoutesByTo {
   '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
-  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -639,7 +631,6 @@ export interface FileRoutesById {
   '/_authenticated/qa': typeof AuthenticatedQaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
-  '/dev/header-preview': typeof DevHeaderPreviewRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -713,7 +704,6 @@ export interface FileRouteTypes {
     | '/qa'
     | '/settings'
     | '/wallet'
-    | '/dev/header-preview'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -784,7 +774,6 @@ export interface FileRouteTypes {
     | '/qa'
     | '/settings'
     | '/wallet'
-    | '/dev/header-preview'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -857,7 +846,6 @@ export interface FileRouteTypes {
     | '/_authenticated/qa'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
-    | '/dev/header-preview'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -920,7 +908,6 @@ export interface RootRouteChildren {
   ShortsRoute: typeof ShortsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
-  DevHeaderPreviewRoute: typeof DevHeaderPreviewRoute
   PaymentCompleteRoute: typeof PaymentCompleteRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
   TrainersUsernameRoute: typeof TrainersUsernameRoute
@@ -1077,13 +1064,6 @@ declare module '@tanstack/react-router' {
       path: '/payment/complete'
       fullPath: '/payment/complete'
       preLoaderRoute: typeof PaymentCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dev/header-preview': {
-      id: '/dev/header-preview'
-      path: '/dev/header-preview'
-      fullPath: '/dev/header-preview'
-      preLoaderRoute: typeof DevHeaderPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/wallet': {
@@ -1568,7 +1548,6 @@ const rootRouteChildren: RootRouteChildren = {
   ShortsRoute: ShortsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  DevHeaderPreviewRoute: DevHeaderPreviewRoute,
   PaymentCompleteRoute: PaymentCompleteRoute,
   PostsPostIdRoute: PostsPostIdRoute,
   TrainersUsernameRoute: TrainersUsernameRoute,

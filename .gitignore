@@ -1,8 +1,14 @@
-# Dependencies
+# ==========================================
+# LEER Sports — Git Ignore Configuration
+# ==========================================
+
+# 1. Dependencies & Package Managers
 node_modules/
 .pnpm-store/
+.yarn/
+.npm/
 
-# Build & Runtime Outputs
+# 2. Build & Runtime Outputs
 dist/
 dist-ssr/
 .output/
@@ -12,19 +18,36 @@ dist-ssr/
 .nixpacks/
 .turbo/
 .cache/
+.wrangler/
+out/
+build/
 
-# Lovable local workspace files
-.lovable/
-
-# Environment variables & secrets
+# 3. Environment Variables & Secret Keys
 .env
-.env.*
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
 !.env.example
 .dev.vars
 *.pem
 *.key
+*.cert
+*.pfx
+*.p12
 
-# Logs, Debugging & Temp files
+# 4. Testing, Reports & Playwright Artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+coverage/
+.nyc_output/
+*.lcov
+tests/visual/screenshots/
+
+# 5. Logs & Temporary Files
 logs/
 *.log
 npm-debug.log*
@@ -35,30 +58,38 @@ lerna-debug.log*
 *.tmp
 *.temp
 *.bak
+.eslintcache
+.stylelintcache
 
-# Testing & Visual Regression
-coverage/
-.nyc_output/
-tests/visual/screenshots/
-playwright-report/
-test-results/
+# 6. Temporary Directories
+scratch/
+tmp/
+temp/
+.temp/
+supabase/.temp/
 
-# Wrangler / Serverless
-.wrangler/
-
-# OS & IDE Files
+# 7. OS Metadata & Cache
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 8. IDE & Editor Configurations
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-workspace
+*.sublime-project
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 
-# Local compiler and Supabase CLI state
+# 9. Compiler & Tooling State
 *.tsbuildinfo
-supabase/.temp/
-docs/
+.lovable/
