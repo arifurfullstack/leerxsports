@@ -215,7 +215,7 @@ export function Footer() {
     ];
 
     if (!user) {
-      links.push({ to: "/auth", label: "Sign in", icon: LogIn });
+      links.push({ to: "/login", label: "Sign in", icon: LogIn });
     }
 
     if (user && isAdminUser) {

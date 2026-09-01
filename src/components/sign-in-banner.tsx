@@ -68,12 +68,12 @@ export function SignInBanner({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
-            <Link to="/auth" search={{ mode: "signup", redirect } as never}>
+            <Link to="/signup" search={{ redirect } as never}>
               Create account
             </Link>
           </Button>
           <Button asChild size="sm">
-            <Link to="/auth" search={{ redirect } as never}>
+            <Link to="/login" search={{ redirect } as never}>
               Sign in
             </Link>
           </Button>

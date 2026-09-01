@@ -48,7 +48,7 @@ export function AuthGateDialog() {
 
         <div className="mt-6 flex flex-col gap-3">
           <Link
-            to="/auth"
+            to="/login"
             search={{ redirect } as never}
             onClick={closeAuthGate}
             className="group relative flex h-11 w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 text-xs font-semibold uppercase tracking-[0.18em] text-background transition-all hover:bg-foreground/90 hover:shadow-[0_0_20px_-3px_rgba(255,255,255,0.2)]"
@@ -58,8 +58,8 @@ export function AuthGateDialog() {
           </Link>
 
           <Link
-            to="/auth"
-            search={{ mode: "signup", redirect } as never}
+            to="/signup"
+            search={{ redirect } as never}
             onClick={closeAuthGate}
             className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-hairline-strong bg-accent/40 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition-all hover:border-foreground/40 hover:bg-accent"
           >

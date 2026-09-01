@@ -466,12 +466,12 @@ export function Navbar() {
             </>
           ) : (
             <div className="hidden items-center gap-1.5 sm:flex">
-              <Link to="/auth">
+              <Link to="/login">
                 <Button variant="ghost" size="sm" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70 hover:text-foreground">
                   <LogIn className="mr-1.5 h-4 w-4" /> Log in
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/signup">
                 <Button
                   size="sm"
                   className="relative overflow-hidden rounded-sm bg-premium px-4 text-[11px] font-bold uppercase tracking-[0.18em] text-premium-foreground shadow-none transition-all hover:bg-premium hover:shadow-[0_0_20px_-2px_var(--premium)]"
@@ -629,12 +629,12 @@ export function Navbar() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <Link to="/auth" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
+                <Link to="/login" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
                   <Button variant="outline" size="sm" className="w-full border-hairline bg-accent/40 text-foreground/80 hover:border-hairline-strong hover:bg-accent hover:text-accent-foreground">
                     <LogIn className="mr-2 h-4 w-4" /> Log in
                   </Button>
                 </Link>
-                <Link to="/auth" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
+                <Link to="/signup" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
                   <Button
                     size="sm"
                     className="w-full rounded-sm bg-premium text-[11px] font-bold uppercase tracking-[0.18em] text-premium-foreground hover:bg-premium hover:shadow-[0_0_20px_-2px_var(--premium)]"
@@ -643,13 +643,10 @@ export function Navbar() {
                   </Button>
                 </Link>
                 <Link
-                  to="/admin"
+                  to="/admin/login"
                   className="col-span-2"
                   tabIndex={mobileOpen ? 0 : -1}
-                  onClick={(e) => {
-                    handleAdminClick(e);
-                    setMobileOpen(false);
-                  }}
+                  onClick={() => setMobileOpen(false)}
                 >
                   <Button variant="ghost" size="sm" className="w-full text-foreground/70 hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0">
                     <Shield className="mr-2 h-4 w-4" /> Go to Admin

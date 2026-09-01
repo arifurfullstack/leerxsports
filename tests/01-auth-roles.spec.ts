@@ -9,23 +9,17 @@ test.describe("1. Authentication & Role Permissions Suite", () => {
     await ensureQAUser("admin");
   });
 
-  test("A. Signup page loads with mandatory role selection", async ({ page }) => {
+  test("A. Signup page loads with role selection", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await page.goto("/auth", { waitUntil: "domcontentloaded" });
+    await page.goto("/signup", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("domcontentloaded");
 
-    // Click Sign Up tab
-    const signUpTab = page.getByRole("tab", { name: "Sign Up" });
-    await expect(signUpTab).toBeVisible({ timeout: 10_000 });
-    await signUpTab.click();
-    await page.waitForTimeout(500);
+    // Verify role options (Athlete / Creator / Coach) exist
+    const athleteOption = page.locator('button:has-text("Athlete")').first();
+    const coachOption = page.locator('button:has-text("Creator"), button:has-text("Coach")').first();
 
-    // Verify role options (Trainee / Pro Trainer) exist
-    const traineeOption = page.locator('button:has-text("Trainee")').first();
-    const trainerOption = page.locator('button:has-text("Pro Trainer")').first();
-
-    await expect(traineeOption).toBeVisible({ timeout: 10_000 });
-    await expect(trainerOption).toBeVisible({ timeout: 10_000 });
+    await expect(athleteOption).toBeVisible({ timeout: 10_000 });
+    await expect(coachOption).toBeVisible({ timeout: 10_000 });
   });
 
   test("B. Trainee login and logout flow works cleanly", async ({ page }) => {
@@ -75,10 +69,10 @@ test.describe("1. Authentication & Role Permissions Suite", () => {
 
   test("D. Forgot password route loads recovery interface", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await page.goto("/auth", { waitUntil: "domcontentloaded" });
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("domcontentloaded");
 
-    const forgotBtn = page.locator('text="Forgot", button:has-text("Forgot password"), a:has-text("Forgot")').first();
+    const forgotBtn = page.locator('text="Forgot", a:has-text("Forgot")').first();
     if (await forgotBtn.isVisible({ timeout: 5000 })) {
       await forgotBtn.click();
       const resetHeader = page.locator('text="Reset Password", text="Recovery", input[type="email"]').first();
@@ -86,9 +80,9 @@ test.describe("1. Authentication & Role Permissions Suite", () => {
     }
   });
 
-  test("E. Google authentication entry point exists where configured", async ({ page }) => {
+  test("E. Google authentication entry point exists on /login", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await page.goto("/auth", { waitUntil: "domcontentloaded" });
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("domcontentloaded");
 
     const googleBtn = page.locator('button:has-text("Google"), [aria-label*="Google" i]').first();

@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ShortsRouteImport } from './routes/shorts'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CookiesRouteImport } from './routes/cookies'
@@ -91,6 +93,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShortsRoute = ShortsRouteImport.update({
   id: '/shorts',
   path: '/shorts',
@@ -114,6 +121,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedRoute = FeedRouteImport.update({
@@ -476,11 +488,13 @@ export interface FileRoutesByFullPath {
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
+  '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -548,11 +562,13 @@ export interface FileRoutesByTo {
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
+  '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -621,11 +637,13 @@ export interface FileRoutesById {
   '/cookies': typeof CookiesRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/shorts': typeof ShortsRoute
+  '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -695,11 +713,13 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/login'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
+    | '/signup'
     | '/sitemap.xml'
     | '/terms'
     | '/admin'
@@ -767,11 +787,13 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/login'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
+    | '/signup'
     | '/sitemap.xml'
     | '/terms'
     | '/dashboard'
@@ -839,11 +861,13 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/explore'
     | '/feed'
+    | '/login'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
     | '/search'
     | '/shorts'
+    | '/signup'
     | '/sitemap.xml'
     | '/terms'
     | '/_authenticated/admin'
@@ -913,11 +937,13 @@ export interface RootRouteChildren {
   CookiesRoute: typeof CookiesRoute
   ExploreRoute: typeof ExploreRoute
   FeedRoute: typeof FeedRoute
+  LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   ShortsRoute: typeof ShortsRoute
+  SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -944,6 +970,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shorts': {
@@ -979,6 +1012,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feed': {
@@ -1561,11 +1601,13 @@ const rootRouteChildren: RootRouteChildren = {
   CookiesRoute: CookiesRoute,
   ExploreRoute: ExploreRoute,
   FeedRoute: FeedRoute,
+  LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   ShortsRoute: ShortsRoute,
+  SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   AdminLoginRoute: AdminLoginRoute,

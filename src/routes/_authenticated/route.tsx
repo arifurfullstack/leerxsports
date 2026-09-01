@@ -17,7 +17,8 @@ export const Route = createFileRoute("/_authenticated")({
         });
       }
       throw redirect({
-        to: "/",
+        to: "/login" as any,
+        search: { redirect: location.pathname + (location.searchStr ?? "") } as any,
       });
     }
     const { data, error } = await supabase.auth.getUser();
@@ -29,7 +30,8 @@ export const Route = createFileRoute("/_authenticated")({
         });
       }
       throw redirect({
-        to: "/",
+        to: "/login" as any,
+        search: { redirect: location.pathname + (location.searchStr ?? "") } as any,
       });
     }
 
