@@ -1144,7 +1144,7 @@ function FinalCtaSection() {
               style={{ ["--reveal-delay" as string]: "220ms" }}
             >
               <Link
-                to="/auth"
+                to="/signup"
                 onClick={() => track("home_cta_click", { section: "final_cta", target: "signup" })}
                 className="group inline-flex items-center justify-center gap-2 bg-premium px-8 py-4 text-xs font-sans font-bold uppercase tracking-[0.28em] text-background transition-all duration-300 hover:bg-foreground hover:text-background"
               >
