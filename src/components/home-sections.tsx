@@ -83,10 +83,10 @@ function HowItWorksSection() {
       ref={ref}
       aria-label="How LEER works"
       data-inview={seen ? "true" : "false"}
-      className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6"
+      className="relative mx-auto max-w-6xl px-4 pb-16 sm:pb-24 pt-8 sm:px-6"
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-baseline md:justify-between">
-        <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-premium text-[clamp(3.5rem,10vw,7rem)]">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-baseline md:justify-between">
+        <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-premium text-[clamp(2.5rem,8vw,6.5rem)]">
           Process
         </h2>
         <p className="reveal max-w-xs text-xs font-sans font-bold uppercase tracking-[0.28em] text-muted-foreground" style={{ ["--reveal-delay" as string]: "120ms" }}>
@@ -205,9 +205,9 @@ function DisciplinesSection() {
       data-inview={seen ? "true" : "false"}
       className="relative border-y border-border bg-white/[0.04]"
     >
-      <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(3.5rem,10vw,7rem)]">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24 sm:px-6">
+        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
+          <h2 className="reveal font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(2.5rem,8vw,6.5rem)]">
             Disciplines
           </h2>
           <Link
@@ -960,7 +960,7 @@ function PricingSection() {
         <div className="text-xs font-sans font-bold uppercase tracking-[0.28em] text-premium">
           Membership
         </div>
-        <h2 className="mt-4 font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(3.25rem,10vw,7rem)]">
+        <h2 className="mt-4 font-display uppercase leading-[0.9] tracking-tighter text-foreground text-[clamp(2.5rem,8vw,6.5rem)]">
           Investment
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-sm font-sans text-muted-foreground">
@@ -1131,7 +1131,7 @@ function FinalCtaSection() {
                 Restricted area
               </span>
               <h2
-                className="reveal mt-8 font-display italic uppercase leading-[0.85] tracking-tighter text-foreground text-[clamp(3.5rem,11vw,8.5rem)]"
+                className="reveal mt-8 font-display italic uppercase leading-[0.85] tracking-tighter text-foreground text-[clamp(2.5rem,9vw,7.5rem)]"
                 style={{ ["--reveal-delay" as string]: "80ms" }}
               >
                 Don&rsquo;t play
