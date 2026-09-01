@@ -67,7 +67,7 @@ function toDay(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function presetToRange(preset: string, start?: string, end?: string) {
+function presetToRange(preset: string = "30", start?: string, end?: string) {
   const today = toDay(new Date());
   if (preset === "custom" && start && end) {
     return { start, end, days: diffDays(start, end) };
@@ -84,9 +84,9 @@ function diffDays(a: string, b: string) {
 }
 
 const searchSchema = z.object({
-  preset: fallback(z.string(), "30").default("30"),
-  start: fallback(z.string(), "").default(""),
-  end: fallback(z.string(), "").default(""),
+  preset: z.string().optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
 });
 
 const overviewQ = queryOptions({
@@ -343,12 +343,12 @@ function AdminDashboardPage() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <RangePicker
-              preset={search.preset}
+              preset={search.preset || "30"}
               start={start}
               end={end}
               onChange={(next) =>
                 navigate({
-                  search: (prev: { preset: string; start: string; end: string }) => ({
+                  search: (prev: any) => ({
                     ...prev,
                     ...next,
                   }),

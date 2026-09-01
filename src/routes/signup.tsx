@@ -11,8 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RedirectIfAuthed } from "@/components/redirect-if-authed";
 
 const signupSearchSchema = z.object({
-  redirect: z.string().optional().default(""),
-  role: z.enum(["trainee", "trainer"]).optional().default("trainee"),
+  redirect: z.string().optional(),
+  role: z.enum(["trainee", "trainer"]).optional(),
 });
 
 export const Route = createFileRoute("/signup")({

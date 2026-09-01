@@ -3,9 +3,9 @@ import { zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
 
 const authSearchSchema = z.object({
-  intent: z.string().optional().default(""),
-  redirect: z.string().optional().default(""),
-  mode: z.string().optional().default(""),
+  intent: z.string().optional(),
+  redirect: z.string().optional(),
+  mode: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({

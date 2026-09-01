@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const adminLoginSearchSchema = z.object({
-  redirect: z.string().optional().default("/admin"),
-  error: z.string().optional().default(""),
+  redirect: z.string().optional(),
+  error: z.string().optional(),
 });
 
 export const Route = createFileRoute("/admin/login")({
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin/login")({
 });
 
 function AdminLoginPage() {
-  const { redirect, error: initialError } = Route.useSearch();
+  const { redirect: redirectTarget = "/admin", error: initialError } = Route.useSearch();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -70,7 +70,7 @@ function AdminLoginPage() {
       setSuccessMessage("Security clearance verified. Redirecting to Command Center...");
 
       setTimeout(() => {
-        const dest = redirect && redirect.startsWith("/admin") ? redirect : "/admin";
+        const dest = redirectTarget && redirectTarget.startsWith("/admin") ? redirectTarget : "/admin";
         window.location.href = dest;
       }, 300);
     } catch (err: any) {

@@ -11,8 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RedirectIfAuthed } from "@/components/redirect-if-authed";
 
 const loginSearchSchema = z.object({
-  redirect: z.string().optional().default(""),
-  error: z.string().optional().default(""),
+  redirect: z.string().optional(),
+  error: z.string().optional(),
 });
 
 export const Route = createFileRoute("/login")({

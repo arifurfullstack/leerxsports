@@ -99,13 +99,13 @@ const feedQuery = queryOptions({
 
 
 const feedSearchSchema = z.object({
-  tab: fallback(z.string(), "feed").default("feed"),
-  post: fallback(z.string(), "").default(""),
-  panel: fallback(z.string(), "media").default("media"),
-  sort: fallback(z.string(), "newest").default("newest"),
-  verified: fallback(z.string(), "all").default("all"),
-  q: fallback(z.string(), "").default(""),
-  scope: fallback(z.string(), "all").default("all"),
+  tab: z.string().optional(),
+  post: z.string().optional(),
+  panel: z.string().optional(),
+  sort: z.string().optional(),
+  verified: z.string().optional(),
+  q: z.string().optional(),
+  scope: z.string().optional(),
 });
 type FeedSearch = z.infer<typeof feedSearchSchema>;
 
