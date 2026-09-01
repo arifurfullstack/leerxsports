@@ -20,7 +20,7 @@ test.describe("TEST 4 — ADMIN DASHBOARD / TRAINER APPROVAL", () => {
         password,
         email_confirm: true,
       });
-      user = created?.user;
+      user = created?.user ?? undefined;
     }
 
     applicantUserId = user?.id || "";
