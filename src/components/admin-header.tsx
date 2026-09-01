@@ -62,7 +62,7 @@ export function AdminHeader() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth", search: { intent: "admin" }, replace: true });
+    router.navigate({ to: "/admin/login" as any, replace: true });
   };
 
   const displayName =

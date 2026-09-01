@@ -48,14 +48,16 @@ function AdminPendingSkeleton() {
  */
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async ({ location }) => {
+    if (location.pathname === "/admin/login") {
+      return;
+    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({
-        to: "/auth",
+        to: "/admin/login" as any,
         search: {
-          intent: "admin",
           redirect: location.pathname + (location.searchStr ?? ""),
-        },
+        } as any,
       });
     }
     // Load the user's roles so the sidebar can render only the sections
@@ -71,7 +73,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
     // Strictly block non-admin / non-moderator users from backend pages!
     if (!isAdmin && !isModerator) {
       throw redirect({
-        to: "/home",
+        to: "/admin/login" as any,
+        search: {
+          error: "unauthorized",
+          redirect: location.pathname + (location.searchStr ?? ""),
+        } as any,
       });
     }
 
@@ -186,16 +192,15 @@ function AdminAuthErrorBoundary({
         {isUnauth ? (
           <Button asChild>
             <Link
-              to="/auth"
+              to={"/admin/login" as any}
               search={{
-                intent: "admin",
                 redirect:
                   typeof window !== "undefined"
                     ? window.location.pathname + window.location.search
                     : "/admin",
-              }}
+              } as any}
             >
-              <LogIn className="mr-2 h-4 w-4" /> Sign in
+              <LogIn className="mr-2 h-4 w-4" /> Admin Sign in
             </Link>
           </Button>
         ) : (

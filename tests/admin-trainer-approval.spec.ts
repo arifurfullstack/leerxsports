@@ -52,27 +52,40 @@ test.describe("TEST 4 — ADMIN DASHBOARD / TRAINER APPROVAL", () => {
     }
   });
 
-  test("4.1 Admin Login: QA Admin account can log in and access /admin dashboard", async ({ page }) => {
+  test("4.1 Dedicated Admin Portal (/admin/login): Renders restricted gateway and logs in Admin", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await loginAs(page, "admin");
+    await page.goto("/admin/login", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector('#admin-email', { timeout: 15_000 });
 
-    await page.goto("/admin", { waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("domcontentloaded");
+    const portalHeading = page.locator('h1:has-text("LEER Command")').first();
+    await expect(portalHeading).toBeVisible({ timeout: 15_000 });
 
-    const header = page.locator('h1, h2, [data-testid="admin-dashboard"], main').first();
-    await expect(header).toBeVisible({ timeout: 15_000 });
+    // Fill in admin credentials
+    await page.fill('#admin-email', "qa.admin@leersports.com");
+    await page.fill('#admin-password', "LeerAdmin2026!");
+    await page.click('button[type="submit"]');
+
+    // Wait for redirect to /admin
+    await page.waitForURL((url) => url.pathname.startsWith("/admin") && !url.pathname.includes("login"), { timeout: 15_000 });
+    const adminHeader = page.locator('h1, h2, [data-testid="admin-dashboard"], main').first();
+    await expect(adminHeader).toBeVisible({ timeout: 15_000 });
   });
 
-  test("4.2 RBAC Protection: Non-admin trainee is blocked from /admin routes", async ({ page }) => {
+  test("4.2 RBAC & Route Protection: Trainee attempting /admin/login is denied and blocked", async ({ page }) => {
     monitorConsoleAndNetwork(page);
-    await loginAs(page, "trainee");
-
-    await page.goto("/admin", { waitUntil: "domcontentloaded" });
+    await page.goto("/auth", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => localStorage.clear());
+    await page.goto("/admin/login", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("domcontentloaded");
 
-    const url = page.url();
-    const isProtected = !url.endsWith("/admin") || url.includes("redirect") || url.includes("/auth");
-    expect(isProtected).toBe(true);
+    // Trainee credentials
+    await page.fill('#admin-email', "qa.trainee@leersports.com");
+    await page.fill('#admin-password', "LeerSports2026!Trainee");
+    await page.click('button[type="submit"]');
+
+    // Expect Access Denied security warning
+    const alertWarning = page.locator('[role="alert"]').first();
+    await expect(alertWarning).toBeVisible({ timeout: 15_000 });
   });
 
   test("4.3 Pending Trainer List: Pending applications visible in admin interface", async ({ page }) => {

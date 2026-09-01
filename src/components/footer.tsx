@@ -153,8 +153,6 @@ export function Footer() {
     setIsAdminRoute(pathname.startsWith("/admin"));
   }, [pathname]);
 
-  if (isAdminRoute) return null;
-
   useEffect(() => {
     let active = true;
 
@@ -226,6 +224,8 @@ export function Footer() {
 
     return links;
   }, [user, isAdminUser]);
+
+  if (isAdminRoute) return null;
 
   return (
     <footer

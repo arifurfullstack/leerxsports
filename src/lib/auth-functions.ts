@@ -30,3 +30,33 @@ export const isAdmin = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return !!isAdminRole;
   });
+
+export const verifyAdminLogin = createServerFn({ method: "POST" })
+  .validator((d: { email: string; password: string }) => d)
+  .handler(async ({ data: { email, password } }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (authErr || !authData.user) {
+      throw new Error(authErr?.message || "Invalid administrator credentials.");
+    }
+    const userId = authData.user.id;
+    const { data: roleRows, error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (roleErr) {
+      throw new Error("Failed to verify administrative authorization.");
+    }
+    const roles = (roleRows ?? []).map((r) => r.role);
+    const isAuthorized = roles.includes("admin") || roles.includes("moderator");
+    if (!isAuthorized) {
+      throw new Error("Access Denied: Your account does not have administrator privileges.");
+    }
+    return {
+      session: authData.session,
+      user: authData.user,
+    };
+  });

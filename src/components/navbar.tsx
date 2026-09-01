@@ -124,9 +124,6 @@ export function Navbar() {
     setIsAdminRoute(pathname.startsWith("/admin"));
   }, [pathname]);
 
-  if (isAdminRoute) return null;
-
-
   const trainerStatusQuery = useQuery({
     queryKey: ["navbar-trainer-status", user?.id],
     queryFn: async () => {
@@ -190,44 +187,11 @@ export function Navbar() {
   const handleAdminClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
-      const toastId = "admin-signin-required";
-      toast.warning("Sign in required to access the admin panel.", {
-        id: toastId,
-        description: "Redirecting you to the sign-in page…",
-        position: "top-center",
-        duration: Infinity,
-      });
       setMobileOpen(false);
-      Promise.resolve(
-        router.navigate({
-          to: "/auth",
-          search: { intent: "admin", redirect: "/admin" },
-        }),
-      )
-        .then(async () => {
-          await new Promise<void>((resolve) => {
-            const check = () => {
-              const s = router.state;
-              if (
-                s.location.pathname === "/auth" &&
-                s.status === "idle" &&
-                !s.isLoading &&
-                !s.isTransitioning
-              ) {
-                resolve();
-                return true;
-              }
-              return false;
-            };
-            if (check()) return;
-            const unsub = router.subscribe("onResolved", () => {
-              if (check()) unsub();
-            });
-          });
-        })
-        .finally(() => {
-          toast.dismiss(toastId);
-        });
+      router.navigate({
+        to: "/admin/login" as any,
+        search: { redirect: "/admin" } as any,
+      });
     }
   };
 
@@ -297,6 +261,8 @@ export function Navbar() {
     (user?.user_metadata?.name as string | undefined) ||
     user?.email ||
     "";
+
+  if (isAdminRoute) return null;
 
   return (
     <header

@@ -5,12 +5,15 @@ import { resolveAuthIntent } from "@/lib/auth-intent";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
+    if (location.pathname === "/admin/login") {
+      return;
+    }
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       if (location.pathname.startsWith("/admin")) {
         throw redirect({
-          to: "/auth",
-          search: { intent: "admin", redirect: location.pathname + (location.searchStr ?? "") },
+          to: "/admin/login" as any,
+          search: { redirect: location.pathname + (location.searchStr ?? "") } as any,
         });
       }
       throw redirect({
@@ -21,8 +24,8 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       if (location.pathname.startsWith("/admin")) {
         throw redirect({
-          to: "/auth",
-          search: { intent: "admin", redirect: location.pathname + (location.searchStr ?? "") },
+          to: "/admin/login" as any,
+          search: { redirect: location.pathname + (location.searchStr ?? "") } as any,
         });
       }
       throw redirect({

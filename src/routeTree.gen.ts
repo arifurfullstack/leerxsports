@@ -30,6 +30,7 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as TrainersUsernameRouteImport } from './routes/trainers.$username'
 import { Route as PostsPostIdRouteImport } from './routes/posts.$postId'
 import { Route as PaymentCompleteRouteImport } from './routes/payment.complete'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedQaRouteImport } from './routes/_authenticated/qa'
@@ -182,6 +183,11 @@ const PostsPostIdRoute = PostsPostIdRouteImport.update({
 const PaymentCompleteRoute = PaymentCompleteRouteImport.update({
   id: '/payment/complete',
   path: '/payment/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
@@ -488,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/login': typeof AdminLoginRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -558,6 +565,7 @@ export interface FileRoutesByTo {
   '/qa': typeof AuthenticatedQaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/admin/login': typeof AdminLoginRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -631,6 +639,7 @@ export interface FileRoutesById {
   '/_authenticated/qa': typeof AuthenticatedQaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
+  '/admin/login': typeof AdminLoginRoute
   '/payment/complete': typeof PaymentCompleteRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/trainers/$username': typeof TrainersUsernameRoute
@@ -704,6 +713,7 @@ export interface FileRouteTypes {
     | '/qa'
     | '/settings'
     | '/wallet'
+    | '/admin/login'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -774,6 +784,7 @@ export interface FileRouteTypes {
     | '/qa'
     | '/settings'
     | '/wallet'
+    | '/admin/login'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -846,6 +857,7 @@ export interface FileRouteTypes {
     | '/_authenticated/qa'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
+    | '/admin/login'
     | '/payment/complete'
     | '/posts/$postId'
     | '/trainers/$username'
@@ -908,6 +920,7 @@ export interface RootRouteChildren {
   ShortsRoute: typeof ShortsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   PaymentCompleteRoute: typeof PaymentCompleteRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
   TrainersUsernameRoute: typeof TrainersUsernameRoute
@@ -1064,6 +1077,13 @@ declare module '@tanstack/react-router' {
       path: '/payment/complete'
       fullPath: '/payment/complete'
       preLoaderRoute: typeof PaymentCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/wallet': {
@@ -1548,6 +1568,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShortsRoute: ShortsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  AdminLoginRoute: AdminLoginRoute,
   PaymentCompleteRoute: PaymentCompleteRoute,
   PostsPostIdRoute: PostsPostIdRoute,
   TrainersUsernameRoute: TrainersUsernameRoute,
